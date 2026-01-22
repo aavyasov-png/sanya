@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
-// import { supabase } from "./supabase";
+import { supabase } from "./supabase";
 import "./App.css";
 
 type Lang = "ru" | "uz";
@@ -196,7 +196,8 @@ export default function App() {
   const [cards, setCards] = useState<CardRow[]>([]);
   const [news, setNews] = useState<NewsRow[]>([]);
 
-  const [adminSession, setAdminSession] = useState<any>(null);const isAdmin = !!adminSession;
+  const [adminSession, setAdminSession] = useState<any>(null);
+  
   
 
   // keep lang
@@ -436,11 +437,18 @@ export default function App() {
 
                 <div style={{ marginTop: 12, display: "flex", justifyContent: "center" }}>
                   <button
-                    className="smallBtn"
-                    onClick={() => setRoute({ name: isAdmin ? "admin" : "adminLogin" })}
-                  >
-                    {t.openAdmin}
-                  </button>
+  className="pillBtn"
+  onClick={() => {
+    if (isAdmin) {
+      setRoute({ name: "admin" });
+    } else {
+      setRoute({ name: "adminLogin" });
+    }
+  }}
+>                      
+  {t.openAdmin}
+</button>
+                  
                 </div>
               </div>
             </div>
@@ -459,9 +467,18 @@ export default function App() {
               onBack={goBack}
               onHome={goHome}
               rightSlot={
-                <button className="smallBtn" onClick={() => setRoute({ name: isAdmin ? "admin" : "adminLogin" })}>
-                  {t.admin}
-                </button>
+                <button
+  className="pillBtn"
+  onClick={() => {
+    if (isAdmin) {
+      setRoute({ name: "admin" });
+    } else {
+      setRoute({ name: "adminLogin" });
+    }
+  }}
+>
+  {t.openAdmin}
+</button>
               }
             />
 
