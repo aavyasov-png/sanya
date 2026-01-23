@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState, useRef } from "react";
 import { supabase } from "./supabase";
 import "./App.css";
 
@@ -736,6 +736,170 @@ export default function App() {
   };
 
   // ---------- UI ----------
+  const sectionListRef = useRef<HTMLDivElement | null>(null);
+
+  const handleSectionScroll = () => {
+    const el = sectionListRef.current;
+    if (!el) return;
+
+    const children = Array.from(el.children) as HTMLElement[];
+    const centerX = el.scrollLeft + el.clientWidth / 2;
+
+    children.forEach((ch) => {
+      const rect = ch.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      const chCenter = ch.offsetLeft + rect.width / 2;
+      const dist = Math.abs(chCenter - centerX);
+      ch.classList.remove("is-center", "is-near", "is-far");
+      if (dist < rect.width * 0.45) {
+        ch.classList.add("is-center");
+      } else if (dist < rect.width * 1.2) {
+        ch.classList.add("is-near");
+      } else {
+        ch.classList.add("is-far");
+      }
+    });
+  };
+
+  useEffect(() => {
+    // initialize and update on resize
+    handleSectionScroll();
+    const onResize = () => handleSectionScroll();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [sections, filteredSections]);
+
+  // auto-snap to nearest item after scroll stops
+  const snapTimerRef = useRef<number | null>(null);
+
+  const snapToClosest = () => {
+    const el = sectionListRef.current;
+    if (!el) return;
+    const children = Array.from(el.children) as HTMLElement[];
+    if (children.length === 0) return;
+
+    const centerX = el.scrollLeft + el.clientWidth / 2;
+    let closest: HTMLElement | null = null;
+    let minDist = Infinity;
+    children.forEach((ch) => {
+      const rect = ch.getBoundingClientRect();
+      const chCenter = ch.offsetLeft + rect.width / 2;
+      const dist = Math.abs(chCenter - centerX);
+      if (dist < minDist) {
+        minDist = dist;
+        closest = ch;
+      }
+    });
+
+    if (!closest) return;
+
+    const target = closest.offsetLeft - (el.clientWidth - closest.clientWidth) / 2;
+    const start = el.scrollLeft;
+    const delta = target - start;
+    const dur = 360;
+    let startTs: number | null = null;
+
+    const step = (ts: number) => {
+      if (!startTs) startTs = ts;
+      const t = Math.min(1, (ts - startTs) / dur);
+      const ease = 1 - Math.pow(1 - t, 3);
+      el.scrollLeft = start + delta * ease;
+      if (t < 1) requestAnimationFrame(step);
+      else handleSectionScroll();
+    };
+
+    requestAnimationFrame(step);
+  };
+
+  // attach tilt + magnetic interactions
+  useEffect(() => {
+    const el = sectionListRef.current;
+    if (!el) return;
+
+    const children = Array.from(el.children) as HTMLElement[];
+
+    const onMouseMoveCard = (ch: HTMLElement) => (e: MouseEvent) => {
+      const rect = ch.getBoundingClientRect();
+      const dx = (e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2);
+      const dy = (e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
+      // base scale from classes
+      let scale = 1;
+      let ty = 0;
+      if (ch.classList.contains("is-center")) {
+        scale = 1.08; ty = -10;
+      } else if (ch.classList.contains("is-near")) {
+        scale = 0.98; ty = -6;
+      } else {
+        scale = 0.94; ty = 0;
+      }
+      const rx = -dy * 6;
+      const ry = dx * 6;
+      ch.style.transform = `translateY(${ty}px) scale(${scale}) rotateX(${rx}deg) rotateY(${ry}deg)`;
+      ch.style.transition = "transform 80ms linear";
+    };
+
+    const onMouseLeaveCard = (ch: HTMLElement) => () => {
+      ch.style.transition = "transform .28s cubic-bezier(.22,.1,.36,.9)";
+      // restore class-based transform by clearing inline transform (then handleSectionScroll will reapply via classes)
+      ch.style.transform = "";
+    };
+
+    children.forEach((ch) => {
+      const mm = onMouseMoveCard(ch);
+      const ml = onMouseLeaveCard(ch);
+      ch.addEventListener("mousemove", mm);
+      ch.addEventListener("mouseleave", ml);
+      // store handlers on element for cleanup
+      (ch as any).__mm = mm;
+      (ch as any).__ml = ml;
+    });
+
+    // magnetic CTA
+    const btn = document.querySelector(".allSectionsBtn") as HTMLElement | null;
+    let onBtnMove: ((e: MouseEvent) => void) | null = null;
+    let onBtnLeave: ((e: MouseEvent) => void) | null = null;
+    if (btn) {
+      onBtnMove = (e: MouseEvent) => {
+        const r = btn.getBoundingClientRect();
+        const mx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
+        const my = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+        btn.style.transform = `translate(${mx * 8}px, ${my * 6}px) scale(1.02)`;
+      };
+      onBtnLeave = () => { btn.style.transform = ""; };
+      btn.addEventListener("mousemove", onBtnMove);
+      btn.addEventListener("mouseleave", onBtnLeave);
+    }
+
+    return () => {
+      children.forEach((ch) => {
+        ch.removeEventListener("mousemove", (ch as any).__mm);
+        ch.removeEventListener("mouseleave", (ch as any).__ml);
+        delete (ch as any).__mm;
+        delete (ch as any).__ml;
+      });
+      if (btn && onBtnMove && onBtnLeave) {
+        btn.removeEventListener("mousemove", onBtnMove);
+        btn.removeEventListener("mouseleave", onBtnLeave);
+      }
+    };
+  }, [sections, filteredSections]);
+
+  // debounce snap on scroll
+  useEffect(() => {
+    const el = sectionListRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      if (snapTimerRef.current) window.clearTimeout(snapTimerRef.current);
+      snapTimerRef.current = window.setTimeout(() => {
+        snapToClosest();
+      }, 140) as unknown as number;
+    };
+    el.addEventListener("scroll", onScroll);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      if (snapTimerRef.current) window.clearTimeout(snapTimerRef.current);
+    };
+  }, [sections, filteredSections]);
   return (
     <div className="app">
       <div className="phone">
@@ -891,20 +1055,15 @@ export default function App() {
               <div className="h2">{t.hello} {userName || "Гость"}</div>
               <div className="sub">{t.sections}</div>
             </div>
-            <div style={{ display: "flex", justifyContent: "center", padding: "8px 16px 0 16px" }}>
-              <button className="btnGhost" onClick={() => setRoute({ name: "sections_all" })} style={{ width: 160 }}>
-                {t.allSections}
-              </button>
-            </div>
-
-            <div className="sectionList" onWheel={(e: any) => {
-              // scroll horizontally with mouse wheel
-              const el = e.currentTarget as HTMLDivElement;
+            <div className="sectionList" ref={sectionListRef} onWheel={(e: any) => {
+              // scroll horizontally with mouse wheel and update center classes
+              const el = sectionListRef.current as HTMLDivElement | null;
               if (!el) return;
-              // invert for natural feeling, use deltaY to move horizontally
               el.scrollLeft += e.deltaY;
               e.preventDefault();
-            }}>
+              // schedule update
+              window.requestAnimationFrame(() => handleSectionScroll());
+            }} onScroll={() => handleSectionScroll()}>
               {filteredSections.map((s) => (
                 <button
                   key={s.id}
@@ -954,6 +1113,12 @@ export default function App() {
                   <div className="newsBody">{lang === "ru" ? n.body_ru : n.body_uz}</div>
                 </div>
               ))}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "center", padding: "10px 16px" }}>
+              <button className="btnGhost allSectionsBtn" onClick={() => setRoute({ name: "sections_all" })}>
+                {t.allSections}
+              </button>
             </div>
           </div>
         )}
