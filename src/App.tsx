@@ -544,6 +544,14 @@ export default function App() {
   return (
     <div className="app">
       <div className="phone">
+        <div className="floating-logos">
+          <img src="/assets/uzum-logo.png" alt="" className="floating-logo floating-logo-1" />
+          <img src="/assets/uzum-logo.png" alt="" className="floating-logo floating-logo-2" />
+          <img src="/assets/uzum-logo.png" alt="" className="floating-logo floating-logo-3" />
+          <img src="/assets/uzum-logo.png" alt="" className="floating-logo floating-logo-4" />
+          <img src="/assets/uzum-logo.png" alt="" className="floating-logo floating-logo-5" />
+        </div>
+
         {route.name === "welcome" && (
           <div className="page">
             <div className="center">
