@@ -747,7 +747,6 @@ export default function App() {
 
     children.forEach((ch) => {
       const rect = ch.getBoundingClientRect();
-      const elRect = el.getBoundingClientRect();
       const chCenter = ch.offsetLeft + rect.width / 2;
       const dist = Math.abs(chCenter - centerX);
       ch.classList.remove("is-center", "is-near", "is-far");
@@ -793,7 +792,8 @@ export default function App() {
 
     if (!closest) return;
 
-    const target = closest.offsetLeft - (el.clientWidth - closest.clientWidth) / 2;
+    const c = closest as HTMLElement;
+    const target = c.offsetLeft - (el.clientWidth - c.clientWidth) / 2;
     const start = el.scrollLeft;
     const delta = target - start;
     const dur = 360;
