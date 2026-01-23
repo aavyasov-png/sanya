@@ -1,8 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { supabase } from "./supabase";
-
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
-
 import "./App.css";
 
 type Lang = "ru" | "uz";
@@ -147,7 +145,9 @@ function TopBar(props: {
 
   return (
     <div className="topbar">
-      <button className="iconBtn" onClick={onBack} aria-label={t.back}>←</button>
+      <button className="iconBtn" onClick={onBack} aria-label={t.back}>
+        ←
+      </button>
 
       {showSearch ? (
         <div className="searchWrap">
@@ -171,7 +171,9 @@ function TopBar(props: {
         </select>
       </div>
 
-      <button className="iconBtn" onClick={onHome} aria-label={t.home}>⌂</button>
+      <button className="iconBtn" onClick={onHome} aria-label={t.home}>
+        ⌂
+      </button>
 
       {rightSlot ? rightSlot : null}
     </div>
@@ -199,9 +201,9 @@ export default function App() {
   const [cards, setCards] = useState<CardRow[]>([]);
   const [news, setNews] = useState<NewsRow[]>([]);
 
-  const [adminSession, setAdminSession] = useState<any>(null);
-  
-  
+  // Admin session
+  const [adminSession, setAdminSession] = useState<Session | null>(null);
+  const isAdmin = !!adminSession;
 
   // keep lang
   useEffect(() => {
@@ -219,19 +221,42 @@ export default function App() {
   const loadPublic = async () => {
     const s = await supabase.from("sections").select("*").order("sort", { ascending: true });
     const c = await supabase.from("cards").select("*").order("sort", { ascending: true });
-    const n = await supabase.from("news").select("*").order("pinned", { ascending: false }).order("published_at", { ascending: false });
+    const n = await supabase
+      .from("news")
+      .select("*")
+      .order("pinned", { ascending: false })
+      .order("published_at", { ascending: false });
 
-    if (!s.error) setSections(s.data as any);
-    if (!c.error) setCards(c.data as any);
-    if (!n.error) setNews(n.data as any);
+    if (!s.error) setSections((s.data ?? []) as SectionRow[]);
+    if (!c.error) setCards((c.data ?? []) as CardRow[]);
+    if (!n.error) setNews((n.data ?? []) as NewsRow[]);
   };
 
   useEffect(() => {
     loadPublic();
   }, []);
 
-  // Admin session watch
-  supabase.auth.getSession
+  // Admin session watch (fix: was broken + types were implicit)
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      const { data, error } = await supabase.auth.getSession();
+      if (!mounted) return;
+      if (!error) setAdminSession(data.session);
+    })();
+
+    const { data: sub } = supabase.auth.onAuthStateChange(
+      (_event: AuthChangeEvent, session: Session | null) => {
+        setAdminSession(session);
+      }
+    );
+
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+  }, []);
 
   const filteredSections = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -251,7 +276,6 @@ export default function App() {
 
     const entered = code.trim().toUpperCase();
 
-    // Проверка кода через Supabase: is_active=true и expires_at либо null, либо в будущем
     const { data, error } = await supabase
       .from("access_codes")
       .select("code,is_active,expires_at")
@@ -263,7 +287,7 @@ export default function App() {
       return;
     }
 
-    const row: any = data[0];
+    const row = data[0] as { is_active: boolean; expires_at: string | null };
     if (!row.is_active) {
       setError(t.invalidCode);
       return;
@@ -296,7 +320,10 @@ export default function App() {
   const goHome = () => setRoute({ name: "home" });
 
   const goBack = () => {
-    if (route.name === "card") return setRoute({ name: "section", sectionId: (cards.find(x => x.id === route.cardId)?.section_id) || "" });
+    if (route.name === "card") {
+      const secId = cards.find((x) => x.id === route.cardId)?.section_id || "";
+      return setRoute({ name: "section", sectionId: secId });
+    }
     if (route.name === "section" || route.name === "news" || route.name === "admin") return setRoute({ name: "home" });
     if (route.name === "adminLogin") return setRoute({ name: "home" });
     if (route.name === "home") return setRoute({ name: "welcome" });
@@ -309,8 +336,22 @@ export default function App() {
 
   // forms
   const [secForm, setSecForm] = useState({ key: "", title_ru: "", title_uz: "", icon: "📄", sort: 100 });
-  const [cardForm, setCardForm] = useState({ section_id: "", title_ru: "", title_uz: "", body_ru: "", body_uz: "", sort: 100 });
-  const [newsForm, setNewsForm] = useState({ title_ru: "", title_uz: "", body_ru: "", body_uz: "", published_at: new Date().toISOString().slice(0,10), pinned: false });
+  const [cardForm, setCardForm] = useState({
+    section_id: "",
+    title_ru: "",
+    title_uz: "",
+    body_ru: "",
+    body_uz: "",
+    sort: 100,
+  });
+  const [newsForm, setNewsForm] = useState({
+    title_ru: "",
+    title_uz: "",
+    body_ru: "",
+    body_uz: "",
+    published_at: new Date().toISOString().slice(0, 10),
+    pinned: false,
+  });
   const [codeForm, setCodeForm] = useState({ code: "", is_active: true, expires_at: "", note: "" });
 
   const adminSignIn = async () => {
@@ -329,13 +370,13 @@ export default function App() {
     showToast("Ок");
     setRoute({ name: "home" });
   };
-  const [adminSession, setAdminSession] = useState<Session | null>(null);
-  const isAdmin = !!adminSession; 
-  
 
   const adminSaveSection = async () => {
     const { error } = await supabase.from("sections").insert(secForm as any);
-    if (error) { showToast("Ошибка"); return; }
+    if (error) {
+      showToast("Ошибка");
+      return;
+    }
     showToast("Ок");
     setSecForm({ key: "", title_ru: "", title_uz: "", icon: "📄", sort: 100 });
     await loadPublic();
@@ -343,14 +384,20 @@ export default function App() {
 
   const adminDeleteSection = async (id: string) => {
     const { error } = await supabase.from("sections").delete().eq("id", id);
-    if (error) { showToast("Ошибка"); return; }
+    if (error) {
+      showToast("Ошибка");
+      return;
+    }
     showToast("Ок");
     await loadPublic();
   };
 
   const adminSaveCard = async () => {
     const { error } = await supabase.from("cards").insert({ ...cardForm, updated_at: new Date().toISOString() } as any);
-    if (error) { showToast("Ошибка"); return; }
+    if (error) {
+      showToast("Ошибка");
+      return;
+    }
     showToast("Ок");
     setCardForm({ section_id: "", title_ru: "", title_uz: "", body_ru: "", body_uz: "", sort: 100 });
     await loadPublic();
@@ -358,22 +405,38 @@ export default function App() {
 
   const adminDeleteCard = async (id: string) => {
     const { error } = await supabase.from("cards").delete().eq("id", id);
-    if (error) { showToast("Ошибка"); return; }
+    if (error) {
+      showToast("Ошибка");
+      return;
+    }
     showToast("Ок");
     await loadPublic();
   };
 
   const adminSaveNews = async () => {
     const { error } = await supabase.from("news").insert(newsForm as any);
-    if (error) { showToast("Ошибка"); return; }
+    if (error) {
+      showToast("Ошибка");
+      return;
+    }
     showToast("Ок");
-    setNewsForm({ title_ru: "", title_uz: "", body_ru: "", body_uz: "", published_at: new Date().toISOString().slice(0,10), pinned: false });
+    setNewsForm({
+      title_ru: "",
+      title_uz: "",
+      body_ru: "",
+      body_uz: "",
+      published_at: new Date().toISOString().slice(0, 10),
+      pinned: false,
+    });
     await loadPublic();
   };
 
   const adminDeleteNews = async (id: string) => {
     const { error } = await supabase.from("news").delete().eq("id", id);
-    if (error) { showToast("Ошибка"); return; }
+    if (error) {
+      showToast("Ошибка");
+      return;
+    }
     showToast("Ок");
     await loadPublic();
   };
@@ -386,7 +449,10 @@ export default function App() {
       expires_at: codeForm.expires_at ? new Date(codeForm.expires_at).toISOString() : null,
     };
     const { error } = await supabase.from("access_codes").upsert(payload as any);
-    if (error) { showToast("Ошибка"); return; }
+    if (error) {
+      showToast("Ошибка");
+      return;
+    }
     showToast("Ок");
     setCodeForm({ code: "", is_active: true, expires_at: "", note: "" });
   };
@@ -409,15 +475,23 @@ export default function App() {
                 <input
                   className="input"
                   value={code}
-                  onChange={(e) => { setCode(e.target.value); if (error) setError(""); }}
-                  onKeyDown={(e) => { if (e.key === "Enter") submitCode(); }}
+                  onChange={(e) => {
+                    setCode(e.target.value);
+                    if (error) setError("");
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") submitCode();
+                  }}
                 />
 
                 <label className="row" style={{ marginTop: 10, color: "rgba(20,18,26,.88)" }}>
                   <input
                     type="checkbox"
                     checked={rules}
-                    onChange={(e) => { setRules(e.target.checked); if (error) setError(""); }}
+                    onChange={(e) => {
+                      setRules(e.target.checked);
+                      if (error) setError("");
+                    }}
                     style={{ width: 20, height: 20, accentColor: "#6F00FF" }}
                   />
                   <span style={{ fontWeight: 900 }}>{t.acceptRules}</span>
@@ -427,7 +501,11 @@ export default function App() {
 
                 <button
                   className="btnPrimary"
-                  style={{ marginTop: 12, opacity: canContinue ? 1 : 0.5, cursor: canContinue ? "pointer" : "not-allowed" }}
+                  style={{
+                    marginTop: 12,
+                    opacity: canContinue ? 1 : 0.5,
+                    cursor: canContinue ? "pointer" : "not-allowed",
+                  }}
                   onClick={submitCode}
                 >
                   {t.continue}
@@ -435,18 +513,17 @@ export default function App() {
 
                 <div style={{ marginTop: 12, display: "flex", justifyContent: "center" }}>
                   <button
-  className="pillBtn"
-  onClick={() => {
-    if (isAdmin) {
-  setRoute({ name: "admin" });
-} else {
-  setRoute({ name: "adminLogin" });
-}
-  }}
->                      
-  {t.openAdmin}
-</button>
-                  
+                    className="pillBtn"
+                    onClick={() => {
+                      if (isAdmin) {
+                        setRoute({ name: "admin" });
+                      } else {
+                        setRoute({ name: "adminLogin" });
+                      }
+                    }}
+                  >
+                    {t.openAdmin}
+                  </button>
                 </div>
               </div>
             </div>
@@ -466,17 +543,17 @@ export default function App() {
               onHome={goHome}
               rightSlot={
                 <button
-  className="pillBtn"
-  onClick={() => {
-    if (isAdmin) {
-      setRoute({ name: "admin" });
-    } else {
-      setRoute({ name: "adminLogin" });
-    }
-  }}
->
-  {t.openAdmin}
-</button>
+                  className="pillBtn"
+                  onClick={() => {
+                    if (isAdmin) {
+                      setRoute({ name: "admin" });
+                    } else {
+                      setRoute({ name: "adminLogin" });
+                    }
+                  }}
+                >
+                  {t.openAdmin}
+                </button>
               }
             />
 
@@ -488,22 +565,22 @@ export default function App() {
             <div className="blockTitle">{t.sections}</div>
             <div className="sectionList">
               {filteredSections.map((s) => (
-                <button
-                  key={s.id}
-                  className="sectionRow"
-                  onClick={() => setRoute({ name: "section", sectionId: s.id })}
-                >
+                <button key={s.id} className="sectionRow" onClick={() => setRoute({ name: "section", sectionId: s.id })}>
                   <div className="sectionIcon">{s.icon}</div>
 
                   <div className="sectionText">
                     <div className="sectionTitle">{getSectionTitle(s)}</div>
                     <div className="sectionSub">
-                      {cards.filter(c => c.section_id === s.id).slice(0, 1).map(c => getCardTitle(c)).join(" • ") || "—"}
+                      {cards
+                        .filter((c) => c.section_id === s.id)
+                        .slice(0, 1)
+                        .map((c) => getCardTitle(c))
+                        .join(" • ") || "—"}
                     </div>
                   </div>
 
                   <div className="sectionMeta">
-                    {news[0]?.published_at ? news[0].published_at.split("-").reverse().slice(0,2).join(".") : ""}
+                    {news[0]?.published_at ? news[0].published_at.split("-").reverse().slice(0, 2).join(".") : ""}
                   </div>
                 </button>
               ))}
@@ -515,7 +592,7 @@ export default function App() {
                   <div className="sectionSub">{news[0] ? (lang === "ru" ? news[0].title_ru : news[0].title_uz) : "—"}</div>
                 </div>
                 <div className="sectionMeta">
-                  {news[0]?.published_at ? news[0].published_at.split("-").reverse().slice(0,2).join(".") : ""}
+                  {news[0]?.published_at ? news[0].published_at.split("-").reverse().slice(0, 2).join(".") : ""}
                 </div>
               </button>
             </div>
@@ -527,12 +604,10 @@ export default function App() {
                   <div className="row" style={{ justifyContent: "space-between" }}>
                     <div style={{ fontWeight: 950 }}>{lang === "ru" ? n.title_ru : n.title_uz}</div>
                     <div style={{ opacity: 0.65, fontWeight: 950 }}>
-                      {n.published_at.split("-").reverse().slice(0,2).join(".")}
+                      {n.published_at.split("-").reverse().slice(0, 2).join(".")}
                     </div>
                   </div>
-                  <div style={{ marginTop: 8, opacity: 0.85, lineHeight: 1.35 }}>
-                    {lang === "ru" ? n.body_ru : n.body_uz}
-                  </div>
+                  <div style={{ marginTop: 8, opacity: 0.85, lineHeight: 1.35 }}>{lang === "ru" ? n.body_ru : n.body_uz}</div>
                 </div>
               ))}
             </div>
@@ -552,31 +627,32 @@ export default function App() {
               onHome={goHome}
             />
             <div className="headerBlock">
-              <div className="h2">
-                {getSectionTitle(sections.find(s => s.id === route.sectionId) as any)}
-              </div>
+              <div className="h2">{getSectionTitle(sections.find((s) => s.id === route.sectionId) as SectionRow)}</div>
               <div className="sub">Карточки</div>
             </div>
 
             <div className="list">
-              {cards.filter(c => c.section_id === route.sectionId).sort((a,b)=>a.sort-b.sort).map((c) => (
-                <div key={c.id} className="cardCream">
-                  <div style={{ fontWeight: 950 }}>{getCardTitle(c)}</div>
-                  <div style={{ marginTop: 8, opacity: 0.85, lineHeight: 1.35, whiteSpace: "pre-wrap" }}>
-                    {getCardBody(c).split("\n").slice(0, 3).join("\n")}
-                    {getCardBody(c).split("\n").length > 3 ? "\n..." : ""}
-                  </div>
+              {cards
+                .filter((c) => c.section_id === route.sectionId)
+                .sort((a, b) => a.sort - b.sort)
+                .map((c) => (
+                  <div key={c.id} className="cardCream">
+                    <div style={{ fontWeight: 950 }}>{getCardTitle(c)}</div>
+                    <div style={{ marginTop: 8, opacity: 0.85, lineHeight: 1.35, whiteSpace: "pre-wrap" }}>
+                      {getCardBody(c).split("\n").slice(0, 3).join("\n")}
+                      {getCardBody(c).split("\n").length > 3 ? "\n..." : ""}
+                    </div>
 
-                  <div className="split" style={{ marginTop: 12 }}>
-                    <button className="smallBtn" onClick={() => setRoute({ name: "card", cardId: c.id })}>
-                      Открыть
-                    </button>
-                    <button className="btnPrimary" onClick={() => copyText(getCardBody(c))}>
-                      {t.copyAll}
-                    </button>
+                    <div className="split" style={{ marginTop: 12 }}>
+                      <button className="smallBtn" onClick={() => setRoute({ name: "card", cardId: c.id })}>
+                        Открыть
+                      </button>
+                      <button className="btnPrimary" onClick={() => copyText(getCardBody(c))}>
+                        {t.copyAll}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
         )}
@@ -595,7 +671,7 @@ export default function App() {
             />
 
             {(() => {
-              const c = cards.find(x => x.id === route.cardId);
+              const c = cards.find((x) => x.id === route.cardId);
               if (!c) return null;
               const body = getCardBody(c);
               return (
@@ -639,7 +715,7 @@ export default function App() {
                       {lang === "ru" ? n.title_ru : n.title_uz}
                     </div>
                     <div style={{ opacity: 0.65, fontWeight: 950 }}>
-                      {n.published_at.split("-").reverse().slice(0,2).join(".")}
+                      {n.published_at.split("-").reverse().slice(0, 2).join(".")}
                     </div>
                   </div>
                   <div style={{ marginTop: 8, opacity: 0.85, lineHeight: 1.35, whiteSpace: "pre-wrap" }}>
@@ -672,7 +748,12 @@ export default function App() {
                 <input className="input" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} />
 
                 <div style={{ fontWeight: 950, marginTop: 12 }}>{t.password}</div>
-                <input className="input" type="password" value={adminPass} onChange={(e) => setAdminPass(e.target.value)} />
+                <input
+                  className="input"
+                  type="password"
+                  value={adminPass}
+                  onChange={(e) => setAdminPass(e.target.value)}
+                />
 
                 <button className="btnPrimary" style={{ marginTop: 12 }} onClick={adminSignIn}>
                   {t.signIn}
@@ -693,17 +774,29 @@ export default function App() {
               setSearch={setSearch}
               onBack={goBack}
               onHome={goHome}
-              rightSlot={<button className="smallBtn" onClick={adminSignOut}>{t.signOut}</button>}
+              rightSlot={
+                <button className="smallBtn" onClick={adminSignOut}>
+                  {t.signOut}
+                </button>
+              }
             />
 
             <div style={{ padding: 14 }}>
               <div className="h2">{t.admin}</div>
 
               <div className="row" style={{ marginTop: 12 }}>
-                <button className="smallBtn" onClick={() => setAdminTab("sections")}>{t.manageSections}</button>
-                <button className="smallBtn" onClick={() => setAdminTab("cards")}>{t.manageCards}</button>
-                <button className="smallBtn" onClick={() => setAdminTab("news")}>{t.manageNews}</button>
-                <button className="smallBtn" onClick={() => setAdminTab("codes")}>{t.manageCodes}</button>
+                <button className="smallBtn" onClick={() => setAdminTab("sections")}>
+                  {t.manageSections}
+                </button>
+                <button className="smallBtn" onClick={() => setAdminTab("cards")}>
+                  {t.manageCards}
+                </button>
+                <button className="smallBtn" onClick={() => setAdminTab("news")}>
+                  {t.manageNews}
+                </button>
+                <button className="smallBtn" onClick={() => setAdminTab("codes")}>
+                  {t.manageCodes}
+                </button>
               </div>
 
               {/* SECTIONS */}
@@ -712,26 +805,57 @@ export default function App() {
                   <div style={{ fontWeight: 950, marginBottom: 10 }}>{t.manageSections}</div>
 
                   <div className="split">
-                    <input className="input" placeholder="key (например docs)" value={secForm.key} onChange={(e) => setSecForm({ ...secForm, key: e.target.value })} />
-                    <input className="input" placeholder={t.icon} value={secForm.icon} onChange={(e) => setSecForm({ ...secForm, icon: e.target.value })} />
+                    <input
+                      className="input"
+                      placeholder="key (например docs)"
+                      value={secForm.key}
+                      onChange={(e) => setSecForm({ ...secForm, key: e.target.value })}
+                    />
+                    <input
+                      className="input"
+                      placeholder={t.icon}
+                      value={secForm.icon}
+                      onChange={(e) => setSecForm({ ...secForm, icon: e.target.value })}
+                    />
                   </div>
 
                   <div className="split" style={{ marginTop: 10 }}>
-                    <input className="input" placeholder={t.titleRu} value={secForm.title_ru} onChange={(e) => setSecForm({ ...secForm, title_ru: e.target.value })} />
-                    <input className="input" placeholder={t.titleUz} value={secForm.title_uz} onChange={(e) => setSecForm({ ...secForm, title_uz: e.target.value })} />
+                    <input
+                      className="input"
+                      placeholder={t.titleRu}
+                      value={secForm.title_ru}
+                      onChange={(e) => setSecForm({ ...secForm, title_ru: e.target.value })}
+                    />
+                    <input
+                      className="input"
+                      placeholder={t.titleUz}
+                      value={secForm.title_uz}
+                      onChange={(e) => setSecForm({ ...secForm, title_uz: e.target.value })}
+                    />
                   </div>
 
                   <div className="split" style={{ marginTop: 10 }}>
-                    <input className="input" placeholder={t.sort} value={secForm.sort} onChange={(e) => setSecForm({ ...secForm, sort: Number(e.target.value || 100) })} />
-                    <button className="btnPrimary" onClick={adminSaveSection}>{t.add}</button>
+                    <input
+                      className="input"
+                      placeholder={t.sort}
+                      value={String(secForm.sort)}
+                      onChange={(e) => setSecForm({ ...secForm, sort: Number(e.target.value || 100) })}
+                    />
+                    <button className="btnPrimary" onClick={adminSaveSection}>
+                      {t.add}
+                    </button>
                   </div>
 
                   <div style={{ marginTop: 14, fontWeight: 950 }}>Список</div>
                   <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
                     {sections.map((s) => (
                       <div key={s.id} className="row" style={{ justifyContent: "space-between" }}>
-                        <div style={{ fontWeight: 950 }}>{s.icon} {s.title_ru}</div>
-                        <button className="smallBtn" onClick={() => adminDeleteSection(s.id)}>{t.delete}</button>
+                        <div style={{ fontWeight: 950 }}>
+                          {s.icon} {s.title_ru}
+                        </div>
+                        <button className="smallBtn" onClick={() => adminDeleteSection(s.id)}>
+                          {t.delete}
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -750,23 +874,54 @@ export default function App() {
                   >
                     <option value="">Выбери раздел</option>
                     {sections.map((s) => (
-                      <option key={s.id} value={s.id}>{s.title_ru}</option>
+                      <option key={s.id} value={s.id}>
+                        {s.title_ru}
+                      </option>
                     ))}
                   </select>
 
                   <div className="split" style={{ marginTop: 10 }}>
-                    <input className="input" placeholder={t.titleRu} value={cardForm.title_ru} onChange={(e) => setCardForm({ ...cardForm, title_ru: e.target.value })} />
-                    <input className="input" placeholder={t.titleUz} value={cardForm.title_uz} onChange={(e) => setCardForm({ ...cardForm, title_uz: e.target.value })} />
+                    <input
+                      className="input"
+                      placeholder={t.titleRu}
+                      value={cardForm.title_ru}
+                      onChange={(e) => setCardForm({ ...cardForm, title_ru: e.target.value })}
+                    />
+                    <input
+                      className="input"
+                      placeholder={t.titleUz}
+                      value={cardForm.title_uz}
+                      onChange={(e) => setCardForm({ ...cardForm, title_uz: e.target.value })}
+                    />
                   </div>
 
                   <div className="split" style={{ marginTop: 10 }}>
-                    <textarea className="input" style={{ height: 120, paddingTop: 12 }} placeholder={t.bodyRu} value={cardForm.body_ru} onChange={(e) => setCardForm({ ...cardForm, body_ru: e.target.value })} />
-                    <textarea className="input" style={{ height: 120, paddingTop: 12 }} placeholder={t.bodyUz} value={cardForm.body_uz} onChange={(e) => setCardForm({ ...cardForm, body_uz: e.target.value })} />
+                    <textarea
+                      className="input"
+                      style={{ height: 120, paddingTop: 12 }}
+                      placeholder={t.bodyRu}
+                      value={cardForm.body_ru}
+                      onChange={(e) => setCardForm({ ...cardForm, body_ru: e.target.value })}
+                    />
+                    <textarea
+                      className="input"
+                      style={{ height: 120, paddingTop: 12 }}
+                      placeholder={t.bodyUz}
+                      value={cardForm.body_uz}
+                      onChange={(e) => setCardForm({ ...cardForm, body_uz: e.target.value })}
+                    />
                   </div>
 
                   <div className="split" style={{ marginTop: 10 }}>
-                    <input className="input" placeholder={t.sort} value={cardForm.sort} onChange={(e) => setCardForm({ ...cardForm, sort: Number(e.target.value || 100) })} />
-                    <button className="btnPrimary" onClick={adminSaveCard}>{t.add}</button>
+                    <input
+                      className="input"
+                      placeholder={t.sort}
+                      value={String(cardForm.sort)}
+                      onChange={(e) => setCardForm({ ...cardForm, sort: Number(e.target.value || 100) })}
+                    />
+                    <button className="btnPrimary" onClick={adminSaveCard}>
+                      {t.add}
+                    </button>
                   </div>
 
                   <div style={{ marginTop: 14, fontWeight: 950 }}>Список</div>
@@ -774,7 +929,9 @@ export default function App() {
                     {cards.map((c) => (
                       <div key={c.id} className="row" style={{ justifyContent: "space-between" }}>
                         <div style={{ fontWeight: 950 }}>{c.title_ru}</div>
-                        <button className="smallBtn" onClick={() => adminDeleteCard(c.id)}>{t.delete}</button>
+                        <button className="smallBtn" onClick={() => adminDeleteCard(c.id)}>
+                          {t.delete}
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -787,31 +944,69 @@ export default function App() {
                   <div style={{ fontWeight: 950, marginBottom: 10 }}>{t.manageNews}</div>
 
                   <div className="split">
-                    <input className="input" placeholder={t.titleRu} value={newsForm.title_ru} onChange={(e) => setNewsForm({ ...newsForm, title_ru: e.target.value })} />
-                    <input className="input" placeholder={t.titleUz} value={newsForm.title_uz} onChange={(e) => setNewsForm({ ...newsForm, title_uz: e.target.value })} />
+                    <input
+                      className="input"
+                      placeholder={t.titleRu}
+                      value={newsForm.title_ru}
+                      onChange={(e) => setNewsForm({ ...newsForm, title_ru: e.target.value })}
+                    />
+                    <input
+                      className="input"
+                      placeholder={t.titleUz}
+                      value={newsForm.title_uz}
+                      onChange={(e) => setNewsForm({ ...newsForm, title_uz: e.target.value })}
+                    />
                   </div>
 
                   <div className="split" style={{ marginTop: 10 }}>
-                    <textarea className="input" style={{ height: 120, paddingTop: 12 }} placeholder={t.bodyRu} value={newsForm.body_ru} onChange={(e) => setNewsForm({ ...newsForm, body_ru: e.target.value })} />
-                    <textarea className="input" style={{ height: 120, paddingTop: 12 }} placeholder={t.bodyUz} value={newsForm.body_uz} onChange={(e) => setNewsForm({ ...newsForm, body_uz: e.target.value })} />
+                    <textarea
+                      className="input"
+                      style={{ height: 120, paddingTop: 12 }}
+                      placeholder={t.bodyRu}
+                      value={newsForm.body_ru}
+                      onChange={(e) => setNewsForm({ ...newsForm, body_ru: e.target.value })}
+                    />
+                    <textarea
+                      className="input"
+                      style={{ height: 120, paddingTop: 12 }}
+                      placeholder={t.bodyUz}
+                      value={newsForm.body_uz}
+                      onChange={(e) => setNewsForm({ ...newsForm, body_uz: e.target.value })}
+                    />
                   </div>
 
                   <div className="split" style={{ marginTop: 10 }}>
-                    <input className="input" placeholder={t.date} value={newsForm.published_at} onChange={(e) => setNewsForm({ ...newsForm, published_at: e.target.value })} />
+                    <input
+                      className="input"
+                      placeholder={t.date}
+                      value={newsForm.published_at}
+                      onChange={(e) => setNewsForm({ ...newsForm, published_at: e.target.value })}
+                    />
                     <label className="row" style={{ color: "rgba(20,18,26,.85)" }}>
-                      <input type="checkbox" checked={newsForm.pinned} onChange={(e) => setNewsForm({ ...newsForm, pinned: e.target.checked })} />
+                      <input
+                        type="checkbox"
+                        checked={newsForm.pinned}
+                        onChange={(e) => setNewsForm({ ...newsForm, pinned: e.target.checked })}
+                      />
                       <span style={{ fontWeight: 950 }}>{t.pinned}</span>
                     </label>
                   </div>
 
-                  <button className="btnPrimary" style={{ marginTop: 10 }} onClick={adminSaveNews}>{t.add}</button>
+                  <button className="btnPrimary" style={{ marginTop: 10 }} onClick={adminSaveNews}>
+                    {t.add}
+                  </button>
 
                   <div style={{ marginTop: 14, fontWeight: 950 }}>Список</div>
                   <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
                     {news.map((n) => (
                       <div key={n.id} className="row" style={{ justifyContent: "space-between" }}>
-                        <div style={{ fontWeight: 950 }}>{n.pinned ? "📌 " : ""}{n.title_ru}</div>
-                        <button className="smallBtn" onClick={() => adminDeleteNews(n.id)}>{t.delete}</button>
+                        <div style={{ fontWeight: 950 }}>
+                          {n.pinned ? "📌 " : ""}
+                          {n.title_ru}
+                        </div>
+                        <button className="smallBtn" onClick={() => adminDeleteNews(n.id)}>
+                          {t.delete}
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -824,23 +1019,42 @@ export default function App() {
                   <div style={{ fontWeight: 950, marginBottom: 10 }}>{t.manageCodes}</div>
 
                   <div className="split">
-                    <input className="input" placeholder={t.code} value={codeForm.code} onChange={(e) => setCodeForm({ ...codeForm, code: e.target.value })} />
-                    <input className="input" placeholder={t.note} value={codeForm.note} onChange={(e) => setCodeForm({ ...codeForm, note: e.target.value })} />
+                    <input
+                      className="input"
+                      placeholder={t.code}
+                      value={codeForm.code}
+                      onChange={(e) => setCodeForm({ ...codeForm, code: e.target.value })}
+                    />
+                    <input
+                      className="input"
+                      placeholder={t.note}
+                      value={codeForm.note}
+                      onChange={(e) => setCodeForm({ ...codeForm, note: e.target.value })}
+                    />
                   </div>
 
                   <div className="split" style={{ marginTop: 10 }}>
-                    <input className="input" placeholder={t.expiresAt} value={codeForm.expires_at} onChange={(e) => setCodeForm({ ...codeForm, expires_at: e.target.value })} />
+                    <input
+                      className="input"
+                      placeholder={t.expiresAt}
+                      value={codeForm.expires_at}
+                      onChange={(e) => setCodeForm({ ...codeForm, expires_at: e.target.value })}
+                    />
                     <label className="row" style={{ color: "rgba(20,18,26,.85)" }}>
-                      <input type="checkbox" checked={codeForm.is_active} onChange={(e) => setCodeForm({ ...codeForm, is_active: e.target.checked })} />
+                      <input
+                        type="checkbox"
+                        checked={codeForm.is_active}
+                        onChange={(e) => setCodeForm({ ...codeForm, is_active: e.target.checked })}
+                      />
                       <span style={{ fontWeight: 950 }}>{t.active}</span>
                     </label>
                   </div>
 
-                  <button className="btnPrimary" style={{ marginTop: 10 }} onClick={adminSaveCode}>{t.save}</button>
+                  <button className="btnPrimary" style={{ marginTop: 10 }} onClick={adminSaveCode}>
+                    {t.save}
+                  </button>
 
-                  <div style={{ marginTop: 14, fontWeight: 950 }}>
-                    Примечание: список кодов видит только админ (это нормально).
-                  </div>
+                  <div style={{ marginTop: 14, fontWeight: 950 }}>Примечание: список кодов видит только админ (это нормально).</div>
                 </div>
               )}
             </div>
