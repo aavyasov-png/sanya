@@ -131,7 +131,7 @@ type Route =
   | { name: "admin" };
 
 function TopBar(props: {
-  t: (typeof T)["ru"];
+  t: (typeof T)[Lang];
   lang: Lang;
   setLang: (l: Lang) => void;
   showSearch: boolean;
@@ -182,7 +182,7 @@ function TopBar(props: {
 
 export default function App() {
   const [lang, setLang] = useState<Lang>((localStorage.getItem("lang") as Lang) || "ru");
-  const t = T[lang];
+  const t: (typeof T)[Lang] = T[lang];
 
   const [route, setRoute] = useState<Route>(() => {
     const ok = localStorage.getItem("access_ok") === "1";
