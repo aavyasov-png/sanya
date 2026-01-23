@@ -329,7 +329,6 @@ export default function App() {
     if (route.name === "section" || route.name === "news" || route.name === "admin") {
       return setRoute({ name: "home" });
     }
-    if (route.name === "home") return setRoute({ name: "welcome" });
   };
 
   // ---------- Admin UI helpers ----------
