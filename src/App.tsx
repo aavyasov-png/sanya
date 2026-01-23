@@ -1175,19 +1175,19 @@ export default function App() {
                               )}
                             </div>
 
-                            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                               <input
                                 className="input"
                                 type="datetime-local"
                                 value={ac.expires_at ? new Date(ac.expires_at).toISOString().slice(0,16) : ""}
                                 onChange={(e) => updateAccessCode(ac.code, { expires_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
-                                style={{ flex: 1, height: 32, fontSize: 12 }}
+                                style={{ flex: 1, minWidth: 140, height: 32, fontSize: 12 }}
                               />
-                              <label style={{ display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", padding: "8px 12px", background: "rgba(0,0,0,.02)", borderRadius: 8 }}>
-                                <input type="checkbox" checked={ac.is_active} onChange={() => updateAccessCode(ac.code, { is_active: !ac.is_active })} />
-                                <span style={{ fontWeight: 700, fontSize: 12 }}>Активен</span>
+                              <label style={{ display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", padding: "6px 8px", background: "rgba(0,0,0,.02)", borderRadius: 6, cursor: "pointer" }}>
+                                <input type="checkbox" checked={ac.is_active} onChange={() => updateAccessCode(ac.code, { is_active: !ac.is_active })} style={{ cursor: "pointer" }} />
+                                <span style={{ fontWeight: 700, fontSize: 11 }}>Акт.</span>
                               </label>
-                              <button className="btnGhost" onClick={() => deleteAccessCode(ac.code)} style={{ padding: "6px 12px", fontSize: 12, minWidth: 60 }}>
+                              <button className="btnGhost" onClick={() => deleteAccessCode(ac.code)} style={{ padding: "6px 10px", fontSize: 11, flexShrink: 0 }}>
                                 {t.delete}
                               </button>
                             </div>
