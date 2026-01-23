@@ -79,6 +79,7 @@ const T = {
     note: "Заметка",
     signOut: "Выйти",
     cards: "КАРТОЧКИ",
+    allSections: "Все разделы",
     allNews: "Все новости",
     chooseSection: "Выбери раздел",
     ok: "Ок",
@@ -121,6 +122,7 @@ const T = {
     note: "Izoh",
     signOut: "Chiqish",
     cards: "KARTOCHKALAR",
+    allSections: "Barcha bo‘limlar",
     allNews: "Barcha yangiliklar",
     chooseSection: "Bo‘limni tanlang",
     ok: "Ok",
@@ -134,7 +136,8 @@ type Route =
   | { name: "section"; sectionId: string }
   | { name: "card"; cardId: string }
   | { name: "news" }
-  | { name: "admin" };
+  | { name: "admin" }
+  | { name: "sections_all" };
 
 function TopBar(props: {
   t: (typeof T)[Lang];
@@ -888,8 +891,20 @@ export default function App() {
               <div className="h2">{t.hello} {userName || "Гость"}</div>
               <div className="sub">{t.sections}</div>
             </div>
+            <div style={{ display: "flex", justifyContent: "center", padding: "8px 16px 0 16px" }}>
+              <button className="btnGhost" onClick={() => setRoute({ name: "sections_all" })} style={{ width: 160 }}>
+                {t.allSections}
+              </button>
+            </div>
 
-            <div className="sectionList">
+            <div className="sectionList" onWheel={(e: any) => {
+              // scroll horizontally with mouse wheel
+              const el = e.currentTarget as HTMLDivElement;
+              if (!el) return;
+              // invert for natural feeling, use deltaY to move horizontally
+              el.scrollLeft += e.deltaY;
+              e.preventDefault();
+            }}>
               {filteredSections.map((s) => (
                 <button
                   key={s.id}
@@ -993,6 +1008,50 @@ export default function App() {
                   );
                 })}
             </div>
+          </div>
+        )}
+
+        {route.name === "sections_all" && (
+          <div className="page">
+            <TopBar
+              t={t}
+              lang={lang}
+              setLang={setLang}
+              showSearch={true}
+              search={search}
+              setSearch={setSearch}
+              onBack={goBack}
+              onHome={goHome}
+            />
+
+            <div className="headerBlock">
+              <div className="h2">{t.sections}</div>
+              <div className="sub">{t.allSections}</div>
+            </div>
+
+            <div className="list">
+              {sections.map((s) => (
+                <button
+                  key={s.id}
+                  className="cardCream"
+                  style={{ textAlign: "left", display: "flex", gap: 12, alignItems: "center" }}
+                  onClick={() => setRoute({ name: "section", sectionId: s.id })}
+                >
+                  <div className="sectionIconBox" style={{ flex: "0 0 auto" }}>
+                    <div className="sectionIcon">{s.icon}</div>
+                  </div>
+
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 950, color: "#111" }}>{getSectionTitle(s)}</div>
+                    <div style={{ marginTop: 6, color: "rgba(0,0,0,.55)", fontSize: 13 }}>
+                      {cards.filter((c) => c.section_id === s.id).slice(0, 2).map((c) => getCardTitle(c)).join(" • ") || "—"}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
           </div>
         )}
 
