@@ -524,8 +524,12 @@ export default function App() {
     const botToken = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
     const chatId = import.meta.env.VITE_TELEGRAM_CHAT_ID;
     
+    console.log("[TELEGRAM] Проверка переменных:");
+    console.log("[TELEGRAM] botToken:", botToken ? "✓ установлен" : "✗ НЕ установлен");
+    console.log("[TELEGRAM] chatId:", chatId ? "✓ установлен" : "✗ НЕ установлен");
+    
     if (!botToken || !chatId) {
-      console.log("[TELEGRAM] Bot token или chat ID не установлены");
+      console.error("[TELEGRAM] ✗ Bot token или chat ID не установлены!");
       return;
     }
 
@@ -533,7 +537,8 @@ export default function App() {
       const message = `📰 *Новая новость*\n\n*${title}*\n\n${body}`;
       const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
       
-      await fetch(url, {
+      console.log("[TELEGRAM] Отправка сообщения...");
+      const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -543,9 +548,18 @@ export default function App() {
         }),
       });
 
+      const data = await response.json();
+      console.log("[TELEGRAM] Ответ сервера:", data);
+
+      if (!response.ok) {
+        console.error("[TELEGRAM] ✗ Ошибка отправки сообщения:", data);
+        return;
+      }
+
       if (imageUrl) {
+        console.log("[TELEGRAM] Отправка фото...");
         const photoUrl = `https://api.telegram.org/bot${botToken}/sendPhoto`;
-        await fetch(photoUrl, {
+        const photoResponse = await fetch(photoUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -554,11 +568,14 @@ export default function App() {
             caption: title,
           }),
         });
+        
+        const photoData = await photoResponse.json();
+        console.log("[TELEGRAM] Ответ при отправке фото:", photoData);
       }
 
-      console.log("[TELEGRAM] ✓ Уведомление отправлено");
+      console.log("[TELEGRAM] ✓ Уведомление отправлено успешно!");
     } catch (err) {
-      console.log("[TELEGRAM] ✗ Ошибка отправки:", err);
+      console.error("[TELEGRAM] ✗ Ошибка отправки:", err);
     }
   };
 
