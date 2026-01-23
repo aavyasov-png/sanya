@@ -201,7 +201,7 @@ export default function App() {
   const [cards, setCards] = useState<CardRow[]>([]);
   const [news, setNews] = useState<NewsRow[]>([]);
 
-  // Admin session
+  // Admin session (ОДНО объявление!)
   const [adminSession, setAdminSession] = useState<Session | null>(null);
   const isAdmin = !!adminSession;
 
@@ -236,25 +236,25 @@ export default function App() {
     loadPublic();
   }, []);
 
-  // Admin session watch (fix: was broken + types were implicit)
+  // Admin session watch (без "({ data })" и с типами event/session)
   useEffect(() => {
-    let mounted = true;
+    let alive = true;
 
     (async () => {
-      const { data, error } = await supabase.auth.getSession();
-      if (!mounted) return;
-      if (!error) setAdminSession(data.session);
+      const resp = await supabase.auth.getSession();
+      if (!alive) return;
+      setAdminSession(resp.data.session);
     })();
 
-    const { data: sub } = supabase.auth.onAuthStateChange(
+    const { data } = supabase.auth.onAuthStateChange(
       (_event: AuthChangeEvent, session: Session | null) => {
         setAdminSession(session);
       }
     );
 
     return () => {
-      mounted = false;
-      sub.subscription.unsubscribe();
+      alive = false;
+      data.subscription.unsubscribe();
     };
   }, []);
 
@@ -288,6 +288,7 @@ export default function App() {
     }
 
     const row = data[0] as { is_active: boolean; expires_at: string | null };
+
     if (!row.is_active) {
       setError(t.invalidCode);
       return;
@@ -334,7 +335,6 @@ export default function App() {
   const [adminPass, setAdminPass] = useState("");
   const [adminTab, setAdminTab] = useState<"sections" | "cards" | "news" | "codes">("sections");
 
-  // forms
   const [secForm, setSecForm] = useState({ key: "", title_ru: "", title_uz: "", icon: "📄", sort: 100 });
   const [cardForm, setCardForm] = useState({
     section_id: "",
@@ -355,8 +355,8 @@ export default function App() {
   const [codeForm, setCodeForm] = useState({ code: "", is_active: true, expires_at: "", note: "" });
 
   const adminSignIn = async () => {
-    const { error } = await supabase.auth.signInWithPassword({ email: adminEmail, password: adminPass });
-    if (error) {
+    const resp = await supabase.auth.signInWithPassword({ email: adminEmail, password: adminPass });
+    if (resp.error) {
       showToast("Ошибка входа");
       return;
     }
@@ -372,8 +372,8 @@ export default function App() {
   };
 
   const adminSaveSection = async () => {
-    const { error } = await supabase.from("sections").insert(secForm as any);
-    if (error) {
+    const resp = await supabase.from("sections").insert(secForm as any);
+    if (resp.error) {
       showToast("Ошибка");
       return;
     }
@@ -383,8 +383,8 @@ export default function App() {
   };
 
   const adminDeleteSection = async (id: string) => {
-    const { error } = await supabase.from("sections").delete().eq("id", id);
-    if (error) {
+    const resp = await supabase.from("sections").delete().eq("id", id);
+    if (resp.error) {
       showToast("Ошибка");
       return;
     }
@@ -393,8 +393,8 @@ export default function App() {
   };
 
   const adminSaveCard = async () => {
-    const { error } = await supabase.from("cards").insert({ ...cardForm, updated_at: new Date().toISOString() } as any);
-    if (error) {
+    const resp = await supabase.from("cards").insert({ ...cardForm, updated_at: new Date().toISOString() } as any);
+    if (resp.error) {
       showToast("Ошибка");
       return;
     }
@@ -404,8 +404,8 @@ export default function App() {
   };
 
   const adminDeleteCard = async (id: string) => {
-    const { error } = await supabase.from("cards").delete().eq("id", id);
-    if (error) {
+    const resp = await supabase.from("cards").delete().eq("id", id);
+    if (resp.error) {
       showToast("Ошибка");
       return;
     }
@@ -414,8 +414,8 @@ export default function App() {
   };
 
   const adminSaveNews = async () => {
-    const { error } = await supabase.from("news").insert(newsForm as any);
-    if (error) {
+    const resp = await supabase.from("news").insert(newsForm as any);
+    if (resp.error) {
       showToast("Ошибка");
       return;
     }
@@ -432,8 +432,8 @@ export default function App() {
   };
 
   const adminDeleteNews = async (id: string) => {
-    const { error } = await supabase.from("news").delete().eq("id", id);
-    if (error) {
+    const resp = await supabase.from("news").delete().eq("id", id);
+    if (resp.error) {
       showToast("Ошибка");
       return;
     }
@@ -448,13 +448,19 @@ export default function App() {
       note: codeForm.note || null,
       expires_at: codeForm.expires_at ? new Date(codeForm.expires_at).toISOString() : null,
     };
-    const { error } = await supabase.from("access_codes").upsert(payload as any);
-    if (error) {
+    const resp = await supabase.from("access_codes").upsert(payload as any);
+    if (resp.error) {
       showToast("Ошибка");
       return;
     }
     showToast("Ок");
     setCodeForm({ code: "", is_active: true, expires_at: "", note: "" });
+  };
+
+  // helper: без setRoute({name: union})
+  const openAdmin = () => {
+    if (isAdmin) setRoute({ name: "admin" });
+    else setRoute({ name: "adminLogin" });
   };
 
   // ---------- UI ----------
@@ -512,16 +518,7 @@ export default function App() {
                 </button>
 
                 <div style={{ marginTop: 12, display: "flex", justifyContent: "center" }}>
-                  <button
-                    className="pillBtn"
-                    onClick={() => {
-                      if (isAdmin) {
-                        setRoute({ name: "admin" });
-                      } else {
-                        setRoute({ name: "adminLogin" });
-                      }
-                    }}
-                  >
+                  <button className="pillBtn" onClick={openAdmin}>
                     {t.openAdmin}
                   </button>
                 </div>
@@ -542,16 +539,7 @@ export default function App() {
               onBack={goBack}
               onHome={goHome}
               rightSlot={
-                <button
-                  className="pillBtn"
-                  onClick={() => {
-                    if (isAdmin) {
-                      setRoute({ name: "admin" });
-                    } else {
-                      setRoute({ name: "adminLogin" });
-                    }
-                  }}
-                >
+                <button className="pillBtn" onClick={openAdmin}>
                   {t.openAdmin}
                 </button>
               }
@@ -1054,7 +1042,9 @@ export default function App() {
                     {t.save}
                   </button>
 
-                  <div style={{ marginTop: 14, fontWeight: 950 }}>Примечание: список кодов видит только админ (это нормально).</div>
+                  <div style={{ marginTop: 14, fontWeight: 950 }}>
+                    Примечание: список кодов видит только админ (это нормально).
+                  </div>
                 </div>
               )}
             </div>
