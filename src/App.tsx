@@ -137,6 +137,7 @@ type Route =
   | { name: "card"; cardId: string }
   | { name: "news" }
   | { name: "news_item"; newsId: string }
+  | { name: "news_card"; newsId: string }
   | { name: "admin" }
   | { name: "sections_all" };
 
@@ -1549,7 +1550,7 @@ export default function App() {
             />
 
             {(() => {
-              const n = news.find((x) => x.id === route.newsId);
+              const n = news.find((x) => x.id === (route as { newsId: string }).newsId);
               if (!n) return <div className="center">News not found</div>;
               return (
                 <div className="list">
