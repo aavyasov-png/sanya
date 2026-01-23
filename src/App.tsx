@@ -239,21 +239,47 @@ export default function App() {
 
   // Get Telegram user info
   useEffect(() => {
-    if ((window as any).Telegram?.WebApp) {
-      const user = (window as any).Telegram.WebApp.initDataUnsafe?.user;
-      if (user) {
-        const firstName = user.first_name || "";
-        const lastName = user.last_name || "";
-        const fullName = `${firstName} ${lastName}`.trim();
-        setUserName(fullName);
-        localStorage.setItem("user_name", fullName);
-        
-        if (user.photo_url) {
-          setUserPhoto(user.photo_url);
-          localStorage.setItem("user_photo", user.photo_url);
-        }
+    const extractUserData = () => {
+      const tg = (window as any).Telegram?.WebApp;
+      if (!tg) {
+        console.log("Telegram WebApp not available (development mode)");
+        return;
       }
-    }
+      
+      try {
+        // Get init data
+        const initData = tg.initDataUnsafe;
+        const user = initData?.user;
+        
+        if (user && user.first_name) {
+          const firstName = user.first_name || "";
+          const lastName = user.last_name || "";
+          const fullName = `${firstName} ${lastName}`.trim();
+          
+          setUserName(fullName);
+          localStorage.setItem("user_name", fullName);
+          
+          if (user.photo_url) {
+            setUserPhoto(user.photo_url);
+            localStorage.setItem("user_photo", user.photo_url);
+          }
+          
+          console.log("✓ Telegram user loaded:", fullName);
+        } else {
+          console.log("⚠ Telegram user data not available");
+        }
+      } catch (err) {
+        console.error("Error extracting Telegram user:", err);
+      }
+    };
+
+    // Try immediately
+    extractUserData();
+    
+    // Try again after a short delay in case WebApp wasn't ready
+    const timer = setTimeout(extractUserData, 500);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   // toast helper
