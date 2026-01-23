@@ -373,6 +373,30 @@ export default function App() {
     });
   }, [sections, cards, search, lang]);
 
+  const searchResults = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return null;
+
+    const sec = sections.filter((s) => {
+      const title = (lang === "ru" ? s.title_ru : s.title_uz).toLowerCase();
+      if (title.includes(q)) return true;
+      // cards in section
+      return cards.some((c) => c.section_id === s.id && ((lang === "ru" ? c.title_ru : c.title_uz) + " " + (lang === "ru" ? c.body_ru : c.body_uz)).toLowerCase().includes(q));
+    });
+
+    const cds = cards.filter((c) => {
+      const text = ((lang === "ru" ? c.title_ru : c.title_uz) + " " + (lang === "ru" ? c.body_ru : c.body_uz)).toLowerCase();
+      return text.includes(q);
+    });
+
+    const nws = news.filter((n) => {
+      const text = ((lang === "ru" ? n.title_ru : n.title_uz) + " " + (lang === "ru" ? n.body_ru : n.body_uz)).toLowerCase();
+      return text.includes(q);
+    });
+
+    return { sections: sec, cards: cds, news: nws };
+  }, [search, sections, cards, news, lang]);
+
   const getSectionTitle = (s: SectionRow) => (lang === "ru" ? s.title_ru : s.title_uz);
   const getCardTitle = (c: CardRow) => (lang === "ru" ? c.title_ru : c.title_uz);
   const getCardBody = (c: CardRow) => (lang === "ru" ? c.body_ru : c.body_uz);
@@ -485,6 +509,7 @@ export default function App() {
     sort: 100,
     file_url: "",
   });
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [newsForm, setNewsForm] = useState({
     title_ru: "",
     title_uz: "",
@@ -526,12 +551,22 @@ export default function App() {
   };
 
   const adminSaveCard = async () => {
-    const resp = await supabase.from("cards").insert({ ...cardForm, updated_at: new Date().toISOString() } as any);
-    if (resp.error) {
-      showToast(t.error);
-      return;
+    if (editingCardId) {
+      const resp = await supabase.from("cards").update({ ...cardForm, updated_at: new Date().toISOString() } as any).eq("id", editingCardId);
+      if (resp.error) {
+        showToast(t.error);
+        return;
+      }
+      showToast(t.ok);
+      setEditingCardId(null);
+    } else {
+      const resp = await supabase.from("cards").insert({ ...cardForm, updated_at: new Date().toISOString() } as any);
+      if (resp.error) {
+        showToast(t.error);
+        return;
+      }
+      showToast(t.ok);
     }
-    showToast(t.ok);
     setCardForm({ section_id: "", title_ru: "", title_uz: "", body_ru: "", body_uz: "", sort: 100, file_url: "" });
     await loadPublic();
   };
@@ -1115,7 +1150,56 @@ export default function App() {
               ))}
             </div>
 
-            <div style={{ display: "flex", justifyContent: "center", padding: "10px 16px" }}>
+            {/* Search results: show combined matches if query present */}
+            {searchResults ? (
+              <div className="list">
+                {searchResults.sections.length > 0 && (
+                  <div>
+                    <div style={{ fontWeight: 950, marginBottom: 8 }}>{t.sections}</div>
+                    {searchResults.sections.map((s) => (
+                      <button key={s.id} className="cardCream" style={{ textAlign: "left" }} onClick={() => setRoute({ name: "section", sectionId: s.id })}>
+                        <div style={{ fontWeight: 900 }}>{getSectionTitle(s)}</div>
+                        <div style={{ marginTop: 6, color: "rgba(0,0,0,.6)" }}>{cards.filter(c=>c.section_id===s.id).slice(0,2).map(c=>getCardTitle(c)).join(' • ') || '—'}</div>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+
+                {searchResults.cards.length > 0 && (
+                  <div>
+                    <div style={{ fontWeight: 950, marginTop: 6, marginBottom: 8 }}>{t.cards}</div>
+                    {searchResults.cards.map((c) => (
+                      <div key={c.id} className="cardCream">
+                        <div style={{ fontWeight: 900 }}>{getCardTitle(c)}</div>
+                        <div style={{ marginTop: 6, color: "rgba(0,0,0,.6)" }}>{getCardBody(c).split('\n').slice(0,3).join('\n')}</div>
+                        <div style={{ marginTop: 10, display: 'flex', gap: 8 }}>
+                          <button className="btnGhost" onClick={() => setRoute({ name: 'card', cardId: c.id })}>{t.open}</button>
+                          <button className="btnPrimary" onClick={() => copyText(getCardBody(c))}>{t.copyAll}</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {searchResults.news.length > 0 && (
+                  <div>
+                    <div style={{ fontWeight: 950, marginTop: 6, marginBottom: 8 }}>{t.news}</div>
+                    {searchResults.news.map((n) => (
+                      <div key={n.id} className="cardCream">
+                        <div style={{ fontWeight: 900 }}>{lang === 'ru' ? n.title_ru : n.title_uz}</div>
+                        <div style={{ marginTop: 6, color: 'rgba(0,0,0,.6)' }}>{(lang === 'ru' ? n.body_ru : n.body_uz).split('\n').slice(0,3).join('\n')}</div>
+                        <div style={{ marginTop: 10 }}>
+                          <button className="btnGhost" onClick={() => setRoute({ name: 'news' })}>{t.open}</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {/* кнопка под каруселью — визуально поднята ближе к элементам */}
+            <div className="allSectionsContainer" style={{ display: "flex", justifyContent: "center" }}>
               <button className="btnGhost allSectionsBtn" onClick={() => setRoute({ name: "sections_all" })}>
                 {t.allSections}
               </button>
@@ -1525,8 +1609,19 @@ export default function App() {
                       onChange={(e) => setCardForm({ ...cardForm, sort: Number(e.target.value || 100) })}
                     />
                     <button className="btnPrimary" onClick={adminSaveCard}>
-                      {t.add}
+                      {editingCardId ? t.save : t.add}
                     </button>
+                    {editingCardId && (
+                      <button
+                        className="btnGhost"
+                        onClick={() => {
+                          setEditingCardId(null);
+                          setCardForm({ section_id: "", title_ru: "", title_uz: "", body_ru: "", body_uz: "", sort: 100, file_url: "" });
+                        }}
+                      >
+                        Отмена
+                      </button>
+                    )}
                   </div>
 
                   <div style={{ marginTop: 16, fontWeight: 950 }}>Список</div>
@@ -1534,9 +1629,29 @@ export default function App() {
                     {cards.map((c) => (
                       <div key={c.id} className="row" style={{ justifyContent: "space-between" }}>
                         <div style={{ fontWeight: 950, color: "#111" }}>{c.title_ru}</div>
-                        <button className="btnGhost" onClick={() => adminDeleteCard(c.id)}>
-                          {t.delete}
-                        </button>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button
+                            className="btnGhost"
+                            onClick={() => {
+                              setEditingCardId(c.id);
+                              setCardForm({
+                                section_id: c.section_id,
+                                title_ru: c.title_ru,
+                                title_uz: c.title_uz,
+                                body_ru: c.body_ru,
+                                body_uz: c.body_uz,
+                                sort: c.sort,
+                                file_url: c.file_url || "",
+                              });
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                          >
+                            Ред.
+                          </button>
+                          <button className="btnGhost" onClick={() => adminDeleteCard(c.id)}>
+                            {t.delete}
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
