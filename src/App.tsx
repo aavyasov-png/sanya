@@ -31,6 +31,7 @@ type NewsRow = {
   body_uz: string;
   published_at: string;
   pinned: boolean;
+  image_url?: string;
 };
 
 const ADMIN_CODE = "SANYA4565"; // ввод без учета регистра: Sanya4565 / sanya4565 / SANYA4565
@@ -468,6 +469,7 @@ export default function App() {
     body_uz: "",
     published_at: new Date().toISOString().slice(0, 10),
     pinned: false,
+    image_url: "",
   });
   const [codeForm, setCodeForm] = useState({ code: "", is_active: true, expires_at: "", note: "" });
   const [accessCodes, setAccessCodes] = useState<any[]>([]);
@@ -521,6 +523,48 @@ export default function App() {
     await loadPublic();
   };
 
+  const sendTelegramNotification = async (title: string, body: string, imageUrl?: string) => {
+    const botToken = import.meta.env.VITE_TELEGRAM_BOT_TOKEN;
+    const chatId = import.meta.env.VITE_TELEGRAM_CHAT_ID;
+    
+    if (!botToken || !chatId) {
+      console.log("[TELEGRAM] Bot token или chat ID не установлены");
+      return;
+    }
+
+    try {
+      const message = `📰 *Новая новость*\n\n*${title}*\n\n${body}`;
+      const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+      
+      await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+          parse_mode: "Markdown",
+        }),
+      });
+
+      if (imageUrl) {
+        const photoUrl = `https://api.telegram.org/bot${botToken}/sendPhoto`;
+        await fetch(photoUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            photo: imageUrl,
+            caption: title,
+          }),
+        });
+      }
+
+      console.log("[TELEGRAM] ✓ Уведомление отправлено");
+    } catch (err) {
+      console.log("[TELEGRAM] ✗ Ошибка отправки:", err);
+    }
+  };
+
   const adminSaveNews = async () => {
     const resp = await supabase.from("news").insert(newsForm as any);
     if (resp.error) {
@@ -528,6 +572,14 @@ export default function App() {
       return;
     }
     showToast(t.ok);
+    
+    // Отправляем уведомление в Telegram
+    await sendTelegramNotification(
+      newsForm.title_ru || newsForm.title_uz,
+      newsForm.body_ru || newsForm.body_uz,
+      newsForm.image_url
+    );
+    
     setNewsForm({
       title_ru: "",
       title_uz: "",
@@ -535,6 +587,7 @@ export default function App() {
       body_uz: "",
       published_at: new Date().toISOString().slice(0, 10),
       pinned: false,
+      image_url: "",
     });
     await loadPublic();
   };
@@ -933,6 +986,22 @@ export default function App() {
                     <div className="newsMeta">{fmtDM(n.published_at)}</div>
                   </div>
 
+                  {n.image_url && (
+                    <img
+                      src={n.image_url}
+                      alt="news"
+                      style={{
+                        width: "100%",
+                        height: "auto",
+                        borderRadius: 12,
+                        marginTop: 10,
+                        marginBottom: 10,
+                        objectFit: "cover",
+                        maxHeight: 300,
+                      }}
+                    />
+                  )}
+
                   <div className="newsBody">{lang === "ru" ? n.body_ru : n.body_uz}</div>
                 </div>
               ))}
@@ -1171,6 +1240,15 @@ export default function App() {
                       />
                       <span style={{ fontWeight: 950 }}>{t.pinned}</span>
                     </label>
+                  </div>
+
+                  <div style={{ marginTop: 10 }}>
+                    <input
+                      className="input"
+                      placeholder="URL картинки (обязательно)"
+                      value={newsForm.image_url}
+                      onChange={(e) => setNewsForm({ ...newsForm, image_url: e.target.value })}
+                    />
                   </div>
 
                   <button className="btnPrimary" style={{ marginTop: 12, width: "100%" }} onClick={adminSaveNews}>
