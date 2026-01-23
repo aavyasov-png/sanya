@@ -164,12 +164,13 @@ function TopBar(props: {
         </div>
       )}
 
-      <div className="langSelectWrap">
-        <select className="langSelect" value={lang} onChange={(e) => setLang(e.target.value as Lang)}>
-          <option value="ru">RU</option>
-          <option value="uz">UZ</option>
-        </select>
-      </div>
+      <button 
+        className="langBtn" 
+        onClick={() => setLang(lang === "ru" ? "uz" : "ru")}
+        aria-label="Change language"
+      >
+        {lang.toUpperCase()}
+      </button>
 
       <button className="iconBtn" onClick={onHome} aria-label={t.home}>
         ⌂
