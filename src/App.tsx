@@ -136,6 +136,7 @@ type Route =
   | { name: "section"; sectionId: string }
   | { name: "card"; cardId: string }
   | { name: "news" }
+  | { name: "news_item"; newsId: string }
   | { name: "admin" }
   | { name: "sections_all" };
 
@@ -534,7 +535,7 @@ export default function App() {
       const secId = cards.find((x) => x.id === route.cardId)?.section_id || "";
       return setRoute({ name: "section", sectionId: secId });
     }
-    if (route.name === "section" || route.name === "news" || route.name === "admin") {
+    if (route.name === "section" || route.name === "news" || route.name === "news_item" || route.name === "news_card" || route.name === "admin") {
       return setRoute({ name: "home" });
     }
   };
@@ -571,6 +572,23 @@ export default function App() {
   });
   const [codeForm, setCodeForm] = useState({ code: "", is_active: true, expires_at: "", note: "" });
   const [accessCodes, setAccessCodes] = useState<any[]>([]);
+
+  const [particles, setParticles] = useState<Array<{x: number, y: number, vx: number, vy: number, life: number, maxLife: number}>>([]);
+
+  const addParticles = (x: number, y: number) => {
+    const newParticles = [];
+    for (let i = 0; i < 10; i++) {
+      newParticles.push({
+        x,
+        y,
+        vx: (Math.random() - 0.5) * 4,
+        vy: (Math.random() - 0.5) * 4 - 2,
+        life: 60,
+        maxLife: 60,
+      });
+    }
+    setParticles(prev => [...prev, ...newParticles]);
+  };
 
   const adminSignOut = async () => {
     localStorage.removeItem("admin_ok");
@@ -855,6 +873,7 @@ export default function App() {
 
   // auto-snap to nearest item after scroll stops
   const snapTimerRef = useRef<number | null>(null);
+  const particlesCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const snapToClosest = () => {
     const el = sectionListRef.current;
@@ -969,6 +988,42 @@ export default function App() {
     };
   }, [sections, filteredSections]);
 
+  // particles animation
+  useEffect(() => {
+    const canvas = particlesCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      setParticles(prev => prev.map(p => ({ ...p, x: p.x + p.vx, y: p.y + p.vy, vy: p.vy + 0.1, life: p.life - 1 })).filter(p => p.life > 0));
+      particles.forEach(p => {
+        const alpha = p.life / p.maxLife;
+        ctx.fillStyle = `rgba(111, 0, 255, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      requestAnimationFrame(animate);
+    };
+    animate();
+  }, [particles]);
+
+  // click to add particles
+  useEffect(() => {
+    const phone = document.querySelector(".phone");
+    if (!phone) return;
+    const onClick = (e: Event) => {
+      const rect = phone.getBoundingClientRect();
+      const x = (e as MouseEvent).clientX - rect.left;
+      const y = (e as MouseEvent).clientY - rect.top;
+      addParticles(x, y);
+    };
+    phone.addEventListener("click", onClick);
+    return () => phone.removeEventListener("click", onClick);
+  }, []);
+
   // debounce snap on scroll
   useEffect(() => {
     const el = sectionListRef.current;
@@ -998,6 +1053,20 @@ export default function App() {
           <div className="grape grape-7">🍇</div>
           <div className="grape grape-8">🍇</div>
         </div>
+
+        <canvas
+          ref={particlesCanvasRef}
+          className="particles-canvas"
+          width="360"
+          height="800"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            pointerEvents: "none",
+            zIndex: 1,
+          }}
+        />
 
         {route.name === "welcome" && (
           <div className="page">
@@ -1408,9 +1477,31 @@ export default function App() {
               <div className="sub">{t.allNews}</div>
             </div>
 
+            <button
+              className="allSectionsBtn"
+              onClick={() => setRoute({ name: "sections_all" })}
+              style={{
+                margin: "16px",
+                marginBottom: 0,
+                width: "calc(100% - 32px)",
+                padding: "14px",
+                borderRadius: "var(--r-lg)",
+                border: "3px solid var(--accent)",
+                background: "linear-gradient(135deg, rgba(111,0,255,.1), rgba(111,0,255,.05))",
+                color: "var(--accent)",
+                fontWeight: 950,
+                fontSize: 16,
+                cursor: "pointer",
+                transition: "all .2s ease",
+                boxShadow: "0 4px 12px rgba(111,0,255,.15)",
+              }}
+            >
+              📂 {t.allSections}
+            </button>
+
             <div className="list">
               {news.map((n) => (
-                <div key={n.id} className="cardCream">
+                <div key={n.id} className="cardCream newsPreview" onClick={() => setRoute({ name: "news_card", newsId: n.id })}>
                   <div className="row" style={{ justifyContent: "space-between" }}>
                     <div className="newsTitle">
                       {n.pinned ? "📌 " : ""}
@@ -1430,15 +1521,68 @@ export default function App() {
                         marginTop: 10,
                         marginBottom: 10,
                         objectFit: "cover",
-                        maxHeight: 300,
+                        maxHeight: 200,
                       }}
                     />
                   )}
 
-                  <div className="newsBody">{lang === "ru" ? n.body_ru : n.body_uz}</div>
+                  <div className="newsBodyPreview">{lang === "ru" ? n.body_ru : n.body_uz}</div>
                 </div>
               ))}
             </div>
+
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
+          </div>
+        )}
+
+        {route.name === "news_card" && (
+          <div className="page">
+            <TopBar
+              t={t}
+              lang={lang}
+              setLang={setLang}
+              showSearch={false}
+              search={search}
+              setSearch={setSearch}
+              onBack={goBack}
+              onHome={goHome}
+            />
+
+            {(() => {
+              const n = news.find((x) => x.id === route.newsId);
+              if (!n) return <div className="center">News not found</div>;
+              return (
+                <div className="list">
+                  <div className="cardCream">
+                    <div className="row" style={{ justifyContent: "space-between" }}>
+                      <div className="newsTitle">
+                        {n.pinned ? "📌 " : ""}
+                        {lang === "ru" ? n.title_ru : n.title_uz}
+                      </div>
+                      <div className="newsMeta">{fmtDM(n.published_at)}</div>
+                    </div>
+
+                    {n.image_url && (
+                      <img
+                        src={n.image_url}
+                        alt="news"
+                        style={{
+                          width: "100%",
+                          height: "auto",
+                          borderRadius: 12,
+                          marginTop: 10,
+                          marginBottom: 10,
+                          objectFit: "cover",
+                          maxHeight: 400,
+                        }}
+                      />
+                    )}
+
+                    <div className="newsBody">{lang === "ru" ? n.body_ru : n.body_uz}</div>
+                  </div>
+                </div>
+              );
+            })()}
 
             <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
           </div>
