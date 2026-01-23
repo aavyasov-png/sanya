@@ -768,6 +768,22 @@ export default function App() {
                 >
                   {t.continue}
                 </button>
+
+                <div style={{
+                  marginTop: 24,
+                  padding: "12px",
+                  background: "rgba(111,0,255,.08)",
+                  borderRadius: 8,
+                  textAlign: "center",
+                  fontSize: 12,
+                  color: "rgba(20,18,26,.7)",
+                  lineHeight: 1.6
+                }}>
+                  <div>Для получения кода доступа</div>
+                  <div style={{ fontWeight: 900, color: "#6F00FF", marginTop: 4 }}>
+                    обратитесь к <strong>@alex_uzumm</strong>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
