@@ -21,6 +21,7 @@ type CardRow = {
   body_ru: string;
   body_uz: string;
   sort: number;
+  file_url?: string;
 };
 
 type NewsRow = {
@@ -456,6 +457,7 @@ export default function App() {
     body_ru: "",
     body_uz: "",
     sort: 100,
+    file_url: "",
   });
   const [newsForm, setNewsForm] = useState({
     title_ru: "",
@@ -504,7 +506,7 @@ export default function App() {
       return;
     }
     showToast(t.ok);
-    setCardForm({ section_id: "", title_ru: "", title_uz: "", body_ru: "", body_uz: "", sort: 100 });
+    setCardForm({ section_id: "", title_ru: "", title_uz: "", body_ru: "", body_uz: "", sort: 100, file_url: "" });
     await loadPublic();
   };
 
@@ -955,10 +957,39 @@ export default function App() {
                         {body}
                       </pre>
 
-                      <div style={{ marginTop: 14 }}>
+                      <div style={{ marginTop: 14, display: "flex", gap: 10, flexDirection: "column" }}>
                         <button className="btnPrimary" style={{ width: "100%" }} onClick={() => copyText(body)}>
                           {t.copyAll}
                         </button>
+                        {c.file_url && (
+                          <a
+                            href={c.file_url}
+                            download
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              height: "48px",
+                              border: "3px solid rgba(111,0,255,.3)",
+                              borderRadius: "14px",
+                              backgroundColor: "rgba(111,0,255,.08)",
+                              color: "var(--accent)",
+                              fontWeight: "950",
+                              fontSize: "14px",
+                              textDecoration: "none",
+                              cursor: "pointer",
+                              transition: "all .12s ease",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = "rgba(111,0,255,.15)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = "rgba(111,0,255,.08)";
+                            }}
+                          >
+                            📥 Скачать файл
+                          </a>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1171,6 +1202,15 @@ export default function App() {
                       placeholder={t.bodyUz}
                       value={cardForm.body_uz}
                       onChange={(e) => setCardForm({ ...cardForm, body_uz: e.target.value })}
+                    />
+                  </div>
+
+                  <div style={{ marginTop: 10 }}>
+                    <input
+                      className="input"
+                      placeholder="URL файла (опционально)"
+                      value={cardForm.file_url}
+                      onChange={(e) => setCardForm({ ...cardForm, file_url: e.target.value })}
                     />
                   </div>
 
