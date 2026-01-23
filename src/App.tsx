@@ -33,7 +33,7 @@ type NewsRow = {
   pinned: boolean;
 };
 
-const ADMIN_CODE = "SANYA4565"; // можно вводить Sanya4565 / sanya4565 и т.д.
+const ADMIN_CODE = "SANYA4565"; // ввод без учета регистра: Sanya4565 / sanya4565 / SANYA4565
 
 const T = {
   ru: {
@@ -43,10 +43,11 @@ const T = {
     continue: "Продолжить",
     search: "Поиск по разделам",
     hello: "Здравствуйте",
-    sections: "Разделы",
-    news: "Новости",
+    sections: "РАЗДЕЛЫ",
+    news: "НОВОСТИ",
     back: "Назад",
     home: "Домой",
+    open: "Открыть",
     copyAll: "Скопировать всё",
     copied: "Скопировано",
     invalidCode: "Неверный код доступа",
@@ -71,6 +72,11 @@ const T = {
     expiresAt: "Истекает (необяз.)",
     note: "Заметка",
     signOut: "Выйти",
+    cards: "КАРТОЧКИ",
+    allNews: "Все новости",
+    chooseSection: "Выбери раздел",
+    ok: "Ок",
+    error: "Ошибка",
   },
   uz: {
     welcome: "Xush\nkelibsiz",
@@ -79,10 +85,11 @@ const T = {
     continue: "Davom etish",
     search: "Bo‘limlar bo‘yicha qidirish",
     hello: "Salom",
-    sections: "Bo‘limlar",
-    news: "Yangiliklar",
+    sections: "BO‘LIMLAR",
+    news: "YANGILIKLAR",
     back: "Orqaga",
     home: "Bosh sahifa",
+    open: "Ochish",
     copyAll: "Hammasini nusxalash",
     copied: "Nusxalandi",
     invalidCode: "Kod noto‘g‘ri",
@@ -107,6 +114,11 @@ const T = {
     expiresAt: "Tugash (ixtiyoriy)",
     note: "Izoh",
     signOut: "Chiqish",
+    cards: "KARTOCHKALAR",
+    allNews: "Barcha yangiliklar",
+    chooseSection: "Bo‘limni tanlang",
+    ok: "Ok",
+    error: "Xato",
   },
 } as const;
 
@@ -119,7 +131,7 @@ type Route =
   | { name: "admin" };
 
 function TopBar(props: {
-  t: any;
+  t: (typeof T)["ru"];
   lang: Lang;
   setLang: (l: Lang) => void;
   showSearch: boolean;
@@ -139,11 +151,16 @@ function TopBar(props: {
 
       {showSearch ? (
         <div className="searchWrap">
-          <input className="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.search} />
+          <input
+            className="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t.search}
+          />
         </div>
       ) : (
         <div className="searchWrap" style={{ justifyContent: "center" }}>
-          <div style={{ fontWeight: 950 }}>{t.home}</div>
+          <div className="topbarTitle">{t.home}</div>
         </div>
       )}
 
@@ -158,14 +175,14 @@ function TopBar(props: {
         ⌂
       </button>
 
-      {rightSlot ? rightSlot : null}
+      {rightSlot ? <div className="topbarRight">{rightSlot}</div> : null}
     </div>
   );
 }
 
 export default function App() {
   const [lang, setLang] = useState<Lang>((localStorage.getItem("lang") as Lang) || "ru");
-  const t: typeof T[Lang] = T[lang];
+  const t = T[lang];
 
   const [route, setRoute] = useState<Route>(() => {
     const ok = localStorage.getItem("access_ok") === "1";
@@ -202,7 +219,11 @@ export default function App() {
   const loadPublic = async () => {
     const s = await supabase.from("sections").select("*").order("sort", { ascending: true });
     const c = await supabase.from("cards").select("*").order("sort", { ascending: true });
-    const n = await supabase.from("news").select("*").order("pinned", { ascending: false }).order("published_at", { ascending: false });
+    const n = await supabase
+      .from("news")
+      .select("*")
+      .order("pinned", { ascending: false })
+      .order("published_at", { ascending: false });
 
     if (!s.error) setSections((s.data ?? []) as SectionRow[]);
     if (!c.error) setCards((c.data ?? []) as CardRow[]);
@@ -213,7 +234,7 @@ export default function App() {
     loadPublic();
   }, []);
 
-  // защитим админку (если вручную попадут на route admin)
+  // protect admin route
   useEffect(() => {
     if (route.name === "admin" && !adminOk) {
       setRoute({ name: "home" });
@@ -237,7 +258,7 @@ export default function App() {
 
     const entered = code.trim().toUpperCase();
 
-    // ✅ Админ-код: сразу открываем админку
+    // ADMIN: open admin immediately, no button needed
     if (entered === ADMIN_CODE) {
       setError("");
       localStorage.setItem("access_ok", "1");
@@ -247,7 +268,7 @@ export default function App() {
       return;
     }
 
-    // Обычный пользователь — проверка через Supabase
+    // user access codes via Supabase
     const resp = await supabase
       .from("access_codes")
       .select("code,is_active,expires_at")
@@ -299,7 +320,9 @@ export default function App() {
       const secId = cards.find((x) => x.id === route.cardId)?.section_id || "";
       return setRoute({ name: "section", sectionId: secId });
     }
-    if (route.name === "section" || route.name === "news" || route.name === "admin") return setRoute({ name: "home" });
+    if (route.name === "section" || route.name === "news" || route.name === "admin") {
+      return setRoute({ name: "home" });
+    }
     if (route.name === "home") return setRoute({ name: "welcome" });
   };
 
@@ -307,7 +330,14 @@ export default function App() {
   const [adminTab, setAdminTab] = useState<"sections" | "cards" | "news" | "codes">("sections");
 
   const [secForm, setSecForm] = useState({ key: "", title_ru: "", title_uz: "", icon: "📄", sort: 100 });
-  const [cardForm, setCardForm] = useState({ section_id: "", title_ru: "", title_uz: "", body_ru: "", body_uz: "", sort: 100 });
+  const [cardForm, setCardForm] = useState({
+    section_id: "",
+    title_ru: "",
+    title_uz: "",
+    body_ru: "",
+    body_uz: "",
+    sort: 100,
+  });
   const [newsForm, setNewsForm] = useState({
     title_ru: "",
     title_uz: "",
@@ -321,17 +351,17 @@ export default function App() {
   const adminSignOut = async () => {
     localStorage.removeItem("admin_ok");
     setAdminOk(false);
-    showToast("Ок");
+    showToast(t.ok);
     setRoute({ name: "home" });
   };
 
   const adminSaveSection = async () => {
     const resp = await supabase.from("sections").insert(secForm as any);
     if (resp.error) {
-      showToast("Ошибка");
+      showToast(t.error);
       return;
     }
-    showToast("Ок");
+    showToast(t.ok);
     setSecForm({ key: "", title_ru: "", title_uz: "", icon: "📄", sort: 100 });
     await loadPublic();
   };
@@ -339,20 +369,20 @@ export default function App() {
   const adminDeleteSection = async (id: string) => {
     const resp = await supabase.from("sections").delete().eq("id", id);
     if (resp.error) {
-      showToast("Ошибка");
+      showToast(t.error);
       return;
     }
-    showToast("Ок");
+    showToast(t.ok);
     await loadPublic();
   };
 
   const adminSaveCard = async () => {
     const resp = await supabase.from("cards").insert({ ...cardForm, updated_at: new Date().toISOString() } as any);
     if (resp.error) {
-      showToast("Ошибка");
+      showToast(t.error);
       return;
     }
-    showToast("Ок");
+    showToast(t.ok);
     setCardForm({ section_id: "", title_ru: "", title_uz: "", body_ru: "", body_uz: "", sort: 100 });
     await loadPublic();
   };
@@ -360,20 +390,20 @@ export default function App() {
   const adminDeleteCard = async (id: string) => {
     const resp = await supabase.from("cards").delete().eq("id", id);
     if (resp.error) {
-      showToast("Ошибка");
+      showToast(t.error);
       return;
     }
-    showToast("Ок");
+    showToast(t.ok);
     await loadPublic();
   };
 
   const adminSaveNews = async () => {
     const resp = await supabase.from("news").insert(newsForm as any);
     if (resp.error) {
-      showToast("Ошибка");
+      showToast(t.error);
       return;
     }
-    showToast("Ок");
+    showToast(t.ok);
     setNewsForm({
       title_ru: "",
       title_uz: "",
@@ -388,10 +418,10 @@ export default function App() {
   const adminDeleteNews = async (id: string) => {
     const resp = await supabase.from("news").delete().eq("id", id);
     if (resp.error) {
-      showToast("Ошибка");
+      showToast(t.error);
       return;
     }
-    showToast("Ок");
+    showToast(t.ok);
     await loadPublic();
   };
 
@@ -404,11 +434,18 @@ export default function App() {
     };
     const resp = await supabase.from("access_codes").upsert(payload as any);
     if (resp.error) {
-      showToast("Ошибка");
+      showToast(t.error);
       return;
     }
-    showToast("Ок");
+    showToast(t.ok);
     setCodeForm({ code: "", is_active: true, expires_at: "", note: "" });
+  };
+
+  const fmtDM = (iso: string) => {
+    // ISO yyyy-mm-dd -> dd.mm
+    const parts = iso.split("-");
+    if (parts.length !== 3) return iso;
+    return `${parts[2]}.${parts[1]}`;
   };
 
   // ---------- UI ----------
@@ -425,7 +462,8 @@ export default function App() {
               <div className="h1">{t.welcome}</div>
 
               <div className="cardCream">
-                <div style={{ fontWeight: 950, marginBottom: 8 }}>{t.enterCode}</div>
+                <div style={{ fontWeight: 950, marginBottom: 10 }}>{t.enterCode}</div>
+
                 <input
                   className="input"
                   value={code}
@@ -438,7 +476,7 @@ export default function App() {
                   }}
                 />
 
-                <label className="row" style={{ marginTop: 10, color: "rgba(20,18,26,.88)" }}>
+                <label className="row" style={{ marginTop: 12, color: "rgba(20,18,26,.88)" }}>
                   <input
                     type="checkbox"
                     checked={rules}
@@ -451,11 +489,18 @@ export default function App() {
                   <span style={{ fontWeight: 900 }}>{t.acceptRules}</span>
                 </label>
 
-                {error ? <div style={{ marginTop: 8, color: "#b00020", fontWeight: 950 }}>{error}</div> : null}
+                {error ? (
+                  <div style={{ marginTop: 10, color: "#b00020", fontWeight: 950 }}>{error}</div>
+                ) : null}
 
                 <button
                   className="btnPrimary"
-                  style={{ marginTop: 12, opacity: canContinue ? 1 : 0.5, cursor: canContinue ? "pointer" : "not-allowed" }}
+                  style={{
+                    marginTop: 14,
+                    opacity: canContinue ? 1 : 0.55,
+                    cursor: canContinue ? "pointer" : "not-allowed",
+                    width: "100%",
+                  }}
                   onClick={submitCode}
                 >
                   {t.continue}
@@ -479,15 +524,22 @@ export default function App() {
             />
 
             <div className="headerBlock">
-              <div className="h2">{t.hello}, Авьясов А.</div>
+              <div className="h2">{t.hello} Авьясов А.</div>
               <div className="sub">{t.sections}</div>
             </div>
 
             <div className="blockTitle">{t.sections}</div>
+
             <div className="sectionList">
               {filteredSections.map((s) => (
-                <button key={s.id} className="sectionRow" onClick={() => setRoute({ name: "section", sectionId: s.id })}>
-                  <div className="sectionIcon">{s.icon}</div>
+                <button
+                  key={s.id}
+                  className="sectionRow"
+                  onClick={() => setRoute({ name: "section", sectionId: s.id })}
+                >
+                  <div className="sectionIconBox">
+                    <div className="sectionIcon">{s.icon}</div>
+                  </div>
 
                   <div className="sectionText">
                     <div className="sectionTitle">{getSectionTitle(s)}</div>
@@ -499,34 +551,33 @@ export default function App() {
                         .join(" • ") || "—"}
                     </div>
                   </div>
-
-                  <div className="sectionMeta">
-                    {news[0]?.published_at ? news[0].published_at.split("-").reverse().slice(0, 2).join(".") : ""}
-                  </div>
                 </button>
               ))}
 
               <button className="sectionRow" onClick={() => setRoute({ name: "news" })}>
-                <div className="sectionIcon">📰</div>
+                <div className="sectionIconBox">
+                  <div className="sectionIcon">📰</div>
+                </div>
                 <div className="sectionText">
                   <div className="sectionTitle">{t.news}</div>
                   <div className="sectionSub">{news[0] ? (lang === "ru" ? news[0].title_ru : news[0].title_uz) : "—"}</div>
                 </div>
-                <div className="sectionMeta">
-                  {news[0]?.published_at ? news[0].published_at.split("-").reverse().slice(0, 2).join(".") : ""}
-                </div>
               </button>
             </div>
 
+            {/* на главном — только последние 4, остальное в "Новости" */}
             <div className="blockTitle">{t.news}</div>
             <div className="list">
-              {news.slice(0, 2).map((n) => (
+              {news.slice(0, 4).map((n) => (
                 <div key={n.id} className="cardCream">
                   <div className="row" style={{ justifyContent: "space-between" }}>
-                    <div style={{ fontWeight: 950 }}>{lang === "ru" ? n.title_ru : n.title_uz}</div>
-                    <div style={{ opacity: 0.65, fontWeight: 950 }}>{n.published_at.split("-").reverse().slice(0, 2).join(".")}</div>
+                    <div className="newsTitle">
+                      {n.pinned ? "📌 " : ""}
+                      {lang === "ru" ? n.title_ru : n.title_uz}
+                    </div>
+                    <div className="newsMeta">{fmtDM(n.published_at)}</div>
                   </div>
-                  <div style={{ marginTop: 8, opacity: 0.85, lineHeight: 1.35 }}>{lang === "ru" ? n.body_ru : n.body_uz}</div>
+                  <div className="newsBody">{lang === "ru" ? n.body_ru : n.body_uz}</div>
                 </div>
               ))}
             </div>
@@ -545,33 +596,43 @@ export default function App() {
               onBack={goBack}
               onHome={goHome}
             />
+
             <div className="headerBlock">
-              <div className="h2">{getSectionTitle(sections.find((s) => s.id === route.sectionId) as SectionRow)}</div>
-              <div className="sub">Карточки</div>
+              <div className="h2">
+                {getSectionTitle(sections.find((s) => s.id === route.sectionId) as SectionRow)}
+              </div>
+              <div className="sub">{t.cards}</div>
             </div>
 
             <div className="list">
               {cards
                 .filter((c) => c.section_id === route.sectionId)
                 .sort((a, b) => a.sort - b.sort)
-                .map((c) => (
-                  <div key={c.id} className="cardCream">
-                    <div style={{ fontWeight: 950 }}>{getCardTitle(c)}</div>
-                    <div style={{ marginTop: 8, opacity: 0.85, lineHeight: 1.35, whiteSpace: "pre-wrap" }}>
-                      {getCardBody(c).split("\n").slice(0, 3).join("\n")}
-                      {getCardBody(c).split("\n").length > 3 ? "\n..." : ""}
-                    </div>
+                .map((c) => {
+                  const body = getCardBody(c);
+                  const preview = body.split("\n").slice(0, 3).join("\n");
+                  const hasMore = body.split("\n").length > 3;
 
-                    <div className="split" style={{ marginTop: 12 }}>
-                      <button className="smallBtn" onClick={() => setRoute({ name: "card", cardId: c.id })}>
-                        Открыть
-                      </button>
-                      <button className="btnPrimary" onClick={() => copyText(getCardBody(c))}>
-                        {t.copyAll}
-                      </button>
+                  return (
+                    <div key={c.id} className="cardCream">
+                      <div className="cardTitle">{getCardTitle(c)}</div>
+
+                      <div className="cardPreview">
+                        {preview}
+                        {hasMore ? "\n..." : ""}
+                      </div>
+
+                      <div className="cardActions">
+                        <button className="btnGhost" onClick={() => setRoute({ name: "card", cardId: c.id })}>
+                          {t.open}
+                        </button>
+                        <button className="btnPrimary" onClick={() => copyText(body)}>
+                          {t.copyAll}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
           </div>
         )}
@@ -593,16 +654,37 @@ export default function App() {
               const c = cards.find((x) => x.id === route.cardId);
               if (!c) return null;
               const body = getCardBody(c);
+
               return (
-                <div style={{ padding: 14 }}>
-                  <div className="h2">{getCardTitle(c)}</div>
-                  <div className="cardCream" style={{ marginTop: 12 }}>
-                    <pre style={{ margin: 0, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{body}</pre>
-                    <button className="btnPrimary" style={{ marginTop: 12 }} onClick={() => copyText(body)}>
-                      {t.copyAll}
-                    </button>
+                <>
+                  <div className="headerBlock">
+                    <div className="h2">{getCardTitle(c)}</div>
+                    <div className="sub">{t.cards}</div>
                   </div>
-                </div>
+
+                  <div className="list">
+                    <div className="cardCream">
+                      <pre
+                        style={{
+                          margin: 0,
+                          whiteSpace: "pre-wrap",
+                          lineHeight: 1.5,
+                          fontFamily: "inherit",
+                          fontSize: 14,
+                          color: "rgba(0,0,0,.78)",
+                        }}
+                      >
+                        {body}
+                      </pre>
+
+                      <div style={{ marginTop: 14 }}>
+                        <button className="btnPrimary" style={{ width: "100%" }} onClick={() => copyText(body)}>
+                          {t.copyAll}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </>
               );
             })()}
           </div>
@@ -620,24 +702,24 @@ export default function App() {
               onBack={goBack}
               onHome={goHome}
             />
+
             <div className="headerBlock">
               <div className="h2">{t.news}</div>
-              <div className="sub">Все новости</div>
+              <div className="sub">{t.allNews}</div>
             </div>
 
             <div className="list">
               {news.map((n) => (
                 <div key={n.id} className="cardCream">
                   <div className="row" style={{ justifyContent: "space-between" }}>
-                    <div style={{ fontWeight: 950 }}>
+                    <div className="newsTitle">
                       {n.pinned ? "📌 " : ""}
                       {lang === "ru" ? n.title_ru : n.title_uz}
                     </div>
-                    <div style={{ opacity: 0.65, fontWeight: 950 }}>{n.published_at.split("-").reverse().slice(0, 2).join(".")}</div>
+                    <div className="newsMeta">{fmtDM(n.published_at)}</div>
                   </div>
-                  <div style={{ marginTop: 8, opacity: 0.85, lineHeight: 1.35, whiteSpace: "pre-wrap" }}>
-                    {lang === "ru" ? n.body_ru : n.body_uz}
-                  </div>
+
+                  <div className="newsBody">{lang === "ru" ? n.body_ru : n.body_uz}</div>
                 </div>
               ))}
             </div>
@@ -656,34 +738,38 @@ export default function App() {
               onBack={goBack}
               onHome={goHome}
               rightSlot={
-                <button className="smallBtn" onClick={adminSignOut}>
+                <button className="btnGhost" onClick={adminSignOut}>
                   {t.signOut}
                 </button>
               }
             />
 
-            <div style={{ padding: 14 }}>
+            <div className="headerBlock">
               <div className="h2">{t.admin}</div>
+              <div className="sub">{t.manageSections}</div>
+            </div>
 
-              <div className="row" style={{ marginTop: 12 }}>
-                <button className="smallBtn" onClick={() => setAdminTab("sections")}>
-                  {t.manageSections}
-                </button>
-                <button className="smallBtn" onClick={() => setAdminTab("cards")}>
-                  {t.manageCards}
-                </button>
-                <button className="smallBtn" onClick={() => setAdminTab("news")}>
-                  {t.manageNews}
-                </button>
-                <button className="smallBtn" onClick={() => setAdminTab("codes")}>
-                  {t.manageCodes}
-                </button>
+            <div className="list">
+              <div className="cardCream">
+                <div className="row" style={{ flexWrap: "wrap" }}>
+                  <button className="btnGhost" onClick={() => setAdminTab("sections")}>
+                    {t.manageSections}
+                  </button>
+                  <button className="btnGhost" onClick={() => setAdminTab("cards")}>
+                    {t.manageCards}
+                  </button>
+                  <button className="btnGhost" onClick={() => setAdminTab("news")}>
+                    {t.manageNews}
+                  </button>
+                  <button className="btnGhost" onClick={() => setAdminTab("codes")}>
+                    {t.manageCodes}
+                  </button>
+                </div>
               </div>
 
-              {/* SECTIONS */}
               {adminTab === "sections" && (
-                <div className="cardCream" style={{ marginTop: 12 }}>
-                  <div style={{ fontWeight: 950, marginBottom: 10 }}>{t.manageSections}</div>
+                <div className="cardCream">
+                  <div style={{ fontWeight: 950, marginBottom: 12 }}>{t.manageSections}</div>
 
                   <div className="split">
                     <input
@@ -692,7 +778,12 @@ export default function App() {
                       value={secForm.key}
                       onChange={(e) => setSecForm({ ...secForm, key: e.target.value })}
                     />
-                    <input className="input" placeholder={t.icon} value={secForm.icon} onChange={(e) => setSecForm({ ...secForm, icon: e.target.value })} />
+                    <input
+                      className="input"
+                      placeholder={t.icon}
+                      value={secForm.icon}
+                      onChange={(e) => setSecForm({ ...secForm, icon: e.target.value })}
+                    />
                   </div>
 
                   <div className="split" style={{ marginTop: 10 }}>
@@ -722,14 +813,14 @@ export default function App() {
                     </button>
                   </div>
 
-                  <div style={{ marginTop: 14, fontWeight: 950 }}>Список</div>
-                  <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ marginTop: 16, fontWeight: 950 }}>Список</div>
+                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
                     {sections.map((s) => (
                       <div key={s.id} className="row" style={{ justifyContent: "space-between" }}>
-                        <div style={{ fontWeight: 950 }}>
+                        <div style={{ fontWeight: 950, color: "#111" }}>
                           {s.icon} {s.title_ru}
                         </div>
-                        <button className="smallBtn" onClick={() => adminDeleteSection(s.id)}>
+                        <button className="btnGhost" onClick={() => adminDeleteSection(s.id)}>
                           {t.delete}
                         </button>
                       </div>
@@ -738,13 +829,16 @@ export default function App() {
                 </div>
               )}
 
-              {/* CARDS */}
               {adminTab === "cards" && (
-                <div className="cardCream" style={{ marginTop: 12 }}>
-                  <div style={{ fontWeight: 950, marginBottom: 10 }}>{t.manageCards}</div>
+                <div className="cardCream">
+                  <div style={{ fontWeight: 950, marginBottom: 12 }}>{t.manageCards}</div>
 
-                  <select className="input" value={cardForm.section_id} onChange={(e) => setCardForm({ ...cardForm, section_id: e.target.value })}>
-                    <option value="">Выбери раздел</option>
+                  <select
+                    className="input"
+                    value={cardForm.section_id}
+                    onChange={(e) => setCardForm({ ...cardForm, section_id: e.target.value })}
+                  >
+                    <option value="">{t.chooseSection}</option>
                     {sections.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.title_ru}
@@ -770,14 +864,14 @@ export default function App() {
                   <div className="split" style={{ marginTop: 10 }}>
                     <textarea
                       className="input"
-                      style={{ height: 120, paddingTop: 12 }}
+                      style={{ height: 140, paddingTop: 12 }}
                       placeholder={t.bodyRu}
                       value={cardForm.body_ru}
                       onChange={(e) => setCardForm({ ...cardForm, body_ru: e.target.value })}
                     />
                     <textarea
                       className="input"
-                      style={{ height: 120, paddingTop: 12 }}
+                      style={{ height: 140, paddingTop: 12 }}
                       placeholder={t.bodyUz}
                       value={cardForm.body_uz}
                       onChange={(e) => setCardForm({ ...cardForm, body_uz: e.target.value })}
@@ -796,12 +890,12 @@ export default function App() {
                     </button>
                   </div>
 
-                  <div style={{ marginTop: 14, fontWeight: 950 }}>Список</div>
-                  <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ marginTop: 16, fontWeight: 950 }}>Список</div>
+                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
                     {cards.map((c) => (
                       <div key={c.id} className="row" style={{ justifyContent: "space-between" }}>
-                        <div style={{ fontWeight: 950 }}>{c.title_ru}</div>
-                        <button className="smallBtn" onClick={() => adminDeleteCard(c.id)}>
+                        <div style={{ fontWeight: 950, color: "#111" }}>{c.title_ru}</div>
+                        <button className="btnGhost" onClick={() => adminDeleteCard(c.id)}>
                           {t.delete}
                         </button>
                       </div>
@@ -810,54 +904,72 @@ export default function App() {
                 </div>
               )}
 
-              {/* NEWS */}
               {adminTab === "news" && (
-                <div className="cardCream" style={{ marginTop: 12 }}>
-                  <div style={{ fontWeight: 950, marginBottom: 10 }}>{t.manageNews}</div>
+                <div className="cardCream">
+                  <div style={{ fontWeight: 950, marginBottom: 12 }}>{t.manageNews}</div>
 
                   <div className="split">
-                    <input className="input" placeholder={t.titleRu} value={newsForm.title_ru} onChange={(e) => setNewsForm({ ...newsForm, title_ru: e.target.value })} />
-                    <input className="input" placeholder={t.titleUz} value={newsForm.title_uz} onChange={(e) => setNewsForm({ ...newsForm, title_uz: e.target.value })} />
+                    <input
+                      className="input"
+                      placeholder={t.titleRu}
+                      value={newsForm.title_ru}
+                      onChange={(e) => setNewsForm({ ...newsForm, title_ru: e.target.value })}
+                    />
+                    <input
+                      className="input"
+                      placeholder={t.titleUz}
+                      value={newsForm.title_uz}
+                      onChange={(e) => setNewsForm({ ...newsForm, title_uz: e.target.value })}
+                    />
                   </div>
 
                   <div className="split" style={{ marginTop: 10 }}>
                     <textarea
                       className="input"
-                      style={{ height: 120, paddingTop: 12 }}
+                      style={{ height: 140, paddingTop: 12 }}
                       placeholder={t.bodyRu}
                       value={newsForm.body_ru}
                       onChange={(e) => setNewsForm({ ...newsForm, body_ru: e.target.value })}
                     />
                     <textarea
                       className="input"
-                      style={{ height: 120, paddingTop: 12 }}
+                      style={{ height: 140, paddingTop: 12 }}
                       placeholder={t.bodyUz}
                       value={newsForm.body_uz}
                       onChange={(e) => setNewsForm({ ...newsForm, body_uz: e.target.value })}
                     />
                   </div>
 
-                  <div className="split" style={{ marginTop: 10 }}>
-                    <input className="input" placeholder={t.date} value={newsForm.published_at} onChange={(e) => setNewsForm({ ...newsForm, published_at: e.target.value })} />
+                  <div className="split" style={{ marginTop: 10, alignItems: "center" }}>
+                    <input
+                      className="input"
+                      placeholder={t.date}
+                      value={newsForm.published_at}
+                      onChange={(e) => setNewsForm({ ...newsForm, published_at: e.target.value })}
+                    />
                     <label className="row" style={{ color: "rgba(20,18,26,.85)" }}>
-                      <input type="checkbox" checked={newsForm.pinned} onChange={(e) => setNewsForm({ ...newsForm, pinned: e.target.checked })} />
+                      <input
+                        type="checkbox"
+                        checked={newsForm.pinned}
+                        onChange={(e) => setNewsForm({ ...newsForm, pinned: e.target.checked })}
+                      />
                       <span style={{ fontWeight: 950 }}>{t.pinned}</span>
                     </label>
                   </div>
 
-                  <button className="btnPrimary" style={{ marginTop: 10 }} onClick={adminSaveNews}>
+                  <button className="btnPrimary" style={{ marginTop: 12, width: "100%" }} onClick={adminSaveNews}>
                     {t.add}
                   </button>
 
-                  <div style={{ marginTop: 14, fontWeight: 950 }}>Список</div>
-                  <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ marginTop: 16, fontWeight: 950 }}>Список</div>
+                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
                     {news.map((n) => (
                       <div key={n.id} className="row" style={{ justifyContent: "space-between" }}>
-                        <div style={{ fontWeight: 950 }}>
+                        <div style={{ fontWeight: 950, color: "#111" }}>
                           {n.pinned ? "📌 " : ""}
                           {n.title_ru}
                         </div>
-                        <button className="smallBtn" onClick={() => adminDeleteNews(n.id)}>
+                        <button className="btnGhost" onClick={() => adminDeleteNews(n.id)}>
                           {t.delete}
                         </button>
                       </div>
@@ -866,29 +978,49 @@ export default function App() {
                 </div>
               )}
 
-              {/* CODES */}
               {adminTab === "codes" && (
-                <div className="cardCream" style={{ marginTop: 12 }}>
-                  <div style={{ fontWeight: 950, marginBottom: 10 }}>{t.manageCodes}</div>
+                <div className="cardCream">
+                  <div style={{ fontWeight: 950, marginBottom: 12 }}>{t.manageCodes}</div>
 
                   <div className="split">
-                    <input className="input" placeholder={t.code} value={codeForm.code} onChange={(e) => setCodeForm({ ...codeForm, code: e.target.value })} />
-                    <input className="input" placeholder={t.note} value={codeForm.note} onChange={(e) => setCodeForm({ ...codeForm, note: e.target.value })} />
+                    <input
+                      className="input"
+                      placeholder={t.code}
+                      value={codeForm.code}
+                      onChange={(e) => setCodeForm({ ...codeForm, code: e.target.value })}
+                    />
+                    <input
+                      className="input"
+                      placeholder={t.note}
+                      value={codeForm.note}
+                      onChange={(e) => setCodeForm({ ...codeForm, note: e.target.value })}
+                    />
                   </div>
 
-                  <div className="split" style={{ marginTop: 10 }}>
-                    <input className="input" placeholder={t.expiresAt} value={codeForm.expires_at} onChange={(e) => setCodeForm({ ...codeForm, expires_at: e.target.value })} />
+                  <div className="split" style={{ marginTop: 10, alignItems: "center" }}>
+                    <input
+                      className="input"
+                      placeholder={t.expiresAt}
+                      value={codeForm.expires_at}
+                      onChange={(e) => setCodeForm({ ...codeForm, expires_at: e.target.value })}
+                    />
                     <label className="row" style={{ color: "rgba(20,18,26,.85)" }}>
-                      <input type="checkbox" checked={codeForm.is_active} onChange={(e) => setCodeForm({ ...codeForm, is_active: e.target.checked })} />
+                      <input
+                        type="checkbox"
+                        checked={codeForm.is_active}
+                        onChange={(e) => setCodeForm({ ...codeForm, is_active: e.target.checked })}
+                      />
                       <span style={{ fontWeight: 950 }}>{t.active}</span>
                     </label>
                   </div>
 
-                  <button className="btnPrimary" style={{ marginTop: 10 }} onClick={adminSaveCode}>
+                  <button className="btnPrimary" style={{ marginTop: 12, width: "100%" }} onClick={adminSaveCode}>
                     {t.save}
                   </button>
 
-                  <div style={{ marginTop: 14, fontWeight: 950 }}>Примечание: список кодов видит только админ (это нормально).</div>
+                  <div style={{ marginTop: 14, fontWeight: 950, color: "rgba(0,0,0,.70)" }}>
+                    Примечание: список кодов видит только админ (это нормально).
+                  </div>
                 </div>
               )}
             </div>
