@@ -1120,34 +1120,74 @@ export default function App() {
                     {t.save}
                   </button>
 
-                  <div style={{ marginTop: 14, fontWeight: 950, color: "rgba(0,0,0,.70)" }}>
-                    Примечание: список кодов видит только админ (это нормально).
-                  </div>
+                  <div style={{ marginTop: 16, fontWeight: 950, fontSize: 14 }}>Список кодов ({accessCodes.length})</div>
+                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                    {accessCodes.length === 0 ? (
+                      <div style={{ textAlign: "center", padding: 20, color: "rgba(0,0,0,.5)", fontStyle: "italic" }}>Нет кодов</div>
+                    ) : (
+                      accessCodes.map((ac) => {
+                        const expiresDate = ac.expires_at ? new Date(ac.expires_at) : null;
+                        const isExpired = expiresDate && expiresDate < new Date();
+                        const daysLeft = expiresDate ? Math.ceil((expiresDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                        
+                        return (
+                          <div key={ac.code} className="cardCream" style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                              <div style={{ fontFamily: "monospace", fontWeight: 900, fontSize: 16, color: "#111", letterSpacing: 1 }}>
+                                {ac.code}
+                              </div>
+                              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                <span style={{ 
+                                  padding: "4px 10px", 
+                                  borderRadius: 6, 
+                                  fontSize: 11, 
+                                  fontWeight: 900,
+                                  background: ac.is_active ? (isExpired ? "#fff3cd" : "#d4edda") : "#f8d7da",
+                                  color: ac.is_active ? (isExpired ? "#856404" : "#155724") : "#721c24"
+                                }}>
+                                  {!ac.is_active ? "НЕАКТИВ" : isExpired ? "ИСТЁК" : "АКТИВЕН"}
+                                </span>
+                              </div>
+                            </div>
 
-                  <div style={{ marginTop: 16, fontWeight: 950 }}>Список кодов</div>
-                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-                    {accessCodes.map((ac) => (
-                      <div key={ac.code} className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                          <div style={{ fontWeight: 900, color: "#111", minWidth: 80 }}>{ac.code}</div>
-                          <input
-                            className="input"
-                            type="datetime-local"
-                            value={ac.expires_at ? new Date(ac.expires_at).toISOString().slice(0,16) : ""}
-                            onChange={(e) => updateAccessCode(ac.code, { expires_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
-                            style={{ width: 220 }}
-                          />
-                          <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <input type="checkbox" checked={ac.is_active} onChange={() => updateAccessCode(ac.code, { is_active: !ac.is_active })} />
-                            <span style={{ fontWeight: 700 }}>{t.active}</span>
-                          </label>
-                        </div>
+                            <div style={{ display: "flex", gap: 10, fontSize: 13, color: "rgba(0,0,0,.6)" }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 700, marginBottom: 2 }}>Срок:</div>
+                                {expiresDate ? expiresDate.toLocaleString("ru-RU") : "Неограничен"}
+                                {daysLeft !== null && daysLeft > 0 && (
+                                  <div style={{ fontSize: 11, color: "rgba(0,0,0,.5)", marginTop: 2 }}>
+                                    ({daysLeft} дн. осталось)
+                                  </div>
+                                )}
+                              </div>
+                              {ac.note && (
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontWeight: 700, marginBottom: 2 }}>Заметка:</div>
+                                  {ac.note}
+                                </div>
+                              )}
+                            </div>
 
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <button className="btnGhost" onClick={() => deleteAccessCode(ac.code)}>{t.delete}</button>
-                        </div>
-                      </div>
-                    ))}
+                            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                              <input
+                                className="input"
+                                type="datetime-local"
+                                value={ac.expires_at ? new Date(ac.expires_at).toISOString().slice(0,16) : ""}
+                                onChange={(e) => updateAccessCode(ac.code, { expires_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                                style={{ flex: 1, height: 32, fontSize: 12 }}
+                              />
+                              <label style={{ display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", padding: "8px 12px", background: "rgba(0,0,0,.02)", borderRadius: 8 }}>
+                                <input type="checkbox" checked={ac.is_active} onChange={() => updateAccessCode(ac.code, { is_active: !ac.is_active })} />
+                                <span style={{ fontWeight: 700, fontSize: 12 }}>Активен</span>
+                              </label>
+                              <button className="btnGhost" onClick={() => deleteAccessCode(ac.code)} style={{ padding: "6px 12px", fontSize: 12, minWidth: 60 }}>
+                                {t.delete}
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               )}
