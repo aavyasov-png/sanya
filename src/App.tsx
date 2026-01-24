@@ -45,7 +45,7 @@ const T = {
   ru: {
     welcome: "Добро\nпожаловать",
     enterCode: "Введите код доступа",
-    acceptRules: "Принимаю правила пользования",
+    acceptRules: "Принимаю правила",
     continue: "Продолжить",
     search: "Поиск",
     hello: "Здравствуйте",
