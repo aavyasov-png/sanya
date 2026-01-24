@@ -1152,7 +1152,7 @@ export default function App() {
                     }}
                     style={{ width: 20, height: 20, accentColor: "#6F00FF" }}
                   />
-                  <span style={{ fontWeight: 900 }}>Согласен с правилами</span>
+                  <span style={{ fontWeight: 900 }}>{t.acceptRules}</span>
                 </label>
 
                 {error ? (
