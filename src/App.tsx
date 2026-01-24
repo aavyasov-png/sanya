@@ -1264,7 +1264,7 @@ export default function App() {
             <div className="blockTitle">{t.news}</div>
             <div className="list">
               {news.slice(0, 4).map((n) => (
-                <div key={n.id} className="cardCream">
+                <div key={n.id} className="cardCream newsPreview" onClick={() => setRoute({ name: "news_card", newsId: n.id })}>
                   <div className="row" style={{ justifyContent: "space-between" }}>
                     <div className="newsTitle">
                       {n.pinned ? "📌 " : ""}
@@ -1272,7 +1272,7 @@ export default function App() {
                     </div>
                     <div className="newsMeta">{fmtDM(n.published_at)}</div>
                   </div>
-                  <div className="newsBody">{lang === "ru" ? n.body_ru : n.body_uz}</div>
+                  <div className="newsBodyPreview">{lang === "ru" ? n.body_ru : n.body_uz}</div>
                 </div>
               ))}
             </div>
