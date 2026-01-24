@@ -2092,7 +2092,7 @@ export default function App() {
         )}
 
         {adminTab === "faq" && (
-          <div>
+          <>
 
             <div className="headerBlock">
               <div className="h2">{t.manageFaq}</div>
@@ -2166,6 +2166,7 @@ export default function App() {
                 ))
               )}
             </div>
+          </>
         )}
 
         {route.name !== "welcome" ? (
