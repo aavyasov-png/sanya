@@ -1253,6 +1253,13 @@ export default function App() {
               </button>
             </div>
 
+            {/* кнопка над блоком новостей — с улучшенными анимациями */}
+            <div className="allSectionsContainer" style={{ display: "flex", justifyContent: "center", marginTop: "20px", marginBottom: "10px" }}>
+              <button className="btnGhost allSectionsBtn enhancedBtn" onClick={() => setRoute({ name: "sections_all" })}>
+                {t.allSections}
+              </button>
+            </div>
+
             {/* на главном — только последние 4, остальное в "Новости" */}
             <div className="blockTitle">{t.news}</div>
             <div className="list">
@@ -1272,12 +1279,7 @@ export default function App() {
 
             {renderSearchResults()}
 
-            {/* кнопка под каруселью — визуально поднята ближе к элементам */}
-            <div className="allSectionsContainer" style={{ display: "flex", justifyContent: "center" }}>
-              <button className="btnGhost allSectionsBtn" onClick={() => setRoute({ name: "sections_all" })}>
-                {t.allSections}
-              </button>
-            </div>
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
           </div>
         )}
 
