@@ -2087,86 +2087,86 @@ export default function App() {
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-        )}
 
-        {adminTab === "faq" && (
-          <>
+              {adminTab === "faq" && (
+                <>
 
-            <div className="headerBlock">
-              <div className="h2">{t.manageFaq}</div>
-            </div>
+                  <div className="headerBlock">
+                    <div className="h2">{t.manageFaq}</div>
+                  </div>
 
-            <div className="cardCream">
-              <div style={{ fontWeight: 950, marginBottom: 12 }}>{t.add}</div>
-              <div className="split">
-                <input
-                  className="input"
-                  placeholder={t.questionRu}
-                  value={faqForm.question_ru}
-                  onChange={(e) => setFaqForm({ ...faqForm, question_ru: e.target.value })}
-                />
-                <input
-                  className="input"
-                  placeholder={t.questionUz}
-                  value={faqForm.question_uz}
-                  onChange={(e) => setFaqForm({ ...faqForm, question_uz: e.target.value })}
-                />
-              </div>
-              <div className="split">
-                <textarea
-                  className="input"
-                  placeholder={t.answerRu}
-                  value={faqForm.answer_ru}
-                  onChange={(e) => setFaqForm({ ...faqForm, answer_ru: e.target.value })}
-                  rows={3}
-                />
-                <textarea
-                  className="input"
-                  placeholder={t.answerUz}
-                  value={faqForm.answer_uz}
-                  onChange={(e) => setFaqForm({ ...faqForm, answer_uz: e.target.value })}
-                  rows={3}
-                />
-              </div>
-              <div className="split">
-                <input
-                  className="input"
-                  type="number"
-                  placeholder={t.sort}
-                  value={faqForm.sort}
-                  onChange={(e) => setFaqForm({ ...faqForm, sort: parseInt(e.target.value) || 0 })}
-                />
-                <button className="btnPrimary" onClick={adminSaveFaq}>
-                  {t.save}
-                </button>
-              </div>
-            </div>
-
-            <div style={{ marginTop: 16, fontWeight: 950, fontSize: 14 }}>Список FAQ ({faq.length})</div>
-            <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
-              {faq.length === 0 ? (
-                <div style={{ textAlign: "center", padding: 20, color: "rgba(0,0,0,.5)", fontStyle: "italic" }}>Нет FAQ</div>
-              ) : (
-                faq.map((f) => (
-                  <div key={f.id} className="cardCream">
-                    <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 900, marginBottom: 4 }}>{f.question_ru}</div>
-                        <div style={{ color: "#666", marginBottom: 8 }}>{f.answer_ru}</div>
-                        <div style={{ fontWeight: 900, marginBottom: 4 }}>{f.question_uz}</div>
-                        <div style={{ color: "#666" }}>{f.answer_uz}</div>
-                      </div>
-                      <button className="btnGhost" onClick={() => adminDeleteFaq(f.id)}>
-                        {t.delete}
+                  <div className="cardCream">
+                    <div style={{ fontWeight: 950, marginBottom: 12 }}>{t.add}</div>
+                    <div className="split">
+                      <input
+                        className="input"
+                        placeholder={t.questionRu}
+                        value={faqForm.question_ru}
+                        onChange={(e) => setFaqForm({ ...faqForm, question_ru: e.target.value })}
+                      />
+                      <input
+                        className="input"
+                        placeholder={t.questionUz}
+                        value={faqForm.question_uz}
+                        onChange={(e) => setFaqForm({ ...faqForm, question_uz: e.target.value })}
+                      />
+                    </div>
+                    <div className="split">
+                      <textarea
+                        className="input"
+                        placeholder={t.answerRu}
+                        value={faqForm.answer_ru}
+                        onChange={(e) => setFaqForm({ ...faqForm, answer_ru: e.target.value })}
+                        rows={3}
+                      />
+                      <textarea
+                        className="input"
+                        placeholder={t.answerUz}
+                        value={faqForm.answer_uz}
+                        onChange={(e) => setFaqForm({ ...faqForm, answer_uz: e.target.value })}
+                        rows={3}
+                      />
+                    </div>
+                    <div className="split">
+                      <input
+                        className="input"
+                        type="number"
+                        placeholder={t.sort}
+                        value={faqForm.sort}
+                        onChange={(e) => setFaqForm({ ...faqForm, sort: parseInt(e.target.value) || 0 })}
+                      />
+                      <button className="btnPrimary" onClick={adminSaveFaq}>
+                        {t.save}
                       </button>
                     </div>
                   </div>
-                ))
+
+                  <div style={{ marginTop: 16, fontWeight: 950, fontSize: 14 }}>Список FAQ ({faq.length})</div>
+                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                    {faq.length === 0 ? (
+                      <div style={{ textAlign: "center", padding: 20, color: "rgba(0,0,0,.5)", fontStyle: "italic" }}>Нет FAQ</div>
+                    ) : (
+                      faq.map((f) => (
+                        <div key={f.id} className="cardCream">
+                          <div className="row" style={{ justifyContent: "space-between", alignItems: "flex-start" }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 900, marginBottom: 4 }}>{f.question_ru}</div>
+                              <div style={{ color: "#666", marginBottom: 8 }}>{f.answer_ru}</div>
+                              <div style={{ fontWeight: 900, marginBottom: 4 }}>{f.question_uz}</div>
+                              <div style={{ color: "#666" }}>{f.answer_uz}</div>
+                            </div>
+                            <button className="btnGhost" onClick={() => adminDeleteFaq(f.id)}>
+                              {t.delete}
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
               )}
             </div>
-          </>
+          </div>
         )}
 
         {route.name !== "welcome" ? (
