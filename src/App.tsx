@@ -577,7 +577,7 @@ export default function App() {
   const [particles, setParticles] = useState<Array<{x: number, y: number, vx: number, vy: number, life: number, maxLife: number}>>([]);
 
   const addParticles = (x: number, y: number) => {
-    const newParticles = [];
+    const newParticles: Array<{x: number, y: number, vx: number, vy: number, life: number, maxLife: number}> = [];
     for (let i = 0; i < 10; i++) {
       newParticles.push({
         x,
