@@ -225,8 +225,9 @@ function BottomBar(props: {
   userName: string;
   userPhoto: string;
   onSignOut: () => void;
+  onChat: () => void;
 }) {
-  const { userName, onSignOut } = props;
+  const { userName, onSignOut, onChat } = props;
   const userEmoji = useMemo(() => getRandomEmoji(), []); // Фиксируем смайлик при загрузке
 
   return (
@@ -237,6 +238,9 @@ function BottomBar(props: {
       <div className="userInfo">
         <div className="userName">{userName || "Guest"}</div>
       </div>
+      <button className="smallIconBtn" onClick={onChat} aria-label="Chat">
+        💬
+      </button>
       <button className="smallIconBtn signOutBtn" onClick={onSignOut} aria-label="Sign out">
         ✕
       </button>
@@ -1331,7 +1335,7 @@ export default function App() {
 
             {renderSearchResults()}
 
-            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} onChat={() => setRoute({ name: "chat" })} />
           </div>
         )}
 
@@ -1360,7 +1364,7 @@ export default function App() {
               ))}
             </div>
 
-            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} onChat={() => setRoute({ name: "chat" })} />
           </div>
         )}
 
@@ -1459,7 +1463,7 @@ export default function App() {
               ))}
             </div>
 
-            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} onChat={() => setRoute({ name: "chat" })} />
           </div>
         )}
 
@@ -1619,7 +1623,7 @@ export default function App() {
               ))}
             </div>
 
-            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} onChat={() => setRoute({ name: "chat" })} />
           </div>
         )}
 
@@ -1673,7 +1677,7 @@ export default function App() {
               );
             })()}
 
-            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} onChat={() => setRoute({ name: "chat" })} />
           </div>
         )}
 
@@ -2181,6 +2185,8 @@ export default function App() {
                 </>
               )}
             </div>
+
+            <BottomBar userName={userName} userPhoto="" onSignOut={adminSignOut} onChat={() => setRoute({ name: "chat" })} />
           </div>
         )}
 
@@ -2204,12 +2210,10 @@ export default function App() {
             </div>
 
             <Chat />
+
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} onChat={() => setRoute({ name: "chat" })} />
           </div>
         )}
-
-        {route.name !== "welcome" ? (
-          <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
-        ) : null}
 
         {toast ? <div className="toast">{toast}</div> : null}
       </div>
