@@ -7,68 +7,159 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true
 });
 
-const Chat: React.FC = () => {
-  const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
+type Message = {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  showOperatorButton?: boolean;
+};
+
+const Chat: React.FC<{ lang?: 'ru' | 'uz' }> = ({ lang = 'ru' }) => {
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [context, setContext] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [isApiKeySet, setIsApiKeySet] = useState(false);
 
   useEffect(() => {
     setIsApiKeySet(!!import.meta.env.VITE_OPENAI_API_KEY && import.meta.env.VITE_OPENAI_API_KEY !== 'your_openai_api_key');
-  }, []);
-
-  useEffect(() => {
-    // Load all content from Supabase
-    const loadContext = async () => {
-      const sections = await supabase.from('sections').select('title_ru, title_uz');
-      const cards = await supabase.from('cards').select('title_ru, title_uz, body_ru, body_uz');
-      const faq = await supabase.from('faq').select('question_ru, question_uz, answer_ru, answer_uz');
-      const news = await supabase.from('news').select('title_ru, title_uz, body_ru, body_uz');
-      const manual = await supabase.from('manual_sections').select('title, content');
-
-      const allContent = [
-        ...(sections.data || []).map(s => `${s.title_ru} ${s.title_uz}`),
-        ...(cards.data || []).map(c => `${c.title_ru} ${c.title_uz} ${c.body_ru} ${c.body_uz}`),
-        ...(faq.data || []).map(f => `${f.question_ru} ${f.question_uz} ${f.answer_ru} ${f.answer_uz}`),
-        ...(news.data || []).map(n => `${n.title_ru} ${n.title_uz} ${n.body_ru} ${n.body_uz}`),
-        ...(manual.data || []).map(m => `${m.title} ${m.content}`)
-      ].join('\n');
-
-      setContext(allContent);
+    
+    // Приветственное сообщение
+    const welcomeMessage: Message = {
+      role: 'assistant',
+      content: lang === 'ru' 
+        ? 'Здравствуйте! Я ваш помощник по работе с Uzum Market. Задайте мне любой вопрос о работе платформы, и я постараюсь помочь, используя официальную документацию.'
+        : 'Salom! Men sizning Uzum Market bilan ishlash bo\'yicha yordamchingizman. Menga platforma ishlashi haqida har qanday savol bering, men rasmiy hujjatlardan foydalanib yordam berishga harakat qilaman.'
     };
-    loadContext();
-  }, []);
+    setMessages([welcomeMessage]);
+  }, [lang]);
+
+  // Поиск релевантных секций в мануале
+  const searchManual = async (query: string): Promise<string> => {
+    try {
+      // Поиск по ключевым словам в заголовках и контенте
+      const { data, error } = await supabase
+        .from('manual_sections')
+        .select('*')
+        .or(lang === 'ru' 
+          ? `title_ru.ilike.%${query}%,content_ru.ilike.%${query}%`
+          : `title_uz.ilike.%${query}%,content_uz.ilike.%${query}%`)
+        .limit(3);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        return '';
+      }
+
+      // Формируем контекст из найденных секций
+      const context = data.map(section => {
+        const title = lang === 'ru' ? section.title_ru : section.title_uz;
+        const content = lang === 'ru' ? section.content_ru : section.content_uz;
+        return `# ${title}\n${content?.substring(0, 2000) || ''}`;
+      }).join('\n\n');
+
+      return context;
+    } catch (error) {
+      console.error('Error searching manual:', error);
+      return '';
+    }
+  };
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
-    const userMessage = { role: 'user' as const, content: input };
+    const userMessage: Message = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setIsLoading(true);
 
     if (!isApiKeySet) {
-      const errorMessage = { role: 'assistant' as const, content: 'Ключ API OpenAI не настроен. Обратитесь к администратору.' };
+      const errorMessage: Message = { 
+        role: 'assistant', 
+        content: lang === 'ru' 
+          ? 'Ключ API OpenAI не настроен. Обратитесь к администратору.' 
+          : 'OpenAI API kaliti sozlanmagan. Ma\'murga murojaat qiling.',
+        showOperatorButton: true
+      };
       setMessages(prev => [...prev, errorMessage]);
+      setIsLoading(false);
       return;
     }
 
     try {
-      // Generate response with OpenAI
+      // Поиск релевантного контента в мануале
+      const manualContext = await searchManual(input);
+
+      const systemPrompt = lang === 'ru'
+        ? `Ты - профессиональный помощник службы поддержки Uzum Market для продавцов. 
+
+ВАЖНЫЕ ПРАВИЛА:
+1. Отвечай ТОЛЬКО на основе предоставленной документации
+2. Если в документации нет ответа на вопрос, честно скажи об этом и предложи связаться с оператором
+3. Отвечай кратко и по делу (максимум 3-4 предложения)
+4. Используй дружелюбный тон
+5. Если вопрос неясен, попроси уточнить
+
+${manualContext ? `ДОКУМЕНТАЦИЯ:\n${manualContext}` : 'ВНИМАНИЕ: По данному запросу не найдена релевантная документация. Предложи пользователю связаться с оператором.'}`
+        : `Siz Uzum Market sotuvchilari uchun professional yordam xizmati yordamchisisiz.
+
+MUHIM QOIDALAR:
+1. FAQAT taqdim etilgan hujjatlar asosida javob bering
+2. Agar hujjatlarda savolga javob bo'lmasa, buni halol aytib, operator bilan bog'lanishni taklif qiling
+3. Qisqa va aniq javob bering (maksimum 3-4 ta gap)
+4. Do'stona ohangda gaplashing
+5. Agar savol aniq bo'lmasa, aniqlashtrishni so'rang
+
+${manualContext ? `HUJJATLAR:\n${manualContext}` : 'DIQQAT: Ushbu so\'rov bo\'yicha tegishli hujjatlar topilmadi. Foydalanuvchiga operator bilan bog\'lanishni taklif qiling.'}`;
+
       const completion = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         messages: [
-          { role: 'system', content: `You are a support bot for Uzum app. Use the following manual content to answer questions in Russian or Uzbek: ${context}` },
-          userMessage
-        ]
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: input }
+        ],
+        temperature: 0.7,
+        max_tokens: 500
       });
 
-      const assistantMessage = { role: 'assistant' as const, content: completion.choices[0].message.content || '' };
+      const responseText = completion.choices[0].message.content || '';
+      
+      // Проверяем, есть ли указание на отсутствие информации
+      const shouldShowOperator = !manualContext || 
+        responseText.toLowerCase().includes('оператор') ||
+        responseText.toLowerCase().includes('operator') ||
+        responseText.toLowerCase().includes('не могу') ||
+        responseText.toLowerCase().includes('не нашел');
+
+      const assistantMessage: Message = { 
+        role: 'assistant', 
+        content: responseText,
+        showOperatorButton: shouldShowOperator
+      };
+      
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error('Error generating response:', error);
-      const errorMessage = { role: 'assistant' as const, content: 'Извините, произошла ошибка при обработке вашего запроса. Попробуйте позже.' };
+      const errorMessage: Message = { 
+        role: 'assistant', 
+        content: lang === 'ru'
+          ? 'Извините, произошла ошибка при обработке вашего запроса. Попробуйте позже или свяжитесь с оператором.'
+          : 'Kechirasiz, so\'rovingizni qayta ishlashda xatolik yuz berdi. Keyinroq urinib ko\'ring yoki operator bilan bog\'laning.',
+        showOperatorButton: true
+      };
       setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleContactOperator = () => {
+    const operatorMessage: Message = {
+      role: 'assistant',
+      content: lang === 'ru'
+        ? '📞 Свяжитесь с нашим оператором:\n\n✉️ Email: partners@uzum.uz\n📱 Telegram: @umarket_business_bot\n\nОператор ответит вам в ближайшее время!'
+        : '📞 Operatorimiz bilan bog\'laning:\n\n✉️ Email: partners@uzum.uz\n📱 Telegram: @umarket_business_bot\n\nOperator tez orada javob beradi!'
+    };
+    setMessages(prev => [...prev, operatorMessage]);
   };
 
   return (
@@ -88,58 +179,119 @@ const Chat: React.FC = () => {
         gap: '12px' 
       }} ref={(el) => { if (el) el.scrollTop = el.scrollHeight; }}>
         {messages.map((msg, i) => (
-          <div key={i} style={{ 
-            display: 'flex', 
-            justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-            marginBottom: '8px'
-          }}>
-            {msg.role === 'assistant' && (
-              <div style={{ 
-                width: '32px', 
-                height: '32px', 
-                borderRadius: '50%', 
-                backgroundColor: '#6F00FF', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                color: 'white', 
-                fontSize: '14px', 
-                marginRight: '8px',
-                flexShrink: 0
-              }}>
-                🤖
-              </div>
-            )}
+          <div key={i}>
             <div style={{ 
-              maxWidth: '70%', 
-              padding: '12px 16px', 
-              borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px', 
-              backgroundColor: msg.role === 'user' ? '#6F00FF' : 'white', 
-              color: msg.role === 'user' ? 'white' : '#333', 
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)', 
-              wordWrap: 'break-word'
+              display: 'flex', 
+              justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+              marginBottom: '8px'
             }}>
-              {msg.content}
-            </div>
-            {msg.role === 'user' && (
+              {msg.role === 'assistant' && (
+                <div style={{ 
+                  width: '32px', 
+                  height: '32px', 
+                  borderRadius: '50%', 
+                  backgroundColor: '#6F00FF', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  color: 'white', 
+                  fontSize: '14px', 
+                  marginRight: '8px',
+                  flexShrink: 0
+                }}>
+                  🤖
+                </div>
+              )}
               <div style={{ 
-                width: '32px', 
-                height: '32px', 
-                borderRadius: '50%', 
-                backgroundColor: '#ddd', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                color: '#333', 
-                fontSize: '14px', 
-                marginLeft: '8px',
-                flexShrink: 0
+                maxWidth: '70%', 
+                padding: '12px 16px', 
+                borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px', 
+                backgroundColor: msg.role === 'user' ? '#6F00FF' : 'white', 
+                color: msg.role === 'user' ? 'white' : '#333', 
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)', 
+                wordWrap: 'break-word',
+                whiteSpace: 'pre-wrap'
               }}>
-                👤
+                {msg.content}
+              </div>
+              {msg.role === 'user' && (
+                <div style={{ 
+                  width: '32px', 
+                  height: '32px', 
+                  borderRadius: '50%', 
+                  backgroundColor: '#ddd', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  color: '#333', 
+                  fontSize: '14px', 
+                  marginLeft: '8px',
+                  flexShrink: 0
+                }}>
+                  👤
+                </div>
+              )}
+            </div>
+            {msg.showOperatorButton && (
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'flex-start',
+                paddingLeft: '40px',
+                marginTop: '8px'
+              }}>
+                <button
+                  onClick={handleContactOperator}
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#28a745',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '20px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  {lang === 'ru' ? '📞 Связаться с оператором' : '📞 Operator bilan bog\'laning'}
+                </button>
               </div>
             )}
           </div>
         ))}
+        {isLoading && (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'flex-start',
+            marginBottom: '8px'
+          }}>
+            <div style={{ 
+              width: '32px', 
+              height: '32px', 
+              borderRadius: '50%', 
+              backgroundColor: '#6F00FF', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              color: 'white', 
+              fontSize: '14px', 
+              marginRight: '8px',
+              flexShrink: 0
+            }}>
+              🤖
+            </div>
+            <div style={{ 
+              padding: '12px 16px', 
+              borderRadius: '18px 18px 18px 4px', 
+              backgroundColor: 'white', 
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+            }}>
+              <span style={{ color: '#6F00FF' }}>●</span>
+              <span style={{ color: '#6F00FF', animation: 'blink 1s infinite' }}>●</span>
+              <span style={{ color: '#6F00FF', animation: 'blink 1s infinite 0.2s' }}>●</span>
+            </div>
+          </div>
+        )}
       </div>
       <div style={{ 
         padding: '16px', 
@@ -151,31 +303,34 @@ const Chat: React.FC = () => {
         <input
           value={input}
           onChange={e => setInput(e.target.value)}
-          onKeyPress={e => e.key === 'Enter' && handleSend()}
-          placeholder="Введите вопрос..."
+          onKeyPress={e => e.key === 'Enter' && !isLoading && handleSend()}
+          placeholder={lang === 'ru' ? 'Введите вопрос...' : 'Savolingizni kiriting...'}
+          disabled={isLoading}
           style={{ 
             flex: 1, 
             padding: '12px 16px', 
             border: '1px solid #ccc', 
             borderRadius: '24px', 
             outline: 'none', 
-            fontSize: '16px'
+            fontSize: '16px',
+            opacity: isLoading ? 0.6 : 1
           }}
         />
         <button 
           onClick={handleSend} 
+          disabled={isLoading}
           style={{ 
             padding: '12px 20px', 
             border: 'none', 
             borderRadius: '24px', 
-            backgroundColor: '#6F00FF', 
+            backgroundColor: isLoading ? '#ccc' : '#6F00FF', 
             color: 'white', 
-            cursor: 'pointer', 
+            cursor: isLoading ? 'not-allowed' : 'pointer', 
             fontSize: '16px', 
             fontWeight: 'bold'
           }}
         >
-          Отправить
+          {lang === 'ru' ? 'Отправить' : 'Yuborish'}
         </button>
       </div>
     </div>

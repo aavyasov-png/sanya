@@ -49,7 +49,7 @@ async function crawlPage(url: string, visited: Set<string> = new Set()): Promise
     }
 
     // Сохраняем в Supabase
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('manual_sections')
       .insert([{ 
         title_ru: titleRu,
