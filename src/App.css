@@ -135,42 +135,68 @@ body{
 .iconBtn:active{ transform: scale(.98); }
 
 .smallIconBtn{
-  width:46px;
-  height:46px;
-  min-width:46px;
-  border-radius:var(--r-md);
-  border:3px solid var(--accent);
-  background:rgba(112,0,255,.09);
+  width:50px;
+  height:50px;
+  min-width:50px;
+  border-radius:16px;
+  border:none;
+  background: linear-gradient(145deg, #ffffff 0%, #f5f5ff 100%);
   color:var(--accent);
   cursor:pointer;
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:19px;
+  font-size:20px;
   font-weight:900;
-  transition:transform .15s cubic-bezier(.22,.1,.36,.9), box-shadow .15s ease, background .15s ease;
+  transition:all .22s cubic-bezier(.22,.1,.36,.9);
   flex-shrink:0;
-  box-shadow: 0 3px 10px rgba(112,0,255,.15), inset 0 1px 0 rgba(255,255,255,.3);
+  box-shadow: 
+    0 6px 20px rgba(112,0,255,.18),
+    0 2px 8px rgba(0,0,0,.08),
+    inset 0 1px 2px rgba(255,255,255,.95),
+    inset 0 0 0 1px rgba(112,0,255,.15);
   position: relative;
+  overflow: hidden;
 }
 .smallIconBtn::before{
   content: '';
   position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: var(--gradient-primary);
+  opacity: 0;
+  transition: opacity .3s cubic-bezier(.22,.1,.36,.9);
+  z-index: -1;
+}
+.smallIconBtn::after{
+  content: '';
+  position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: var(--gradient-glow);
-  opacity: 0;
-  transition: opacity .2s ease;
+  background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,.4) 50%, transparent 100%);
+  transform: translateX(-100%);
+  transition: transform .5s ease;
 }
 .smallIconBtn:active{
-  transform:scale(.94);
+  transform:scale(.95) translateY(1px);
+  box-shadow: 
+    0 3px 12px rgba(112,0,255,.15),
+    0 1px 4px rgba(0,0,0,.06),
+    inset 0 1px 2px rgba(255,255,255,.9);
 }
 .smallIconBtn:hover{
-  background:rgba(112,0,255,.18);
-  box-shadow:0 6px 20px rgba(112,0,255,.28), inset 0 1px 0 rgba(255,255,255,.4);
+  transform: translateY(-3px);
+  box-shadow:
+    0 10px 32px rgba(112,0,255,.28),
+    0 4px 12px rgba(0,0,0,.1),
+    inset 0 1px 2px rgba(255,255,255,1),
+    inset 0 0 0 2px rgba(112,0,255,.25);
 }
 .smallIconBtn:hover::before{
-  opacity: 0.3;
+  opacity: 0.08;
+}
+.smallIconBtn:hover::after{
+  transform: translateX(100%);
 }
 
 .searchWrap{
@@ -892,26 +918,66 @@ body{
 }
 
 .bottombar .signOutBtn{
-  width:44px;
-  height:44px;
-  background:rgba(255,255,255,.2);
-  border:2px solid rgba(255,255,255,.45);
+  width:48px;
+  height:48px;
+  background: linear-gradient(145deg, rgba(255,255,255,.28) 0%, rgba(255,255,255,.18) 100%);
+  border:none;
   color:#fff;
-  font-size:18px;
-  border-radius:12px;
-  transition: all .18s cubic-bezier(.22,.1,.36,.9);
+  font-size:20px;
+  border-radius:14px;
+  transition: all .22s cubic-bezier(.22,.1,.36,.9);
   box-shadow: 
-    0 3px 10px rgba(0,0,0,.2),
-    inset 0 1px 0 rgba(255,255,255,.25);
+    0 4px 16px rgba(0,0,0,.15),
+    0 2px 6px rgba(0,0,0,.08),
+    inset 0 2px 4px rgba(255,255,255,.35),
+    inset 0 0 0 1px rgba(255,255,255,.4);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.bottombar .signOutBtn::before{
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(145deg, rgba(255,255,255,.4) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+
+.bottombar .signOutBtn::after{
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,.5) 50%, transparent 100%);
+  transform: translateX(-100%);
+  transition: transform .5s ease;
 }
 
 .bottombar .signOutBtn:hover{
-  transform: translateY(-2px);
-  background:rgba(255,255,255,.3);
+  transform: translateY(-3px) scale(1.02);
+  background: linear-gradient(145deg, rgba(255,255,255,.38) 0%, rgba(255,255,255,.25) 100%);
   box-shadow:
-    0 6px 18px rgba(0,0,0,.25),
-    inset 0 1px 0 rgba(255,255,255,.35);
-  border-color:rgba(255,255,255,.65);
+    0 8px 24px rgba(0,0,0,.2),
+    0 4px 10px rgba(0,0,0,.1),
+    inset 0 2px 6px rgba(255,255,255,.45),
+    inset 0 0 0 2px rgba(255,255,255,.5);
+}
+
+.bottombar .signOutBtn:hover::before{
+  opacity: 1;
+}
+
+.bottombar .signOutBtn:hover::after{
+  transform: translateX(100%);
+}
+
+.bottombar .signOutBtn:active{
+  transform: translateY(-1px) scale(0.98);
+  box-shadow:
+    0 4px 14px rgba(0,0,0,.15),
+    0 2px 6px rgba(0,0,0,.08),
+    inset 0 2px 4px rgba(255,255,255,.35);
 }
 
 /* Animations and motion polish */
@@ -1364,36 +1430,39 @@ body{
 
 /* Checkbox styling for rules acceptance */
 input[type="checkbox"] {
-  width: 22px;
-  height: 22px;
-  border: 3px solid var(--accent);
-  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 8px;
   cursor: pointer;
   appearance: none;
-  background: rgba(255,255,255,.9);
+  background: linear-gradient(145deg, #ffffff 0%, #faf9ff 100%);
   position: relative;
   transition: all .25s cubic-bezier(.22,.1,.36,.9);
   flex-shrink: 0;
   box-shadow: 
-    0 2px 6px rgba(112,0,255,.12),
-    inset 0 1px 0 rgba(255,255,255,.5);
+    0 4px 12px rgba(112,0,255,.15),
+    0 2px 6px rgba(0,0,0,.06),
+    inset 0 1px 2px rgba(255,255,255,.95),
+    inset 0 0 0 2px rgba(112,0,255,.2);
 }
 
 input[type="checkbox"]:hover {
-  border-color: var(--accentLight);
-  background: rgba(255,255,255,1);
+  background: linear-gradient(145deg, #ffffff 0%, #f5f3ff 100%);
   box-shadow: 
-    0 4px 12px rgba(112,0,255,.2),
-    inset 0 1px 0 rgba(255,255,255,.6);
-  transform: scale(1.05);
+    0 6px 18px rgba(112,0,255,.25),
+    0 2px 8px rgba(0,0,0,.08),
+    inset 0 1px 2px rgba(255,255,255,1),
+    inset 0 0 0 2px rgba(112,0,255,.35);
+  transform: scale(1.08);
 }
 
 input[type="checkbox"]:checked {
   background: var(--gradient-primary);
-  border-color: var(--accent);
   box-shadow: 
-    0 4px 16px rgba(112,0,255,.3),
-    inset 0 2px 0 rgba(255,255,255,.25);
+    0 6px 20px rgba(112,0,255,.35),
+    0 2px 8px rgba(0,0,0,.1),
+    inset 0 2px 4px rgba(255,255,255,.25);
 }
 
 input[type="checkbox"]:checked::after {
@@ -1401,73 +1470,170 @@ input[type="checkbox"]:checked::after {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(1);
   color: #fff;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 900;
-  text-shadow: 0 1px 2px rgba(0,0,0,.2);
+  text-shadow: 0 2px 4px rgba(0,0,0,.3);
+  animation: checkmarkPop .3s cubic-bezier(.22,.1,.36,.9) both;
+}
+
+@keyframes checkmarkPop {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
 }
 
 /* Rules toggle button */
 .rulesToggle {
   width: 100%;
-  padding: 12px 16px;
-  border: 2px solid rgba(112,0,255,.25);
-  border-radius: var(--r-md);
-  background: rgba(112,0,255,.06);
+  padding: 16px 20px;
+  border: none;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #ffffff 0%, #faf9ff 100%);
   color: var(--dark);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 900;
   cursor: pointer;
-  transition: all .22s cubic-bezier(.22,.1,.36,.9);
+  transition: all .25s cubic-bezier(.22,.1,.36,.9);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 2px 6px rgba(112,0,255,.08);
+  box-shadow: 
+    0 6px 20px rgba(112,0,255,.12),
+    0 2px 8px rgba(0,0,0,.06),
+    inset 0 1px 2px rgba(255,255,255,.95),
+    inset 0 0 0 1px rgba(112,0,255,.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.rulesToggle::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--gradient-glow);
+  opacity: 0;
+  transition: opacity .3s ease;
+  border-radius: inherit;
+}
+
+.rulesToggle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,.6) 50%, transparent 100%);
+  transform: translateX(-100%);
+  transition: transform .6s ease;
+}
+
+.rulesToggle span {
+  position: relative;
+  z-index: 1;
 }
 
 .rulesToggle:hover {
-  background: rgba(112,0,255,.12);
-  border-color: rgba(112,0,255,.4);
-  box-shadow: 0 4px 12px rgba(112,0,255,.15);
-  transform: translateY(-1px);
+  background: linear-gradient(145deg, #ffffff 0%, #f5f3ff 100%);
+  box-shadow: 
+    0 10px 32px rgba(112,0,255,.2),
+    0 4px 12px rgba(0,0,0,.08),
+    inset 0 1px 3px rgba(255,255,255,1),
+    inset 0 0 0 2px rgba(112,0,255,.25);
+  transform: translateY(-2px);
+}
+
+.rulesToggle:hover::before {
+  opacity: 0.05;
+}
+
+.rulesToggle:hover::after {
+  transform: translateX(100%);
 }
 
 .rulesToggle:active {
   transform: translateY(0) scale(0.98);
+  box-shadow: 
+    0 4px 16px rgba(112,0,255,.15),
+    0 2px 6px rgba(0,0,0,.06),
+    inset 0 1px 2px rgba(255,255,255,.9);
 }
 
 /* Rules content */
 .rulesContent {
-  margin-top: 12px;
-  padding: 16px;
-  border-radius: var(--r-md);
-  background: rgba(255,255,255,.7);
-  border: 2px solid rgba(112,0,255,.15);
+  margin-top: 14px;
+  padding: 20px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(255,255,255,.95) 0%, rgba(250,248,255,.95) 100%);
+  border: 2px solid rgba(112,0,255,.2);
   font-size: 13px;
-  line-height: 1.6;
-  color: rgba(0,0,0,.75);
-  max-height: 200px;
+  line-height: 1.8;
+  color: rgba(0,0,0,.8);
+  max-height: 220px;
   overflow-y: auto;
-  box-shadow: inset 0 2px 8px rgba(0,0,0,.05);
+  box-shadow: 
+    0 6px 20px rgba(112,0,255,.12),
+    inset 0 2px 12px rgba(112,0,255,.06);
+  animation: rulesSlideDown .3s cubic-bezier(.22,.1,.36,.9) both;
+}
+
+@keyframes rulesSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 220px;
+  }
+}
+
+.rulesContent ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.rulesContent li {
+  margin-bottom: 8px;
+  font-weight: 500;
+  position: relative;
+  padding-left: 8px;
+}
+
+.rulesContent li::marker {
+  color: var(--accent);
+  font-weight: 900;
 }
 
 .rulesContent::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .rulesContent::-webkit-scrollbar-track {
   background: rgba(112,0,255,.08);
-  border-radius: 3px;
+  border-radius: 4px;
+  margin: 4px 0;
 }
 
 .rulesContent::-webkit-scrollbar-thumb {
-  background: var(--accent);
-  border-radius: 3px;
+  background: var(--gradient-primary);
+  border-radius: 4px;
+  border: 2px solid rgba(255,255,255,.3);
+  box-shadow: 0 2px 6px rgba(112,0,255,.2);
 }
 
 .rulesContent::-webkit-scrollbar-thumb:hover {
-  background: var(--accentLight);
+  background: linear-gradient(135deg, #8B2FFF 0%, #B366FF 100%);
+  box-shadow: 0 4px 12px rgba(112,0,255,.3);
 }
 
 /* Error message styling */
