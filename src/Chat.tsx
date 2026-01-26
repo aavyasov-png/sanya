@@ -72,22 +72,112 @@ const Chat: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '16px' }}>
-      <div style={{ height: '400px', overflowY: 'auto', marginBottom: '16px', border: '1px solid #ccc', padding: '8px' }}>
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      height: '100%', 
+      backgroundColor: '#f5f5f5', 
+      fontFamily: 'Arial, sans-serif' 
+    }}>
+      <div style={{ 
+        flex: 1, 
+        overflowY: 'auto', 
+        padding: '16px', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '12px' 
+      }} ref={(el) => { if (el) el.scrollTop = el.scrollHeight; }}>
         {messages.map((msg, i) => (
-          <div key={i} style={{ marginBottom: '8px' }}>
-            <strong>{msg.role === 'user' ? 'Вы:' : 'Бот:'}</strong> {msg.content}
+          <div key={i} style={{ 
+            display: 'flex', 
+            justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+            marginBottom: '8px'
+          }}>
+            {msg.role === 'assistant' && (
+              <div style={{ 
+                width: '32px', 
+                height: '32px', 
+                borderRadius: '50%', 
+                backgroundColor: '#6F00FF', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                color: 'white', 
+                fontSize: '14px', 
+                marginRight: '8px',
+                flexShrink: 0
+              }}>
+                🤖
+              </div>
+            )}
+            <div style={{ 
+              maxWidth: '70%', 
+              padding: '12px 16px', 
+              borderRadius: msg.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px', 
+              backgroundColor: msg.role === 'user' ? '#6F00FF' : 'white', 
+              color: msg.role === 'user' ? 'white' : '#333', 
+              boxShadow: '0 2px 4px rgba(0,0,0,0.1)', 
+              wordWrap: 'break-word'
+            }}>
+              {msg.content}
+            </div>
+            {msg.role === 'user' && (
+              <div style={{ 
+                width: '32px', 
+                height: '32px', 
+                borderRadius: '50%', 
+                backgroundColor: '#ddd', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                color: '#333', 
+                fontSize: '14px', 
+                marginLeft: '8px',
+                flexShrink: 0
+              }}>
+                👤
+              </div>
+            )}
           </div>
         ))}
       </div>
-      <input
-        value={input}
-        onChange={e => setInput(e.target.value)}
-        onKeyPress={e => e.key === 'Enter' && handleSend()}
-        placeholder="Введите вопрос..."
-        style={{ width: '100%', padding: '8px', marginBottom: '8px' }}
-      />
-      <button onClick={handleSend} style={{ width: '100%', padding: '8px' }}>Отправить</button>
+      <div style={{ 
+        padding: '16px', 
+        borderTop: '1px solid #e0e0e0', 
+        backgroundColor: 'white', 
+        display: 'flex', 
+        gap: '8px'
+      }}>
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyPress={e => e.key === 'Enter' && handleSend()}
+          placeholder="Введите вопрос..."
+          style={{ 
+            flex: 1, 
+            padding: '12px 16px', 
+            border: '1px solid #ccc', 
+            borderRadius: '24px', 
+            outline: 'none', 
+            fontSize: '16px'
+          }}
+        />
+        <button 
+          onClick={handleSend} 
+          style={{ 
+            padding: '12px 20px', 
+            border: 'none', 
+            borderRadius: '24px', 
+            backgroundColor: '#6F00FF', 
+            color: 'white', 
+            cursor: 'pointer', 
+            fontSize: '16px', 
+            fontWeight: 'bold'
+          }}
+        >
+          Отправить
+        </button>
+      </div>
     </div>
   );
 };
