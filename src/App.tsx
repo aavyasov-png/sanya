@@ -175,10 +175,9 @@ function TopBar(props: {
   setSearch: (v: string) => void;
   onBack: () => void;
   onHome: () => void;
-  onChat: () => void;
   rightSlot?: ReactNode;
 }) {
-  const { t, lang, setLang, showSearch, search, setSearch, onBack, onHome, onChat, rightSlot } = props;
+  const { t, lang, setLang, showSearch, search, setSearch, onBack, onHome, rightSlot } = props;
 
   return (
     <div className="topbar" style={{ padding: "8px 16px" }}>
@@ -222,9 +221,8 @@ function BottomBar(props: {
   userName: string;
   userPhoto: string;
   onSignOut: () => void;
-  onChat: () => void;
 }) {
-  const { userName, onSignOut, onChat } = props;
+  const { userName, onSignOut } = props;
   const userEmoji = useMemo(() => getRandomEmoji(), []); // Фиксируем смайлик при загрузке
 
   return (
@@ -1242,7 +1240,6 @@ export default function App() {
               setSearch={setSearch}
               onBack={goBack}
               onHome={goHome}
-              onChat={() => setRoute({ name: "chat" })}
               rightSlot={undefined}
             />
 
@@ -1329,7 +1326,7 @@ export default function App() {
 
             {renderSearchResults()}
 
-            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} onChat={() => setRoute({ name: "chat" })} />
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
           </div>
         )}
 
@@ -1344,7 +1341,6 @@ export default function App() {
               setSearch={setSearch}
               onBack={goBack}
               onHome={goHome}
-              onChat={() => setRoute({ name: "chat" })}
             />
 
             <div className="headerBlock">
@@ -1358,7 +1354,7 @@ export default function App() {
               ))}
             </div>
 
-            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} onChat={() => setRoute({ name: "chat" })} />
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
           </div>
         )}
 
@@ -1373,7 +1369,6 @@ export default function App() {
               setSearch={setSearch}
               onBack={goBack}
               onHome={goHome}
-              onChat={() => setRoute({ name: "chat" })}
             />
 
             <div className="headerBlock">
@@ -1427,7 +1422,6 @@ export default function App() {
               setSearch={setSearch}
               onBack={goBack}
               onHome={goHome}
-              onChat={() => setRoute({ name: "chat" })}
             />
 
             <div className="headerBlock">
@@ -1457,7 +1451,7 @@ export default function App() {
               ))}
             </div>
 
-            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} onChat={() => setRoute({ name: "chat" })} />
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
           </div>
         )}
 
@@ -1472,7 +1466,6 @@ export default function App() {
               setSearch={setSearch}
               onBack={goBack}
               onHome={goHome}
-              onChat={() => setRoute({ name: "chat" })}
             />
 
             {(() => {
@@ -1555,7 +1548,6 @@ export default function App() {
               setSearch={setSearch}
               onBack={goBack}
               onHome={goHome}
-              onChat={() => setRoute({ name: "chat" })}
             />
 
             <div className="headerBlock">
@@ -1617,7 +1609,7 @@ export default function App() {
               ))}
             </div>
 
-            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} onChat={() => setRoute({ name: "chat" })} />
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
           </div>
         )}
 
@@ -1632,7 +1624,6 @@ export default function App() {
               setSearch={setSearch}
               onBack={goBack}
               onHome={goHome}
-              onChat={() => setRoute({ name: "chat" })}
             />
 
             {(() => {
@@ -1671,7 +1662,7 @@ export default function App() {
               );
             })()}
 
-            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} onChat={() => setRoute({ name: "chat" })} />
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
           </div>
         )}
 
@@ -1686,7 +1677,6 @@ export default function App() {
               setSearch={setSearch}
               onBack={() => setAdminTab("")}
               onHome={goHome}
-              onChat={() => setRoute({ name: "chat" })}
               rightSlot={
                 <button className="btnGhost" onClick={adminSignOut}>
                   {t.signOut}
@@ -2183,7 +2173,7 @@ export default function App() {
               )}
             </div>
 
-            <BottomBar userName={userName} userPhoto="" onSignOut={adminSignOut} onChat={() => setRoute({ name: "chat" })} />
+            <BottomBar userName={userName} userPhoto="" onSignOut={adminSignOut} />
           </div>
         )}
 
@@ -2199,7 +2189,6 @@ export default function App() {
               setSearch={setSearch}
               onBack={goBack}
               onHome={goHome}
-              onChat={() => setRoute({ name: "chat" })}
             />
 
             <div className="headerBlock">
@@ -2209,7 +2198,7 @@ export default function App() {
 
             <Chat />
 
-            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} onChat={() => setRoute({ name: "chat" })} />
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
           </div>
         )}
         */}
