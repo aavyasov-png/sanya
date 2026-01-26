@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useMemo, useState, useRef } from "react";
 import { supabase } from "./supabase";
 import "./App.css";
 import Chat from "./Chat";
-import { runCrawl } from "../scripts/crawl.ts";
+import { runCrawl } from "../scripts/crawls";
 
 type Lang = "ru" | "uz";
 
