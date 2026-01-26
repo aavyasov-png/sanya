@@ -1375,6 +1375,7 @@ export default function App() {
               setSearch={setSearch}
               onBack={goBack}
               onHome={goHome}
+              onChat={() => setRoute({ name: "chat" })}
             />
 
             <div className="headerBlock">
