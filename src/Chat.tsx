@@ -130,7 +130,7 @@ ${manualContext ? `HUJJATLAR:\n${manualContext}` : 'DIQQAT: Ushbu so\'rov bo\'yi
       
       const completion = AI_PROVIDER === 'groq' 
         ? await groq.chat.completions.create({
-            model: 'llama-3.1-70b-versatile', // Быстрая и умная модель
+            model: 'llama-3.3-70b-versatile', // Новая актуальная модель
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: input }
