@@ -1421,21 +1421,16 @@ export default function App() {
                   const hasMore = body.split("\n").length > 3;
 
                   return (
-                    <div key={c.id} className="cardCream">
+                    <div 
+                      key={c.id} 
+                      className="cardCream cardClickable"
+                      onClick={() => setRoute({ name: "card", cardId: c.id })}
+                    >
                       <div className="cardTitle">{getCardTitle(c)}</div>
 
                       <div className="cardPreview">
                         {preview}
                         {hasMore ? "\n..." : ""}
-                      </div>
-
-                      <div className="cardActions">
-                        <button className="btnGhost" onClick={() => setRoute({ name: "card", cardId: c.id })}>
-                          {t.open}
-                        </button>
-                        <button className="btnPrimary" onClick={() => copyText(body)}>
-                          {t.copyAll}
-                        </button>
                       </div>
                     </div>
                   );

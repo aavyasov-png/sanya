@@ -755,7 +755,34 @@ body{
   line-height:1.35;
   white-space:pre-wrap;
   word-break:break-word;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  min-height: 57px;
 }
+
+/* Кликабельные карточки в разделе */
+.cardClickable {
+  cursor: pointer;
+  transition: all .22s cubic-bezier(.22,.1,.36,.9);
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cardClickable:hover {
+  transform: translateY(-3px);
+  box-shadow: 
+    0 12px 40px rgba(112,0,255,.25),
+    0 4px 16px rgba(0,0,0,.1),
+    inset 0 2px 0 rgba(255,255,255,.8);
+}
+
+.cardClickable:active {
+  transform: translateY(-1px) scale(0.98);
+}
+
 .cardActions{
   margin-top:14px;
   display:flex;
@@ -1249,7 +1276,7 @@ body{
   top: calc(100% + 8px);
   left: 0;
   right: 0;
-  max-height: 500px;
+  max-height: 70vh;
   overflow-y: auto;
   background: linear-gradient(180deg, #ffffff 0%, #fefefe 100%);
   border: 3px solid var(--accent);
