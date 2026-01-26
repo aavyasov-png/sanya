@@ -1,5 +1,3 @@
-import axios from 'axios';
-import * as cheerio from 'cheerio';
 import { supabase } from '../src/supabase.js'; // Adjust path if needed
 
 const MANUAL_URL = 'https://seller.uzum.uz/manual';
@@ -9,14 +7,16 @@ async function crawlPage(url, visited = new Set()) {
   visited.add(url);
 
   try {
-    const response = await axios.get(url);
-    const $ = cheerio.load(response.data);
+    const response = await fetch(url);
+    const html = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
 
     // Extract title
-    const title = $('title').text() || $('h1').first().text() || 'No title';
+    const title = doc.querySelector('title')?.textContent || doc.querySelector('h1')?.textContent || 'No title';
 
     // Extract content (all text)
-    const content = $('body').text().replace(/\s+/g, ' ').trim().substring(0, 5000); // Limit to 5000 chars
+    const content = doc.body?.textContent?.replace(/\s+/g, ' ').trim().substring(0, 5000) || '';
 
     // Save to Supabase
     const { data, error } = await supabase
@@ -25,30 +25,30 @@ async function crawlPage(url, visited = new Set()) {
 
     if (error) console.error('Insert error:', error);
 
-    // Find links to other pages (relative or absolute)
-    $('a[href]').each((i, elem) => {
-      const link = $(elem).attr('href');
-      if (link) {
+    // Find links to other pages
+    const links = doc.querySelectorAll('a[href]');
+    for (const link of links) {
+      const href = link.getAttribute('href');
+      if (href) {
         let fullLink;
         try {
-          fullLink = new URL(link, url).href;
+          fullLink = new URL(href, url).href;
         } catch {
-          return;
+          continue;
         }
         // Only crawl within the manual domain
         if (fullLink.startsWith('https://seller.uzum.uz/manual/')) {
-          crawlPage(fullLink, visited);
+          await crawlPage(fullLink, visited);
         }
       }
-    });
+    }
   } catch (error) {
     console.error(`Error crawling ${url}:`, error.message);
   }
 }
 
-async function main() {
+export async function runCrawl() {
+  console.log('Starting crawl...');
   await crawlPage(MANUAL_URL);
   console.log('Crawling completed');
 }
-
-main();
