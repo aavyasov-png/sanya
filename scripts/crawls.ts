@@ -1,4 +1,4 @@
-import { supabase } from '../src/supabase.js'; // Adjust path if needed
+import { supabase } from '../src/supabase.js';
 
 const MANUAL_URL = 'https://seller.uzum.uz/manual';
 
@@ -12,20 +12,57 @@ async function crawlPage(url: string, visited: Set<string> = new Set()): Promise
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
 
-    // Extract title
-    const title = doc.querySelector('title')?.textContent || doc.querySelector('h1')?.textContent || 'No title';
+    // Извлекаем заголовки на RU и UZ
+    const titleRu = doc.querySelector('h1[lang="ru"]')?.textContent || 
+                    doc.querySelector('title')?.textContent || 
+                    doc.querySelector('h1')?.textContent || 
+                    'No title';
+    
+    const titleUz = doc.querySelector('h1[lang="uz"]')?.textContent || titleRu;
 
-    // Extract content (all text)
-    const content = doc.body?.textContent?.replace(/\s+/g, ' ').trim().substring(0, 5000) || '';
+    // Извлекаем контент на RU и UZ (без ограничения символов)
+    const contentRuElements = doc.querySelectorAll('[lang="ru"], .content-ru, .ru');
+    const contentUzElements = doc.querySelectorAll('[lang="uz"], .content-uz, .uz');
+    
+    let contentRu = '';
+    let contentUz = '';
+    
+    if (contentRuElements.length > 0) {
+      contentRu = Array.from(contentRuElements)
+        .map(el => el.textContent)
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    } else {
+      // Если нет явно размеченного контента, берем весь текст
+      contentRu = doc.body?.textContent?.replace(/\s+/g, ' ').trim() || '';
+    }
+    
+    if (contentUzElements.length > 0) {
+      contentUz = Array.from(contentUzElements)
+        .map(el => el.textContent)
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    } else {
+      contentUz = contentRu; // Fallback к русскому контенту
+    }
 
-    // Save to Supabase
+    // Сохраняем в Supabase
     const { data, error } = await supabase
       .from('manual_sections')
-      .insert([{ title, content, url }]);
+      .insert([{ 
+        title_ru: titleRu,
+        title_uz: titleUz,
+        content_ru: contentRu,
+        content_uz: contentUz,
+        url 
+      }]);
 
     if (error) console.error('Insert error:', error);
+    else console.log(`✓ Crawled: ${titleRu}`);
 
-    // Find links to other pages
+    // Находим ссылки на другие страницы
     const links = doc.querySelectorAll('a[href]');
     for (const link of links) {
       const href = link.getAttribute('href');
