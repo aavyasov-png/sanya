@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabase';
 import OpenAI from 'openai';
+import Groq from 'groq-sdk';
+
+// Выбор AI провайдера на основе переменной окружения
+const AI_PROVIDER = import.meta.env.VITE_AI_PROVIDER || 'groq'; // 'openai' или 'groq'
 
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true
+});
+
+const groq = new Groq({
+  apiKey: import.meta.env.VITE_GROQ_API_KEY || 'gsk_demo_key',
   dangerouslyAllowBrowser: true
 });
 
@@ -20,7 +29,11 @@ const Chat: React.FC<{ lang?: 'ru' | 'uz' }> = ({ lang = 'ru' }) => {
   const [isApiKeySet, setIsApiKeySet] = useState(false);
 
   useEffect(() => {
-    setIsApiKeySet(!!import.meta.env.VITE_OPENAI_API_KEY && import.meta.env.VITE_OPENAI_API_KEY !== 'your_openai_api_key');
+    const apiKey = AI_PROVIDER === 'groq' 
+      ? import.meta.env.VITE_GROQ_API_KEY 
+      : import.meta.env.VITE_OPENAI_API_KEY;
+    
+    setIsApiKeySet(!!apiKey && apiKey !== 'your_openai_api_key' && apiKey !== 'gsk_demo_key');
     
     // Приветственное сообщение
     const welcomeMessage: Message = {
@@ -111,20 +124,31 @@ MUHIM QOIDALAR:
 
 ${manualContext ? `HUJJATLAR:\n${manualContext}` : 'DIQQAT: Ushbu so\'rov bo\'yicha tegishli hujjatlar topilmadi. Foydalanuvchiga operator bilan bog\'lanishni taklif qiling.'}`;
 
-      console.log('🔍 Sending request to OpenAI...');
+      console.log('🔍 Sending request to AI...');
+      console.log('🤖 Using provider:', AI_PROVIDER);
       console.log('📋 Manual context length:', manualContext.length);
       
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: input }
-        ],
-        temperature: 0.7,
-        max_tokens: 500
-      });
+      const completion = AI_PROVIDER === 'groq' 
+        ? await groq.chat.completions.create({
+            model: 'llama-3.1-70b-versatile', // Быстрая и умная модель
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: input }
+            ],
+            temperature: 0.7,
+            max_tokens: 500
+          })
+        : await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: input }
+            ],
+            temperature: 0.7,
+            max_tokens: 500
+          });
 
-      console.log('✅ OpenAI response received');
+      console.log('✅ AI response received');
 
       const responseText = completion.choices[0].message.content || '';
       
@@ -160,9 +184,16 @@ ${manualContext ? `HUJJATLAR:\n${manualContext}` : 'DIQQAT: Ushbu so\'rov bo\'yi
           ? '🔑 Ошибка авторизации OpenAI. Проверьте API ключ.'
           : '🔑 OpenAI avtorizatsiya xatosi. API kalitini tekshiring.';
       } else if (error?.status === 429) {
-        errorText = lang === 'ru'
-          ? '⏱️ Превышен лимит запросов. Попробуйте через минуту.'
-          : '⏱️ So\'rovlar limiti oshib ketdi. Bir daqiqadan keyin urinib ko\'ring.';
+        // Проверяем, является ли это ошибкой квоты
+        if (error?.message?.includes('quota') || error?.message?.includes('billing')) {
+          errorText = lang === 'ru'
+            ? '💳 Превышена квота OpenAI. Необходимо пополнить баланс или обновить план.\n\nПожалуйста, свяжитесь с оператором для помощи.'
+            : '💳 OpenAI kvotasi oshib ketdi. Balansni to\'ldirish yoki rejani yangilash kerak.\n\nIltimos, yordam uchun operator bilan bog\'laning.';
+        } else {
+          errorText = lang === 'ru'
+            ? '⏱️ Превышен лимит запросов. Попробуйте через минуту.'
+            : '⏱️ So\'rovlar limiti oshib ketdi. Bir daqiqadan keyin urinib ko\'ring.';
+        }
       } else if (error?.message?.includes('fetch')) {
         errorText = lang === 'ru'
           ? '🌐 Проблема с подключением к интернету. Проверьте соединение.'
