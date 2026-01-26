@@ -24,6 +24,7 @@ type CardRow = {
   body_uz: string;
   sort: number;
   file_url?: string;
+  map_url?: string;
 };
 
 type NewsRow = {
@@ -620,6 +621,7 @@ export default function App() {
     body_uz: "",
     sort: 100,
     file_url: "",
+    map_url: "",
   });
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [newsForm, setNewsForm] = useState({
@@ -686,7 +688,7 @@ export default function App() {
       }
       showToast(t.ok);
     }
-    setCardForm({ section_id: "", title_ru: "", title_uz: "", body_ru: "", body_uz: "", sort: 100, file_url: "" });
+    setCardForm({ section_id: "", title_ru: "", title_uz: "", body_ru: "", body_uz: "", sort: 100, file_url: "", map_url: "" });
     await loadPublic();
   };
 
@@ -1529,6 +1531,25 @@ export default function App() {
                           </a>
                         )}
                       </div>
+
+                      {c.map_url && (
+                        <div style={{ marginTop: 16 }}>
+                          <div style={{ fontWeight: 950, marginBottom: 10, fontSize: 14 }}>
+                            📍 Карта пунктов приема
+                          </div>
+                          <iframe
+                            src={c.map_url}
+                            width="100%"
+                            height="400"
+                            style={{
+                              border: "2px solid rgba(111,0,255,.2)",
+                              borderRadius: "12px",
+                              display: "block",
+                            }}
+                            allowFullScreen
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </>
@@ -1833,6 +1854,15 @@ export default function App() {
                     />
                   </div>
 
+                  <div style={{ marginTop: 10 }}>
+                    <input
+                      className="input"
+                      placeholder="URL Яндекс карты (iframe src, опционально)"
+                      value={cardForm.map_url}
+                      onChange={(e) => setCardForm({ ...cardForm, map_url: e.target.value })}
+                    />
+                  </div>
+
                   <div className="split" style={{ marginTop: 10 }}>
                     <input
                       className="input"
@@ -1848,7 +1878,7 @@ export default function App() {
                         className="btnGhost"
                         onClick={() => {
                           setEditingCardId(null);
-                          setCardForm({ section_id: "", title_ru: "", title_uz: "", body_ru: "", body_uz: "", sort: 100, file_url: "" });
+                          setCardForm({ section_id: "", title_ru: "", title_uz: "", body_ru: "", body_uz: "", sort: 100, file_url: "", map_url: "" });
                         }}
                       >
                         Отмена
@@ -1874,6 +1904,7 @@ export default function App() {
                                 body_uz: c.body_uz,
                                 sort: c.sort,
                                 file_url: c.file_url || "",
+                                map_url: c.map_url || "",
                               });
                               window.scrollTo({ top: 0, behavior: 'smooth' });
                             }}
