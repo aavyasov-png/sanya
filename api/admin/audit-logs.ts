@@ -1,5 +1,5 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { requireAuth, logAction, handleError, setCorsHeaders, type AuthenticatedRequest } from '../_lib/middleware';
+import type { VercelResponse } from '@vercel/node';
+import { requireAuth, handleError, setCorsHeaders, type AuthenticatedRequest } from '../_lib/middleware';
 
 /**
  * Получить логи аудита

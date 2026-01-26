@@ -12,12 +12,19 @@ interface AccessCode {
   note: string | null;
 }
 
-export default function AccessCodesManagement({ t }: { t: any }) {
+interface NewCodeForm {
+  role_to_assign: 'owner' | 'admin' | 'editor' | 'viewer';
+  max_uses: number;
+  expires_at: string;
+  note: string;
+}
+
+export default function AccessCodesManagement() {
   const [codes, setCodes] = useState<AccessCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [newCode, setNewCode] = useState({
-    role_to_assign: 'viewer' as any,
+  const [newCode, setNewCode] = useState<NewCodeForm>({
+    role_to_assign: 'viewer' as const,
     max_uses: 1,
     expires_at: '',
     note: '',
@@ -32,7 +39,7 @@ export default function AccessCodesManagement({ t }: { t: any }) {
     try {
       setLoading(true);
       const data = await api.getAccessCodes();
-      setCodes(data.codes);
+      setCodes(data.codes as AccessCode[]);
     } catch (err) {
       console.error('Failed to load codes:', err);
     } finally {
@@ -112,7 +119,7 @@ export default function AccessCodesManagement({ t }: { t: any }) {
               <label>Role:</label>
               <select
                 value={newCode.role_to_assign}
-                onChange={(e) => setNewCode({ ...newCode, role_to_assign: e.target.value as any })}
+                onChange={(e) => setNewCode({ ...newCode, role_to_assign: e.target.value as NewCodeForm['role_to_assign'] })}
                 style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #ddd' }}
               >
                 <option value="viewer">Viewer</option>

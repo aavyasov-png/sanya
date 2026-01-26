@@ -46,7 +46,7 @@ export function verifyJWT(token: string): {
   try {
     const decoded = jwt.verify(token, JWT_CONFIG.SECRET, {
       algorithms: [JWT_CONFIG.ALGORITHM],
-    }) as any;
+    }) as { userId: string; role: string; telegramId?: number };
 
     return {
       userId: decoded.userId,

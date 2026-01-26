@@ -34,7 +34,7 @@ class APIClient {
   private async request<T>(
     method: HTTPMethod,
     endpoint: string,
-    data?: any,
+    data?: unknown,
     attempt: number = 1
   ): Promise<T> {
     const url = `${this.config.baseURL}${endpoint}`;
@@ -88,15 +88,15 @@ class APIClient {
     return this.request<T>('GET', endpoint);
   }
 
-  post<T>(endpoint: string, data: any): Promise<T> {
+  post<T>(endpoint: string, data: unknown): Promise<T> {
     return this.request<T>('POST', endpoint, data);
   }
 
-  put<T>(endpoint: string, data: any): Promise<T> {
+  put<T>(endpoint: string, data: unknown): Promise<T> {
     return this.request<T>('PUT', endpoint, data);
   }
 
-  patch<T>(endpoint: string, data: any): Promise<T> {
+  patch<T>(endpoint: string, data: unknown): Promise<T> {
     return this.request<T>('PATCH', endpoint, data);
   }
 
@@ -111,7 +111,12 @@ class APIClient {
     const response = await this.post<{
       success: boolean;
       token: string;
-      user: any;
+      user: {
+        id: string;
+        full_name: string;
+        role: string;
+        telegram_id: number | null;
+      };
     }>('/auth/verify-code', {
       code,
       telegram_id: telegramId,
@@ -132,19 +137,28 @@ class APIClient {
 
   // Admin - Users
   async getUsers() {
-    return this.get<{ users: any[] }>('/admin/users');
+    return this.get<{ users: Array<{
+      id: string;
+      telegram_id: number | null;
+      email: string | null;
+      full_name: string;
+      role: string;
+      is_active: boolean;
+      created_at: string;
+      last_login_at: string | null;
+    }> }>('/admin/users');
   }
 
-  async updateUser(id: string, data: any) {
-    return this.patch<{ user: any }>(`/admin/users?id=${id}`, data);
+  async updateUser(id: string, data: { role?: string; is_active?: boolean; full_name?: string }) {
+    return this.patch<{ user: unknown }>(`/admin/users?id=${id}`, data);
   }
 
   // Admin - Access Codes
   async getAccessCodes() {
-    return this.get<{ codes: any[] }>('/admin/access-codes');
+    return this.get<{ codes: Array<unknown> }>('/admin/access-codes');
   }
 
-  async createAccessCode(data: any) {
+  async createAccessCode(data: unknown) {
     return this.post<{ code: string; id: string }>('/admin/access-codes', data);
   }
 
@@ -161,7 +175,7 @@ export class APIError extends Error {
   constructor(
     message: string,
     public statusCode: number,
-    public details?: any
+    public details?: unknown
   ) {
     super(message);
     this.name = 'APIError';

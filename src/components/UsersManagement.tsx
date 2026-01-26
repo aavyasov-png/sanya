@@ -13,11 +13,10 @@ interface User {
 }
 
 interface UsersManagementProps {
-  t: any;
   userRole: string;
 }
 
-export default function UsersManagement({ t, userRole }: UsersManagementProps) {
+export default function UsersManagement({ userRole }: UsersManagementProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -31,7 +30,7 @@ export default function UsersManagement({ t, userRole }: UsersManagementProps) {
     try {
       setLoading(true);
       const data = await api.getUsers();
-      setUsers(data.users);
+      setUsers(data.users as User[]);
       setError('');
     } catch (err) {
       if (err instanceof APIError) {

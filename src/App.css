@@ -441,91 +441,106 @@ body{
 
 .input{
   width:100%;
-  height:54px;
-  padding:0 18px;
-  border-radius:var(--r-lg);
-  border:3px solid rgba(112,0,255,.35);
-  background:rgba(255,255,255,.92);
-  color:var(--dark);
+  height:50px;
+  padding:0 16px;
+  border-radius:var(--r-md);
+  border:2px solid var(--accent);
+  background:#ffffff;
+  color:#111;
   outline:none;
-  font-size:16px;
+  font-size:15px;
   font-weight:600;
   transition: all .2s ease;
   position: relative;
   box-shadow: 
-    0 2px 8px rgba(112,0,255,.08),
-    inset 0 1px 0 rgba(255,255,255,.8);
+    0 3px 10px rgba(112,0,255,.12),
+    inset 0 1px 0 rgba(255,255,255,.9);
 }
 .input::placeholder{
-  color: rgba(0,0,0,.4);
+  color: rgba(0,0,0,.45);
   font-weight: 500;
 }
 .input:focus{
   border-color:var(--accent);
-  background:rgba(255,255,255,1);
+  background:#ffffff;
   box-shadow:
-    0 0 0 4px rgba(112,0,255,.15),
-    0 6px 20px rgba(112,0,255,.2),
+    0 0 0 3px rgba(112,0,255,.2),
+    0 4px 16px rgba(112,0,255,.25),
     inset 0 1px 0 rgba(255,255,255,1);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
-/* кнопки: нормальные размеры, без раздувания */
+/* кнопки: улучшенная видимость и контрастность */
 .btnPrimary{
   width:100%;
-  height:54px;
+  height:52px;
   border:none;
   border-radius:var(--r-md);
-  font-size:16px;
-  font-weight:950;
-  color:#fff;
+  font-size:15px;
+  font-weight:900;
+  color:#ffffff;
   background: var(--gradient-primary);
   cursor:pointer;
-  padding:0 24px;
-  transition: transform .15s ease, box-shadow .15s ease;
+  padding:0 20px;
+  transition: all .18s cubic-bezier(.22,.1,.36,.9);
   white-space:nowrap;
   box-shadow: 
-    0 4px 16px rgba(112,0,255,.28),
-    0 1px 3px rgba(0,0,0,.1),
-    inset 0 1px 0 rgba(255,255,255,.2);
+    0 4px 14px rgba(112,0,255,.35),
+    0 2px 6px rgba(0,0,0,.12),
+    inset 0 2px 0 rgba(255,255,255,.25);
   flex-shrink:0;
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 2px rgba(0,0,0,.15);
 }
 .btnPrimary:hover{ 
-  transform: translateY(-2px);
+  transform: translateY(-2px) scale(1.02);
   box-shadow: 
-    0 6px 20px rgba(112,0,255,.35),
-    0 2px 8px rgba(0,0,0,.15),
-    inset 0 1px 0 rgba(255,255,255,.3);
+    0 6px 20px rgba(112,0,255,.45),
+    0 3px 10px rgba(0,0,0,.18),
+    inset 0 2px 0 rgba(255,255,255,.35);
 }
 .btnPrimary:active{ 
-  transform: translateY(0) scale(.98); 
+  transform: translateY(0) scale(.97); 
+  box-shadow: 
+    0 2px 8px rgba(112,0,255,.3),
+    0 1px 4px rgba(0,0,0,.1),
+    inset 0 1px 0 rgba(255,255,255,.2);
 }
 
 .btnGhost{
-  height:50px;
-  border:3px solid var(--accent);
+  height:48px;
+  border:2px solid var(--accent);
   border-radius:var(--r-md);
-  font-size:15px;
-  font-weight:950;
-  color:var(--accent);
-  background:rgba(112,0,255,.09);
+  font-size:14px;
+  font-weight:900;
+  color:#ffffff;
+  background: linear-gradient(135deg, var(--accent) 0%, #5b00d6 100%);
   cursor:pointer;
-  padding:0 24px;
+  padding:0 20px;
   white-space:nowrap;
-  transition: transform .15s ease, background .15s ease, box-shadow .15s ease;
+  transition: all .18s cubic-bezier(.22,.1,.36,.9);
   box-shadow: 
-    0 3px 12px rgba(112,0,255,.15),
-    inset 0 1px 0 rgba(255,255,255,.3);
+    0 3px 12px rgba(112,0,255,.3),
+    0 1px 4px rgba(0,0,0,.1),
+    inset 0 1px 0 rgba(255,255,255,.2);
+  letter-spacing: 0.3px;
+  text-shadow: 0 1px 2px rgba(0,0,0,.15);
+  flex-shrink: 0;
 }
 .btnGhost:hover{
-  transform: translateY(-2px);
-  background:rgba(112,0,255,.15);
+  transform: translateY(-2px) scale(1.02);
+  background: linear-gradient(135deg, #8B2FFF 0%, var(--accent) 100%);
   box-shadow: 
-    0 4px 16px rgba(112,0,255,.22),
-    inset 0 1px 0 rgba(255,255,255,.4);
+    0 5px 18px rgba(112,0,255,.4),
+    0 2px 8px rgba(0,0,0,.15),
+    inset 0 2px 0 rgba(255,255,255,.3);
 }
 .btnGhost:active{ 
-  transform: translateY(0) scale(.98); 
+  transform: translateY(0) scale(.96); 
+  box-shadow: 
+    0 2px 8px rgba(112,0,255,.25),
+    0 1px 3px rgba(0,0,0,.08),
+    inset 0 1px 0 rgba(255,255,255,.15);
 }
 
 .row{ display:flex; gap:10px; align-items:center; }
@@ -729,9 +744,14 @@ body{
 .cardActions{
   margin-top:14px;
   display:flex;
-  gap:12px;
+  gap:10px;
+  flex-wrap: wrap;
 }
-.cardActions > *{ flex:1; min-width:0; }
+.cardActions > *{ 
+  flex:1; 
+  min-width:120px;
+  max-width: 100%;
+}
 
 /* чтобы текст кнопок не ломал */
 .cardActions button{
@@ -739,26 +759,37 @@ body{
   text-overflow:ellipsis;
   position: relative;
   z-index: 1;
+  min-height: 50px;
+  font-size: 14px;
 }
 
 /* Улучшенная видимость кнопок в cardActions */
 .cardActions .btnPrimary,
 .cardActions .btnGhost {
-  min-height: 48px;
+  min-height: 50px;
+  height: auto;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 12px 18px;
 }
 
 .cardActions .btnPrimary {
   background: var(--gradient-primary);
-  color: #fff;
+  color: #ffffff;
+  font-weight: 900;
+  box-shadow: 
+    0 4px 14px rgba(112,0,255,.35),
+    0 2px 6px rgba(0,0,0,.12);
 }
 
 .cardActions .btnGhost {
-  border: 3px solid var(--accent);
-  background: rgba(112,0,255,.09);
-  color: var(--accent);
+  background: linear-gradient(135deg, var(--accent) 0%, #5b00d6 100%);
+  color: #ffffff;
+  font-weight: 900;
+  box-shadow: 
+    0 3px 12px rgba(112,0,255,.3),
+    0 1px 4px rgba(0,0,0,.1);
 }
 
 /* новости */
@@ -1736,3 +1767,79 @@ input[type="checkbox"]:checked::after {
     scroll-behavior: auto !important;
   }
 }
+
+
+/* Карусель админских кнопок - горизонтальный скролл как на главной */
+.adminCarousel {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 4px 16px 4px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+}
+
+.adminCarousel::-webkit-scrollbar {
+  display: none;
+}
+
+.adminCarousel .btnGhost {
+  min-width: 160px;
+  width: auto;
+  flex-shrink: 0;
+  scroll-snap-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Улучшенная кремовая карточка с лучшим контрастом */
+.cardCream {
+  border: 2px solid var(--accent);
+  box-shadow: 
+    0 4px 16px rgba(112,0,255,.15),
+    inset 0 2px 0 rgba(255,255,255,.8);
+}
+
+/* Фикс для кнопок в row - чтобы не выходили за границы */
+.row {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(112,0,255,.3) transparent;
+}
+
+.row::-webkit-scrollbar {
+  height: 4px;
+}
+
+.row::-webkit-scrollbar-track {
+  background: rgba(112,0,255,.05);
+  border-radius: 2px;
+}
+
+.row::-webkit-scrollbar-thumb {
+  background: rgba(112,0,255,.3);
+  border-radius: 2px;
+}
+
+.row::-webkit-scrollbar-thumb:hover {
+  background: rgba(112,0,255,.5);
+}
+
+/* Улучшение видимости всех кнопок */
+button {
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+

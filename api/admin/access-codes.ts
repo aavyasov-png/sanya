@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelResponse } from '@vercel/node';
 import { CreateAccessCodeSchema } from '../_lib/schemas';
 import { supabaseAdmin } from '../_lib/supabase';
 import { hashPassword, generateAccessCode } from '../_lib/auth';

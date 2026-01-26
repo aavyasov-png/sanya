@@ -1137,7 +1137,7 @@ export default function App() {
           <div className="page">
             <div className="center">
               <div className="logoBox">
-                <img className="logoImg" src="/assets/uzum-logo.png" alt="Uzum" />
+                <img className="logoImg" src="/uzum-logo.png" alt="Uzum" />
               </div>
 
               <div className="h1">{t.welcome}</div>
@@ -1742,24 +1742,24 @@ export default function App() {
 
             <div className="list">
               <div className="cardCream">
-                <div className="row" style={{ flexWrap: "wrap" }}>
+                <div className="adminCarousel">
                   <button className="btnGhost" onClick={() => setAdminTab("sections")}>
-                    {t.manageSections}
+                    📂 {t.manageSections}
                   </button>
                   <button className="btnGhost" onClick={() => setAdminTab("cards")}>
-                    {t.manageCards}
+                    🗂️ {t.manageCards}
                   </button>
                   <button className="btnGhost" onClick={() => setAdminTab("news")}>
-                    {t.manageNews}
+                    📰 {t.manageNews}
                   </button>
                   <button className="btnGhost" onClick={() => setAdminTab("faq")}>
-                    {t.manageFaq}
+                    ❓ {t.manageFaq}
                   </button>
                   <button className="btnGhost" onClick={() => setAdminTab("codes")}>
-                    {t.manageCodes}
+                    🔑 {t.manageCodes}
                   </button>
                   <button className="btnGhost" onClick={async () => { await runCrawl(); alert('Краулинг завершён'); }}>
-                    Запустить краулинг
+                    🚀 Краулинг
                   </button>
                 </div>
               </div>

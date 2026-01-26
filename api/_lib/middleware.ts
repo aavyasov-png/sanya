@@ -116,7 +116,7 @@ export async function logAction(
   action: string,
   resourceType: string,
   resourceId?: string | null,
-  details?: Record<string, any>,
+  details?: Record<string, unknown>,
   req?: VercelRequest
 ) {
   try {
@@ -141,10 +141,10 @@ export async function logAction(
 /**
  * Обработка ошибок
  */
-export function handleError(res: VercelResponse, error: any, context: string) {
+export function handleError(res: VercelResponse, error: unknown, context: string) {
   console.error(`[ERROR] ${context}:`, error);
 
-  if (error.name === 'ZodError') {
+  if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError' && 'errors' in error) {
     return res.status(400).json({
       error: 'Validation error',
       details: error.errors,
@@ -153,7 +153,7 @@ export function handleError(res: VercelResponse, error: any, context: string) {
 
   return res.status(500).json({
     error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    message: process.env.NODE_ENV === 'development' && error instanceof Error ? error.message : undefined,
   });
 }
 
