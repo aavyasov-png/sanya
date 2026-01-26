@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useMemo, useState, useRef } from "react";
 import { supabase } from "./supabase";
 import "./App.css";
-import Chat from "./Chat";
+// import Chat from "./Chat"; // ВРЕМЕННО ОТКЛЮЧЕНО - раскомментировать когда доработаешь
 import { runCrawl } from "../scripts/crawls";
 
 type Lang = "ru" | "uz";
@@ -2194,6 +2194,7 @@ export default function App() {
           </div>
         )}
 
+        {/* ВРЕМЕННО ОТКЛЮЧЕНО - раскомментировать когда доработаешь
         {route.name === "chat" && (
           <div className="page">
             <TopBar
@@ -2218,6 +2219,7 @@ export default function App() {
             <BottomBar userName={userName} userPhoto="" onSignOut={signOut} onChat={() => setRoute({ name: "chat" })} />
           </div>
         )}
+        */}
 
         {toast ? <div className="toast">{toast}</div> : null}
       </div>
