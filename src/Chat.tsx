@@ -11,6 +11,11 @@ const Chat: React.FC = () => {
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [input, setInput] = useState('');
   const [context, setContext] = useState('');
+  const [isApiKeySet, setIsApiKeySet] = useState(false);
+
+  useEffect(() => {
+    setIsApiKeySet(!!import.meta.env.VITE_OPENAI_API_KEY && import.meta.env.VITE_OPENAI_API_KEY !== 'your_openai_api_key');
+  }, []);
 
   useEffect(() => {
     // Load all content from Supabase
@@ -41,17 +46,29 @@ const Chat: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
 
-    // Generate response with OpenAI
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        { role: 'system', content: `You are a support bot for Uzum app. Use the following manual content to answer questions in Russian or Uzbek: ${context}` },
-        userMessage
-      ]
-    });
+    if (!isApiKeySet) {
+      const errorMessage = { role: 'assistant' as const, content: 'Ключ API OpenAI не настроен. Обратитесь к администратору.' };
+      setMessages(prev => [...prev, errorMessage]);
+      return;
+    }
 
-    const assistantMessage = { role: 'assistant' as const, content: completion.choices[0].message.content || '' };
-    setMessages(prev => [...prev, assistantMessage]);
+    try {
+      // Generate response with OpenAI
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: `You are a support bot for Uzum app. Use the following manual content to answer questions in Russian or Uzbek: ${context}` },
+          userMessage
+        ]
+      });
+
+      const assistantMessage = { role: 'assistant' as const, content: completion.choices[0].message.content || '' };
+      setMessages(prev => [...prev, assistantMessage]);
+    } catch (error) {
+      console.error('Error generating response:', error);
+      const errorMessage = { role: 'assistant' as const, content: 'Извините, произошла ошибка при обработке вашего запроса. Попробуйте позже.' };
+      setMessages(prev => [...prev, errorMessage]);
+    }
   };
 
   return (
