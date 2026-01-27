@@ -1678,8 +1678,10 @@ export default function App() {
               <div className="sectionList" ref={sectionListRef} onWheel={(e: any) => {
                 const el = sectionListRef.current as HTMLDivElement | null;
                 if (!el) return;
+                if (e.cancelable) {
+                  e.preventDefault();
+                }
                 el.scrollLeft += e.deltaY;
-                e.preventDefault();
                 window.requestAnimationFrame(() => handleSectionScroll());
               }} onScroll={() => handleSectionScroll()}>
                 {filteredSections.map((s) => (
