@@ -128,127 +128,69 @@ export default function UzumProducts({ lang, token, onBack }: UzumProductsProps)
   }
 
   return (
-    <div style={{
-      padding: '24px',
-      maxWidth: '1400px',
-      margin: '0 auto',
-    }}>
+    <div className="list">
       {/* Header */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: '24px',
+        marginBottom: '12px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={onBack}
-            style={{
-              padding: '10px 16px',
-              backgroundColor: '#f3f4f6',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#374151',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#e5e7eb';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f3f4f6';
-            }}
-          >
-            ← {t.back}
-          </button>
-          <h1 style={{
-            fontSize: '28px',
-            fontWeight: '700',
-            margin: 0,
-            color: '#111827',
-          }}>
-            📦 {t.title}
-          </h1>
+        <div style={{
+          fontSize: '18px',
+          fontWeight: 700,
+          color: '#111',
+        }}>
+          📦 {t.title}
         </div>
         <div style={{
-          padding: '10px 20px',
+          padding: '6px 12px',
           backgroundColor: '#7c3aed',
           color: 'white',
           borderRadius: '8px',
-          fontWeight: '600',
+          fontWeight: 600,
+          fontSize: '14px',
         }}>
           {filteredProducts.length}
         </div>
       </div>
 
       {/* Search */}
-      <div style={{ marginBottom: '24px' }}>
+      <div className="cardCream" style={{ marginBottom: '12px' }}>
         <input
           type="text"
+          className="input"
           placeholder={t.search}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '14px 20px',
-            fontSize: '16px',
-            border: '2px solid #e5e7eb',
-            borderRadius: '12px',
-            outline: 'none',
-            transition: 'all 0.2s',
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.borderColor = '#7c3aed';
-            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.1)';
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.borderColor = '#e5e7eb';
-            e.currentTarget.style.boxShadow = 'none';
-          }}
         />
       </div>
 
       {/* Products Grid */}
       {filteredProducts.length === 0 ? (
-        <div style={{
+        <div className="cardCream" style={{
           textAlign: 'center',
-          padding: '60px 20px',
-          color: '#9ca3af',
-          fontSize: '16px',
+          padding: '40px 20px',
+          color: '#999',
         }}>
           📭 {t.noProducts}
         </div>
       ) : (
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: '20px',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+          gap: '12px',
         }}>
           {filteredProducts.map((product: any) => (
             <div
               key={product.id || product.sku}
-              style={{
-                backgroundColor: 'white',
-                borderRadius: '16px',
-                overflow: 'hidden',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                transition: 'all 0.2s',
-                cursor: 'pointer',
-                border: '2px solid transparent',
-              }}
               onClick={() => setSelectedProduct(product)}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-4px)';
-                e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.12)';
-                e.currentTarget.style.borderColor = '#7c3aed';
+              className="cardCream"
+              style={{
+                cursor: 'pointer',
+                transition: 'all 0.2s',
               }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
-                e.currentTarget.style.borderColor = 'transparent';
-              }}
+            >
             >
               {/* Product Image Placeholder */}
               <div style={{

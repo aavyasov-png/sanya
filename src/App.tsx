@@ -2887,24 +2887,9 @@ export default function App() {
                             setUzumError('');
                           }}
                           disabled={uzumLoading}
+                          className="input"
                           style={{
-                            width: "100%",
-                            padding: "14px 50px 14px 16px",
-                            border: "2px solid rgba(111,0,255,0.2)",
-                            borderRadius: "12px",
-                            fontSize: "15px",
-                            fontFamily: "inherit",
-                            outline: "none",
-                            transition: "all 0.2s ease",
-                            background: "white"
-                          }}
-                          onFocus={(e) => {
-                            e.target.style.borderColor = "#6F00FF";
-                            e.target.style.boxShadow = "0 0 0 3px rgba(111,0,255,0.1)";
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.borderColor = "rgba(111,0,255,0.2)";
-                            e.target.style.boxShadow = "none";
+                            paddingRight: "90px"
                           }}
                         />
                         <button
@@ -2962,24 +2947,9 @@ export default function App() {
                             setUzumError('');
                           }}
                           disabled={uzumLoading}
+                          className="input"
                           style={{
-                            width: "100%",
-                            padding: "14px 50px 14px 16px",
-                            border: "2px solid rgba(111,0,255,0.2)",
-                            borderRadius: "12px",
-                            fontSize: "15px",
-                            fontFamily: "inherit",
-                            outline: "none",
-                            transition: "all 0.2s ease",
-                            background: "white"
-                          }}
-                          onFocus={(e) => {
-                            e.target.style.borderColor = "#6F00FF";
-                            e.target.style.boxShadow = "0 0 0 3px rgba(111,0,255,0.1)";
-                          }}
-                          onBlur={(e) => {
-                            e.target.style.borderColor = "rgba(111,0,255,0.2)";
-                            e.target.style.boxShadow = "none";
+                            paddingRight: "90px"
                           }}
                         />
                         <button
@@ -3024,20 +2994,20 @@ export default function App() {
                     </div>
 
                     {/* Action Buttons */}
-                    <div style={{ display: "flex", gap: "12px" }}>
+                    <div className="split" style={{ marginTop: "10px" }}>
                       <button
-                        className="menuBtn"
-                        style={{ flex: 1 }}
+                        className="btnPrimary"
                         onClick={handleTestToken}
                         disabled={uzumLoading || !uzumToken.trim()}
+                        style={{ flex: 1 }}
                       >
                         {uzumLoading ? '⏳ Проверка...' : '🔍 Проверить'}
                       </button>
                       <button
-                        className="menuBtn accent"
-                        style={{ flex: 1 }}
+                        className="btnPrimary"
                         onClick={handleSaveToken}
                         disabled={uzumLoading || !uzumToken.trim() || !uzumPin.trim()}
+                        style={{ flex: 1 }}
                       >
                         {uzumLoading ? '⏳ Сохранение...' : '💾 Сохранить'}
                       </button>

@@ -115,78 +115,55 @@ export default function UzumDashboard({ lang, token, onNavigate }: UzumDashboard
   }
 
   return (
-    <div style={{
-      padding: '24px',
-      maxWidth: '1400px',
-      margin: '0 auto',
-    }}>
+    <div className="list">
       {/* Shops Section */}
       {shops.length > 0 && (
-        <div style={{ marginBottom: '32px' }}>
-          <h2 style={{
-            fontSize: '20px',
-            fontWeight: '700',
-            marginBottom: '16px',
-            color: '#111827',
+        <div style={{ marginBottom: '20px' }}>
+          <div style={{
+            fontSize: '18px',
+            fontWeight: 700,
+            marginBottom: '12px',
+            color: '#111',
           }}>
             {t.shops}
-          </h2>
+          </div>
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '16px',
+            gap: '12px',
           }}>
             {shops.map((shop: any) => (
               <div
                 key={shop.id}
+                className="cardCream"
                 style={{
-                  padding: '24px',
-                  backgroundColor: 'white',
-                  borderRadius: '16px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                  border: '2px solid #f3f4f6',
-                  transition: 'all 0.2s',
                   cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(111,0,255,0.15)';
-                  e.currentTarget.style.borderColor = '#7c3aed';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
-                  e.currentTarget.style.borderColor = '#f3f4f6';
+                  transition: 'all 0.2s',
                 }}
               >
                 <div style={{
-                  width: '48px',
-                  height: '48px',
-                  backgroundColor: '#f3f4f6',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '24px',
-                  marginBottom: '16px',
+                  fontSize: '32px',
+                  marginBottom: '12px',
+                  textAlign: 'center',
                 }}>
                   🏪
                 </div>
-                <h3 style={{
-                  fontSize: '18px',
-                  fontWeight: '600',
-                  marginBottom: '8px',
-                  color: '#111827',
+                <div style={{
+                  fontSize: '16px',
+                  fontWeight: 700,
+                  marginBottom: '6px',
+                  textAlign: 'center',
+                  color: '#111',
                 }}>
                   {shop.name}
-                </h3>
-                <p style={{
-                  color: '#6b7280',
-                  fontSize: '14px',
-                  margin: 0,
+                </div>
+                <div style={{
+                  color: '#666',
+                  fontSize: '13px',
+                  textAlign: 'center',
                 }}>
                   ID: {shop.id}
-                </p>
+                </div>
               </div>
             ))}
           </div>
@@ -197,36 +174,22 @@ export default function UzumDashboard({ lang, token, onNavigate }: UzumDashboard
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-        gap: '16px',
-        marginBottom: '32px',
+        gap: '12px',
       }}>
         {/* Products Card */}
         <div
           onClick={() => onNavigate('products')}
+          className="cardCream"
           style={{
-            padding: '24px',
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             cursor: 'pointer',
             transition: 'all 0.2s',
-            border: '2px solid transparent',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.boxShadow = '0 8px 20px rgba(124,58,237,0.15)';
-            e.currentTarget.style.borderColor = '#7c3aed';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
-            e.currentTarget.style.borderColor = 'transparent';
+            textAlign: 'center',
           }}
         >
           <div style={{ fontSize: '32px', marginBottom: '12px' }}>📦</div>
           <div style={{
-            fontSize: '32px',
-            fontWeight: '700',
+            fontSize: '28px',
+            fontWeight: 700,
             color: '#7c3aed',
             marginBottom: '8px',
           }}>
@@ -234,15 +197,15 @@ export default function UzumDashboard({ lang, token, onNavigate }: UzumDashboard
           </div>
           <div style={{
             fontSize: '14px',
-            color: '#6b7280',
-            marginBottom: '12px',
+            color: '#666',
+            marginBottom: '8px',
           }}>
             {t.totalProducts}
           </div>
           <div style={{
-            fontSize: '14px',
+            fontSize: '13px',
             color: '#7c3aed',
-            fontWeight: '500',
+            fontWeight: 600,
           }}>
             {t.viewAll} →
           </div>
@@ -251,30 +214,17 @@ export default function UzumDashboard({ lang, token, onNavigate }: UzumDashboard
         {/* Orders Card */}
         <div
           onClick={() => onNavigate('orders')}
+          className="cardCream"
           style={{
-            padding: '24px',
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             cursor: 'pointer',
             transition: 'all 0.2s',
-            border: '2px solid transparent',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.boxShadow = '0 8px 20px rgba(34,197,94,0.15)';
-            e.currentTarget.style.borderColor = '#22c55e';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
-            e.currentTarget.style.borderColor = 'transparent';
+            textAlign: 'center',
           }}
         >
           <div style={{ fontSize: '32px', marginBottom: '12px' }}>📋</div>
           <div style={{
-            fontSize: '32px',
-            fontWeight: '700',
+            fontSize: '28px',
+            fontWeight: 700,
             color: '#22c55e',
             marginBottom: '8px',
           }}>
@@ -282,15 +232,15 @@ export default function UzumDashboard({ lang, token, onNavigate }: UzumDashboard
           </div>
           <div style={{
             fontSize: '14px',
-            color: '#6b7280',
-            marginBottom: '12px',
+            color: '#666',
+            marginBottom: '8px',
           }}>
             {t.activeOrders}
           </div>
           <div style={{
-            fontSize: '14px',
+            fontSize: '13px',
             color: '#22c55e',
-            fontWeight: '500',
+            fontWeight: 600,
           }}>
             {t.viewAll} →
           </div>
@@ -299,30 +249,17 @@ export default function UzumDashboard({ lang, token, onNavigate }: UzumDashboard
         {/* Finance Card */}
         <div
           onClick={() => onNavigate('finance')}
+          className="cardCream"
           style={{
-            padding: '24px',
-            backgroundColor: 'white',
-            borderRadius: '16px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             cursor: 'pointer',
             transition: 'all 0.2s',
-            border: '2px solid transparent',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-4px)';
-            e.currentTarget.style.boxShadow = '0 8px 20px rgba(245,158,11,0.15)';
-            e.currentTarget.style.borderColor = '#f59e0b';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
-            e.currentTarget.style.borderColor = 'transparent';
+            textAlign: 'center',
           }}
         >
           <div style={{ fontSize: '32px', marginBottom: '12px' }}>💰</div>
           <div style={{
-            fontSize: '32px',
-            fontWeight: '700',
+            fontSize: '28px',
+            fontWeight: 700,
             color: '#f59e0b',
             marginBottom: '8px',
           }}>
@@ -330,15 +267,15 @@ export default function UzumDashboard({ lang, token, onNavigate }: UzumDashboard
           </div>
           <div style={{
             fontSize: '14px',
-            color: '#6b7280',
-            marginBottom: '12px',
+            color: '#666',
+            marginBottom: '8px',
           }}>
             {t.pendingOrders}
           </div>
           <div style={{
-            fontSize: '14px',
+            fontSize: '13px',
             color: '#f59e0b',
-            fontWeight: '500',
+            fontWeight: 600,
           }}>
             {t.viewAll} →
           </div>
