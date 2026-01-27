@@ -45,8 +45,8 @@ async function importCommissions() {
     columns: true, 
     skip_empty_lines: true,
     relax_quotes: true,
-    relax_column_count: true,
-    from_line: 2  // Пропускаем первую пустую строку
+    relax_column_count: true
+    // Убираем from_line - первая строка и есть заголовок
   });
 
   console.log(`✅ Загружено ${ruRows.length} записей (RU)`);
@@ -57,24 +57,21 @@ async function importCommissions() {
   for (const row of uzRows) {
     const catId = row['category ID'];
     if (catId) {
-      uzMap[catId] = row;
+      uzMap[catId.trim()] = row;
     }
   }
 
   // Подготавливаем данные для вставки
   console.log('🔄 Обработка данных...');
   
-  // Проверяем названия колонок
-  console.log('Колонки RU:', Object.keys(ruRows[0] || {}).slice(0, 5));
-  
   const records = [];
   let skipped = 0;
   
   for (const ruRow of ruRows) {
     // Пробуем разные варианты названия колонки
-    const catId = ruRow['category ID'] || ruRow['category_id'] || ruRow['categoryID'];
+    const catId = (ruRow['category ID'] || ruRow['category_id'] || ruRow['categoryID'] || '').trim();
     
-    if (!catId || catId.trim() === '') {
+    if (!catId || catId === '') {
       skipped++;
       continue;
     }

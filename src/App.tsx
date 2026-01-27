@@ -370,6 +370,7 @@ export default function App() {
       // Фильтруем по последнему заполненному уровню категории
       const filtered = (data || []).filter((item: any) => {
         // Находим последний заполненный уровень (с 6 до 1)
+        // Ищем в текущем языке (ru или uz)
         let lastCategory = null;
         for (let i = 6; i >= 1; i--) {
           const cat = item[`category${i}_${lang}`];
@@ -379,7 +380,7 @@ export default function App() {
           }
         }
         
-        // Ищем только в последнем заполненном уровне
+        // Ищем только в последнем заполненном уровне текущего языка
         return lastCategory && lastCategory.includes(searchTerm);
       }).slice(0, 20);
 
