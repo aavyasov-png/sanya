@@ -571,42 +571,44 @@ export default function App() {
       return;
     }
 
-    // user access codes via Supabase
+    // user access codes via API (bcrypt hashing)
     try {
-      const resp = await supabase
-        .from("access_codes")
-        .select("code,is_active,expires_at")
-        .eq("code", entered)
-        .limit(1);
+      const resp = await fetch("/api/auth/verify-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: entered }),
+      });
 
-      console.log("[CODE] Supabase response:", resp);
+      console.log("[CODE] API response status:", resp.status);
 
-      if (resp.error || !resp.data || resp.data.length === 0) {
-        console.log("[CODE] Code not found or error");
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({ error: "Unknown error" }));
+        console.log("[CODE] API error:", errorData);
         setError(t.invalidCode);
         return;
       }
 
-      const row = resp.data[0] as { is_active: boolean; expires_at: string | null };
-      console.log("[CODE] Code found:", row);
+      const data = await resp.json();
+      console.log("[CODE] API success:", data);
 
-      if (!row.is_active) {
-        console.log("[CODE] Code is inactive");
-        setError(t.invalidCode);
-        return;
-      }
-      if (row.expires_at && new Date(row.expires_at).getTime() < Date.now()) {
-        console.log("[CODE] Code expired");
-        setError(t.invalidCode);
-        return;
-      }
-
-      console.log("[CODE] Code valid, granting access");
+      const userRole = data.user?.role || "viewer";
+      console.log("[CODE] Code valid, granting access with role:", userRole);
+      
       setError("");
       localStorage.setItem("access_ok", "1");
-      localStorage.removeItem("admin_ok");
-      setAdminOk(false);
-      setRoute({ name: "home" });
+      localStorage.setItem("user_role", userRole);
+      localStorage.setItem("session_token", data.token);
+      
+      // Если роль admin или owner, открываем админ-панель
+      if (userRole === "admin" || userRole === "owner") {
+        localStorage.setItem("admin_ok", "1");
+        setAdminOk(true);
+        setRoute({ name: "admin" });
+      } else {
+        localStorage.removeItem("admin_ok");
+        setAdminOk(false);
+        setRoute({ name: "home" });
+      }
     } catch (err) {
       console.error("[CODE] Exception:", err);
       setError(t.invalidCode);
@@ -678,8 +680,9 @@ export default function App() {
     answer_uz: "",
     sort: 0,
   });
-  const [codeForm, setCodeForm] = useState({ code: "", is_active: true, expires_at: "", note: "", role: "viewer" });
+  const [codeForm, setCodeForm] = useState({ role_to_assign: "viewer", max_uses: null as number | null, expires_at: "", note: "" });
   const [accessCodes, setAccessCodes] = useState<any[]>([]);
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
 
   const adminSignOut = async () => {
     localStorage.removeItem("admin_ok");
@@ -907,55 +910,89 @@ export default function App() {
   };
 
   const loadAccessCodes = async () => {
-    const resp = await supabase.from("access_codes").select("code,is_active,expires_at,note,role").order("expires_at", { ascending: false });
-    if (resp.error) return;
-    setAccessCodes((resp.data ?? []) as any[]);
+    try {
+      const token = localStorage.getItem("session_token");
+      const resp = await fetch("/api/admin/access-codes", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!resp.ok) {
+        console.error("Failed to load access codes:", resp.status);
+        return;
+      }
+      
+      const data = await resp.json();
+      setAccessCodes(data.codes ?? []);
+    } catch (err) {
+      console.error("Error loading access codes:", err);
+    }
   };
 
   useEffect(() => {
     if (adminTab === "codes") loadAccessCodes();
   }, [adminTab]);
 
-  const updateAccessCode = async (codeKey: string, patch: any) => {
-    const resp = await supabase.from("access_codes").update(patch).eq("code", codeKey);
-    if (resp.error) {
+  const deleteAccessCode = async (codeId: string) => {
+    try {
+      const token = localStorage.getItem("session_token");
+      const resp = await fetch(`/api/admin/access-codes?id=${codeId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!resp.ok) {
+        showToast(t.error);
+        return;
+      }
+      
+      showToast(t.ok);
+      await loadAccessCodes();
+    } catch (err) {
+      console.error("Error deleting access code:", err);
       showToast(t.error);
-      return;
     }
-    showToast(t.ok);
-    await loadAccessCodes();
-  };
-
-  const deleteAccessCode = async (codeKey: string) => {
-    const resp = await supabase.from("access_codes").delete().eq("code", codeKey);
-    if (resp.error) {
-      showToast(t.error);
-      return;
-    }
-    showToast(t.ok);
-    await loadAccessCodes();
   };
 
   const adminSaveCode = async () => {
-    if (!codeForm.code.trim()) {
-      showToast("Введите код доступа");
-      return;
+    try {
+      const token = localStorage.getItem("session_token");
+      const payload = {
+        role_to_assign: codeForm.role_to_assign,
+        max_uses: codeForm.max_uses,
+        expires_at: codeForm.expires_at ? new Date(codeForm.expires_at).toISOString() : null,
+        note: codeForm.note || null,
+      };
+      
+      const resp = await fetch("/api/admin/access-codes", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({ error: "Unknown error" }));
+        showToast(t.error + ": " + (errorData.error || "Unknown"));
+        return;
+      }
+      
+      const data = await resp.json();
+      setGeneratedCode(data.code); // Сохраняем сгенерированный код для отображения
+      showToast("Код создан: " + data.code);
+      await loadAccessCodes();
+      setCodeForm({ role_to_assign: "viewer", max_uses: null, expires_at: "", note: "" });
+    } catch (err) {
+      console.error("Error creating access code:", err);
+      showToast(t.error);
     }
-    const payload: any = {
-      code: codeForm.code.trim().toUpperCase(),
-      is_active: codeForm.is_active,
-      note: codeForm.note || null,
-      expires_at: codeForm.expires_at ? new Date(codeForm.expires_at).toISOString() : null,
-      role: codeForm.role,
-    };
-    const resp = await supabase.from("access_codes").upsert(payload as any);
-    if (resp.error) {
-      showToast(t.error + ": " + resp.error.message);
-      return;
-    }
-    showToast(t.ok);
-    await loadAccessCodes();
-    setCodeForm({ code: "", is_active: true, expires_at: "", note: "", role: "viewer" });
   };
 
   const fmtDM = (iso: string) => {
@@ -2298,7 +2335,7 @@ export default function App() {
                   </div>
 
                   <div style={{ marginTop: 16, fontWeight: 950 }}>Список</div>
-                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div className="adminListContainer">
                     {sections.map((s) => (
                       <div key={s.id} className="row" style={{ justifyContent: "space-between" }}>
                         <div style={{ fontWeight: 950, color: "#111" }}>
@@ -2404,7 +2441,7 @@ export default function App() {
                   </div>
 
                   <div style={{ marginTop: 16, fontWeight: 950 }}>Список</div>
-                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div className="adminListContainer">
                     {cards.map((c) => (
                       <div key={c.id} className="row" style={{ justifyContent: "space-between" }}>
                         <div style={{ fontWeight: 950, color: "#111" }}>{c.title_ru}</div>
@@ -2505,7 +2542,7 @@ export default function App() {
                   </button>
 
                   <div style={{ marginTop: 16, fontWeight: 950 }}>Список</div>
-                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div className="adminListContainer">
                     {news.map((n) => (
                       <div key={n.id} className="row" style={{ justifyContent: "space-between" }}>
                         <div style={{ fontWeight: 950, color: "#111" }}>
@@ -2524,18 +2561,15 @@ export default function App() {
               {adminTab === "codes" && (
                 <div className="cardCream">
                   <div style={{ fontWeight: 950, marginBottom: 12 }}>{t.manageCodes}</div>
+                  <div style={{ padding: "12px", background: "rgba(111,0,255,.05)", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", color: "#666" }}>
+                    ℹ️ Код генерируется автоматически на сервере с bcrypt-хешированием. После создания код показывается ОДИН раз.
+                  </div>
 
                   <div className="split">
-                    <input
-                      className="input"
-                      placeholder={t.code}
-                      value={codeForm.code}
-                      onChange={(e) => setCodeForm({ ...codeForm, code: e.target.value })}
-                    />
                     <select
                       className="input"
-                      value={codeForm.role}
-                      onChange={(e) => setCodeForm({ ...codeForm, role: e.target.value })}
+                      value={codeForm.role_to_assign}
+                      onChange={(e) => setCodeForm({ ...codeForm, role_to_assign: e.target.value })}
                       style={{ fontSize: 14, fontWeight: 700 }}
                     >
                       <option value="viewer">👁️ Viewer (Просмотр)</option>
@@ -2543,6 +2577,13 @@ export default function App() {
                       <option value="admin">⚙️ Admin (Админ)</option>
                       <option value="owner">👑 Owner (Владелец)</option>
                     </select>
+                    <input
+                      className="input"
+                      type="number"
+                      placeholder="Макс. использований (0 = ∞)"
+                      value={codeForm.max_uses ?? ""}
+                      onChange={(e) => setCodeForm({ ...codeForm, max_uses: e.target.value ? parseInt(e.target.value) : null })}
+                    />
                   </div>
 
                   <div className="split" style={{ marginTop: 10 }}>
@@ -2552,9 +2593,6 @@ export default function App() {
                       value={codeForm.note}
                       onChange={(e) => setCodeForm({ ...codeForm, note: e.target.value })}
                     />
-                  </div>
-
-                  <div className="split" style={{ marginTop: 10, alignItems: "center" }}>
                     <input
                       className="input"
                       type="datetime-local"
@@ -2562,31 +2600,59 @@ export default function App() {
                       value={codeForm.expires_at}
                       onChange={(e) => setCodeForm({ ...codeForm, expires_at: e.target.value })}
                     />
-                    <label className="row" style={{ color: "rgba(20,18,26,.85)" }}>
-                      <input
-                        type="checkbox"
-                        checked={codeForm.is_active}
-                        onChange={(e) => setCodeForm({ ...codeForm, is_active: e.target.checked })}
-                      />
-                      <span style={{ fontWeight: 950 }}>{t.active}</span>
-                    </label>
                   </div>
 
                   <button className="btnPrimary" style={{ marginTop: 12, width: "100%" }} onClick={adminSaveCode}>
-                    {t.save}
+                    🔐 Создать код доступа
                   </button>
 
+                  {generatedCode && (
+                    <div style={{ 
+                      marginTop: "16px", 
+                      padding: "16px", 
+                      background: "#d4edda", 
+                      borderRadius: "12px", 
+                      border: "2px solid #28a745" 
+                    }}>
+                      <div style={{ fontWeight: 900, marginBottom: 8, color: "#155724" }}>✅ Код создан успешно!</div>
+                      <div style={{ 
+                        fontFamily: "monospace", 
+                        fontSize: "20px", 
+                        fontWeight: 900, 
+                        letterSpacing: "2px", 
+                        color: "#111",
+                        padding: "12px",
+                        background: "#fff",
+                        borderRadius: "8px",
+                        textAlign: "center",
+                        marginBottom: "12px"
+                      }}>
+                        {generatedCode}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#856404", marginBottom: 8 }}>
+                        ⚠️ Сохраните этот код! Он больше не будет показан.
+                      </div>
+                      <button 
+                        className="btnPrimary" 
+                        onClick={() => { copyText(generatedCode); setGeneratedCode(null); }}
+                        style={{ width: "100%" }}
+                      >
+                        📋 Скопировать и закрыть
+                      </button>
+                    </div>
+                  )}
+
                   <div style={{ marginTop: 16, fontWeight: 950, fontSize: 14 }}>Список кодов ({accessCodes.length})</div>
-                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10, maxHeight: "500px", overflowY: "auto", paddingRight: "4px" }}>
+                  <div className="adminListContainer">
                     {accessCodes.length === 0 ? (
                       <div style={{ textAlign: "center", padding: 20, color: "rgba(0,0,0,.5)", fontStyle: "italic" }}>Нет кодов</div>
                     ) : (
                       (() => {
                         // Группируем коды: активные → истёкшие → неактивные
-                        const active = accessCodes.filter(ac => ac.is_active && (!ac.expires_at || new Date(ac.expires_at) >= new Date()));
-                        const expired = accessCodes.filter(ac => ac.is_active && ac.expires_at && new Date(ac.expires_at) < new Date());
-                        const inactive = accessCodes.filter(ac => !ac.is_active);
-                        const sorted = [...active, ...expired, ...inactive];
+                        const active = accessCodes.filter(ac => !ac.is_disabled && (!ac.expires_at || new Date(ac.expires_at) >= new Date()));
+                        const expired = accessCodes.filter(ac => !ac.is_disabled && ac.expires_at && new Date(ac.expires_at) < new Date());
+                        const disabled = accessCodes.filter(ac => ac.is_disabled);
+                        const sorted = [...active, ...expired, ...disabled];
                         
                         return sorted.map((ac) => {
                         const expiresDate = ac.expires_at ? new Date(ac.expires_at) : null;
@@ -2594,10 +2660,10 @@ export default function App() {
                         const daysLeft = expiresDate ? Math.ceil((expiresDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
                         
                         return (
-                          <div key={ac.code} className="cardCream" style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                          <div key={ac.id} className="cardCream" style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, opacity: ac.is_disabled ? 0.5 : 1 }}>
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                              <div style={{ fontFamily: "monospace", fontWeight: 900, fontSize: 16, color: "#111", letterSpacing: 1 }}>
-                                {ac.code}
+                              <div style={{ fontSize: 13, color: "#666", fontFamily: "monospace" }}>
+                                🔑 ID: {ac.id.slice(0, 8)}...
                               </div>
                               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                                 <span style={{ 
@@ -2608,17 +2674,17 @@ export default function App() {
                                   background: "#e3f2fd",
                                   color: "#1565c0"
                                 }}>
-                                  {ac.role === "owner" ? "👑 OWNER" : ac.role === "admin" ? "⚙️ ADMIN" : ac.role === "editor" ? "✏️ EDITOR" : "👁️ VIEWER"}
+                                  {ac.role_to_assign === "owner" ? "👑 OWNER" : ac.role_to_assign === "admin" ? "⚙️ ADMIN" : ac.role_to_assign === "editor" ? "✏️ EDITOR" : "👁️ VIEWER"}
                                 </span>
                                 <span style={{ 
                                   padding: "4px 10px", 
                                   borderRadius: 6, 
                                   fontSize: 11, 
                                   fontWeight: 900,
-                                  background: ac.is_active ? (isExpired ? "#fff3cd" : "#d4edda") : "#f8d7da",
-                                  color: ac.is_active ? (isExpired ? "#856404" : "#155724") : "#721c24"
+                                  background: ac.is_disabled ? "#f8d7da" : (isExpired ? "#fff3cd" : "#d4edda"),
+                                  color: ac.is_disabled ? "#721c24" : (isExpired ? "#856404" : "#155724")
                                 }}>
-                                  {!ac.is_active ? "НЕАКТИВ" : isExpired ? "ИСТЁК" : "АКТИВЕН"}
+                                  {ac.is_disabled ? "ОТКЛЮЧЕН" : isExpired ? "ИСТЁК" : "АКТИВЕН"}
                                 </span>
                               </div>
                             </div>
@@ -2626,35 +2692,33 @@ export default function App() {
                             <div style={{ display: "flex", gap: 10, fontSize: 13, color: "rgba(0,0,0,.6)" }}>
                               <div style={{ flex: 1 }}>
                                 <div style={{ fontWeight: 700, marginBottom: 2 }}>Срок:</div>
-                                {expiresDate ? expiresDate.toLocaleDateString("ru-RU") : "Неограничен"}
+                                {expiresDate ? expiresDate.toLocaleDateString("ru-RU") + " " + expiresDate.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" }) : "Неограничен"}
                                 {daysLeft !== null && daysLeft > 0 && (
                                   <div style={{ fontSize: 11, color: "rgba(0,0,0,.5)", marginTop: 2 }}>
                                     ({daysLeft} дн. осталось)
                                   </div>
                                 )}
                               </div>
-                              {ac.note && (
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontWeight: 700, marginBottom: 2 }}>Заметка:</div>
-                                  {ac.note}
-                                </div>
-                              )}
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 700, marginBottom: 2 }}>Использований:</div>
+                                {ac.uses_count} / {ac.max_uses ?? "∞"}
+                              </div>
                             </div>
 
-                            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                              <input
-                                className="input"
-                                type="datetime-local"
-                                value={ac.expires_at ? new Date(ac.expires_at).toISOString().slice(0,16) : ""}
-                                onChange={(e) => updateAccessCode(ac.code, { expires_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
-                                style={{ flex: 1, minWidth: 140, height: 32, fontSize: 12 }}
-                              />
-                              <label style={{ display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap", padding: "6px 8px", background: "rgba(0,0,0,.02)", borderRadius: 6, cursor: "pointer" }}>
-                                <input type="checkbox" checked={ac.is_active} onChange={() => updateAccessCode(ac.code, { is_active: !ac.is_active })} style={{ cursor: "pointer" }} />
-                                <span style={{ fontWeight: 700, fontSize: 11 }}>Акт.</span>
-                              </label>
-                              <button className="btnGhost" onClick={() => deleteAccessCode(ac.code)} style={{ padding: "6px 10px", fontSize: 11, flexShrink: 0 }}>
-                                {t.delete}
+                            {ac.note && (
+                              <div style={{ fontSize: 13, color: "rgba(0,0,0,.6)" }}>
+                                <div style={{ fontWeight: 700, marginBottom: 2 }}>Заметка:</div>
+                                {ac.note}
+                              </div>
+                            )}
+
+                            <div style={{ fontSize: 11, color: "rgba(0,0,0,.4)" }}>
+                              Создан: {new Date(ac.created_at).toLocaleDateString("ru-RU")}
+                            </div>
+
+                            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                              <button className="btnGhost" onClick={() => deleteAccessCode(ac.id)} style={{ padding: "6px 10px", fontSize: 11 }}>
+                                🗑️ {ac.is_disabled ? "Удалить" : "Отключить"}
                               </button>
                             </div>
                           </div>
@@ -2720,7 +2784,7 @@ export default function App() {
                   </div>
 
                   <div style={{ marginTop: 16, fontWeight: 950, fontSize: 14 }}>Список FAQ ({faq.length})</div>
-                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div className="adminListContainer">
                     {faq.length === 0 ? (
                       <div style={{ textAlign: "center", padding: 20, color: "rgba(0,0,0,.5)", fontStyle: "italic" }}>Нет FAQ</div>
                     ) : (

@@ -439,15 +439,10 @@ body{
     var(--shadowSmall),
     inset 0 2px 0 rgba(255,255,255,.7);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   display:flex;
   flex-direction:column;
   gap:16px;
-}
-
-/* Разрешаем горизонтальный скролл для карусели */
-.cardCream:has(.adminCarousel) {
-  overflow: visible;
 }
 
 .adminCarousel {
@@ -464,6 +459,16 @@ body{
 
 .adminCarousel::-webkit-scrollbar {
   display: none;
+}
+
+.adminListContainer {
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .cardCream::before{
