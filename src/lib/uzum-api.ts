@@ -191,8 +191,584 @@ export async function getShops(token: string): Promise<{
   return { success: true, shops };
 }
 
+// ============================================================================
+// FBS (Fulfillment by Seller) - Заказы FBS
+// ============================================================================
+
 /**
- * Get orders
+ * Get FBS orders
+ * Endpoint: /v2/fbs/orders
+ */
+export async function getFbsOrders(
+  token: string,
+  params?: {
+    limit?: number;
+    offset?: number;
+    status?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }
+): Promise<{
+  success: boolean;
+  orders?: any[];
+  error?: string;
+}> {
+  const queryParams = new URLSearchParams();
+  if (params?.limit) queryParams.append('limit', String(params.limit));
+  if (params?.offset) queryParams.append('offset', String(params.offset));
+  if (params?.status) queryParams.append('status', params.status);
+  if (params?.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+  if (params?.dateTo) queryParams.append('dateTo', params.dateTo);
+
+  const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  const result = await apiRequest<any>(
+    `/v2/fbs/orders${query}`,
+    token,
+    { method: 'GET' }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true, orders: result.data };
+}
+
+/**
+ * Get FBS orders count
+ * Endpoint: /v2/fbs/orders/count
+ */
+export async function getFbsOrdersCount(
+  token: string,
+  params?: {
+    status?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }
+): Promise<{
+  success: boolean;
+  count?: number;
+  error?: string;
+}> {
+  const queryParams = new URLSearchParams();
+  if (params?.status) queryParams.append('status', params.status);
+  if (params?.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+  if (params?.dateTo) queryParams.append('dateTo', params.dateTo);
+
+  const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  const result = await apiRequest<any>(
+    `/v2/fbs/orders/count${query}`,
+    token,
+    { method: 'GET' }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true, count: result.data };
+}
+
+/**
+ * Get FBS order details
+ * Endpoint: /v1/fbs/order/{orderId}
+ */
+export async function getFbsOrder(
+  token: string,
+  orderId: string | number
+): Promise<{
+  success: boolean;
+  order?: any;
+  error?: string;
+}> {
+  const result = await apiRequest<any>(
+    `/v1/fbs/order/${orderId}`,
+    token,
+    { method: 'GET' }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true, order: result.data };
+}
+
+/**
+ * Confirm FBS order
+ * Endpoint: /v1/fbs/order/{orderId}/confirm
+ */
+export async function confirmFbsOrder(
+  token: string,
+  orderId: string | number
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  const result = await apiRequest<any>(
+    `/v1/fbs/order/${orderId}/confirm`,
+    token,
+    { method: 'POST' }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Cancel FBS order
+ * Endpoint: /v1/fbs/order/{orderId}/cancel
+ */
+export async function cancelFbsOrder(
+  token: string,
+  orderId: string | number,
+  reason?: string
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  const result = await apiRequest<any>(
+    `/v1/fbs/order/${orderId}/cancel`,
+    token,
+    {
+      method: 'POST',
+      body: reason ? JSON.stringify({ reason }) : undefined
+    }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Get FBS order label
+ * Endpoint: /v1/fbs/order/{orderId}/labels/print
+ */
+export async function getFbsOrderLabel(
+  token: string,
+  orderId: string | number
+): Promise<{
+  success: boolean;
+  label?: any;
+  error?: string;
+}> {
+  const result = await apiRequest<any>(
+    `/v1/fbs/order/${orderId}/labels/print`,
+    token,
+    { method: 'GET' }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true, label: result.data };
+}
+
+/**
+ * Get FBS return reasons
+ * Endpoint: /v1/fbs/order/return-reasons
+ */
+export async function getFbsReturnReasons(
+  token: string
+): Promise<{
+  success: boolean;
+  reasons?: any[];
+  error?: string;
+}> {
+  const result = await apiRequest<any[]>(
+    '/v1/fbs/order/return-reasons',
+    token,
+    { method: 'GET' }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true, reasons: result.data };
+}
+
+/**
+ * Get FBS SKU stocks
+ * Endpoint: /v2/fbs/sku/stocks
+ */
+export async function getFbsSkuStocks(
+  token: string,
+  params?: {
+    shopId?: number;
+    sku?: string;
+  }
+): Promise<{
+  success: boolean;
+  stocks?: any[];
+  error?: string;
+}> {
+  const queryParams = new URLSearchParams();
+  if (params?.shopId) queryParams.append('shopId', String(params.shopId));
+  if (params?.sku) queryParams.append('sku', params.sku);
+
+  const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  const result = await apiRequest<any>(
+    `/v2/fbs/sku/stocks${query}`,
+    token,
+    { method: 'GET' }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true, stocks: result.data };
+}
+
+/**
+ * Update FBS SKU stocks
+ * Endpoint: /v2/fbs/sku/stocks
+ */
+export async function updateFbsSkuStocks(
+  token: string,
+  stocks: Array<{
+    sku: string;
+    stock: number;
+  }>
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  const result = await apiRequest<any>(
+    '/v2/fbs/sku/stocks',
+    token,
+    {
+      method: 'POST',
+      body: JSON.stringify({ stocks })
+    }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true };
+}
+
+// ============================================================================
+// Finance - Финансы
+// ============================================================================
+
+/**
+ * Get finance orders
+ * Endpoint: /v1/finance/orders
+ */
+export async function getFinanceOrders(
+  token: string,
+  params?: {
+    limit?: number;
+    offset?: number;
+    dateFrom?: string;
+    dateTo?: string;
+  }
+): Promise<{
+  success: boolean;
+  orders?: any[];
+  error?: string;
+}> {
+  const queryParams = new URLSearchParams();
+  if (params?.limit) queryParams.append('limit', String(params.limit));
+  if (params?.offset) queryParams.append('offset', String(params.offset));
+  if (params?.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+  if (params?.dateTo) queryParams.append('dateTo', params.dateTo);
+
+  const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  const result = await apiRequest<any>(
+    `/v1/finance/orders${query}`,
+    token,
+    { method: 'GET' }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true, orders: result.data };
+}
+
+/**
+ * Get finance expenses
+ * Endpoint: /v1/finance/expenses
+ */
+export async function getFinanceExpenses(
+  token: string,
+  params?: {
+    limit?: number;
+    offset?: number;
+    dateFrom?: string;
+    dateTo?: string;
+  }
+): Promise<{
+  success: boolean;
+  expenses?: any[];
+  error?: string;
+}> {
+  const queryParams = new URLSearchParams();
+  if (params?.limit) queryParams.append('limit', String(params.limit));
+  if (params?.offset) queryParams.append('offset', String(params.offset));
+  if (params?.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+  if (params?.dateTo) queryParams.append('dateTo', params.dateTo);
+
+  const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  const result = await apiRequest<any>(
+    `/v1/finance/expenses${query}`,
+    token,
+    { method: 'GET' }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true, expenses: result.data };
+}
+
+// ============================================================================
+// Invoice - Накладные
+// ============================================================================
+
+/**
+ * Get invoices
+ * Endpoint: /v1/invoice
+ */
+export async function getInvoices(
+  token: string,
+  params?: {
+    limit?: number;
+    offset?: number;
+  }
+): Promise<{
+  success: boolean;
+  invoices?: any[];
+  error?: string;
+}> {
+  const queryParams = new URLSearchParams();
+  if (params?.limit) queryParams.append('limit', String(params.limit));
+  if (params?.offset) queryParams.append('offset', String(params.offset));
+
+  const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  const result = await apiRequest<any>(
+    `/v1/invoice${query}`,
+    token,
+    { method: 'GET' }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true, invoices: result.data };
+}
+
+/**
+ * Get shop invoices
+ * Endpoint: /v1/shop/{shopId}/invoice
+ */
+export async function getShopInvoices(
+  token: string,
+  shopId: number | string,
+  params?: {
+    limit?: number;
+    offset?: number;
+  }
+): Promise<{
+  success: boolean;
+  invoices?: any[];
+  error?: string;
+}> {
+  const queryParams = new URLSearchParams();
+  if (params?.limit) queryParams.append('limit', String(params.limit));
+  if (params?.offset) queryParams.append('offset', String(params.offset));
+
+  const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  const result = await apiRequest<any>(
+    `/v1/shop/${shopId}/invoice${query}`,
+    token,
+    { method: 'GET' }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true, invoices: result.data };
+}
+
+/**
+ * Get shop invoice products
+ * Endpoint: /v1/shop/{shopId}/invoice/products
+ */
+export async function getShopInvoiceProducts(
+  token: string,
+  shopId: number | string,
+  params?: {
+    invoiceId?: string | number;
+  }
+): Promise<{
+  success: boolean;
+  products?: any[];
+  error?: string;
+}> {
+  const queryParams = new URLSearchParams();
+  if (params?.invoiceId) queryParams.append('invoiceId', String(params.invoiceId));
+
+  const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  const result = await apiRequest<any>(
+    `/v1/shop/${shopId}/invoice/products${query}`,
+    token,
+    { method: 'GET' }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true, products: result.data };
+}
+
+/**
+ * Get returns
+ * Endpoint: /v1/return
+ */
+export async function getReturns(
+  token: string,
+  params?: {
+    limit?: number;
+    offset?: number;
+  }
+): Promise<{
+  success: boolean;
+  returns?: any[];
+  error?: string;
+}> {
+  const queryParams = new URLSearchParams();
+  if (params?.limit) queryParams.append('limit', String(params.limit));
+  if (params?.offset) queryParams.append('offset', String(params.offset));
+
+  const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  const result = await apiRequest<any>(
+    `/v1/return${query}`,
+    token,
+    { method: 'GET' }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true, returns: result.data };
+}
+
+/**
+ * Get shop returns
+ * Endpoint: /v1/shop/{shopId}/return
+ */
+export async function getShopReturns(
+  token: string,
+  shopId: number | string,
+  params?: {
+    limit?: number;
+    offset?: number;
+  }
+): Promise<{
+  success: boolean;
+  returns?: any[];
+  error?: string;
+}> {
+  const queryParams = new URLSearchParams();
+  if (params?.limit) queryParams.append('limit', String(params.limit));
+  if (params?.offset) queryParams.append('offset', String(params.offset));
+
+  const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
+  const result = await apiRequest<any>(
+    `/v1/shop/${shopId}/return${query}`,
+    token,
+    { method: 'GET' }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true, returns: result.data };
+}
+
+/**
+ * Get shop return details
+ * Endpoint: /v1/shop/{shopId}/return/{returnId}
+ */
+export async function getShopReturnDetails(
+  token: string,
+  shopId: number | string,
+  returnId: number | string
+): Promise<{
+  success: boolean;
+  returnDetails?: any;
+  error?: string;
+}> {
+  const result = await apiRequest<any>(
+    `/v1/shop/${shopId}/return/${returnId}`,
+    token,
+    { method: 'GET' }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true, returnDetails: result.data };
+}
+
+// ============================================================================
+// Product - Товары
+// ============================================================================
+
+/**
+ * Update product prices
+ * Endpoint: /v1/product/{shopId}/sendPriceData
+ */
+export async function updateProductPrices(
+  token: string,
+  shopId: number | string,
+  prices: Array<{
+    sku: string;
+    price: number;
+  }>
+): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  const result = await apiRequest<any>(
+    `/v1/product/${shopId}/sendPriceData`,
+    token,
+    {
+      method: 'POST',
+      body: JSON.stringify({ prices })
+    }
+  );
+
+  if (result.error) {
+    return { success: false, error: result.error };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Get orders (legacy)
  * Endpoint may vary, check API docs
  */
 export async function getOrders(
