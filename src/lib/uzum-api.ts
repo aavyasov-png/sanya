@@ -11,6 +11,8 @@
  */
 
 const BASE_URL = 'https://api-seller.uzum.uz/api/seller-openapi';
+const USE_PROXY = import.meta.env.VITE_USE_UZUM_PROXY !== 'false'; // По умолчанию используем прокси
+const PROXY_URL = '/api/uzum-proxy';
 
 // Get auth scheme from env or default to Bearer
 const AUTH_SCHEME = import.meta.env.VITE_UZUM_AUTH_SCHEME || 'Bearer';
@@ -34,16 +36,36 @@ async function apiRequest<T>(
   options: RequestInit = {}
 ): Promise<{ data?: T; error?: string; status: number }> {
   try {
-    const url = `${BASE_URL}${endpoint}`;
-    
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Authorization': buildAuthHeader(token),
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    });
+    let response: Response;
+
+    if (USE_PROXY) {
+      // Используем Cloudflare Function прокси
+      response = await fetch(PROXY_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          path: endpoint,
+          method: options.method || 'GET',
+          headers: {
+            'Authorization': buildAuthHeader(token),
+          },
+          body: options.body ? JSON.parse(options.body as string) : undefined,
+        }),
+      });
+    } else {
+      // Прямой запрос (может не работать из-за CORS)
+      const url = `${BASE_URL}${endpoint}`;
+      response = await fetch(url, {
+        ...options,
+        headers: {
+          'Authorization': buildAuthHeader(token),
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      });
+    }
 
     const status = response.status;
 
