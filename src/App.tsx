@@ -307,6 +307,13 @@ export default function App() {
 
   const [adminOk, setAdminOk] = useState<boolean>(() => localStorage.getItem("admin_ok") === "1");
   const [userName, setUserName] = useState<string>(() => localStorage.getItem("user_name") || "");
+  const [userRole, setUserRole] = useState<string>(() => localStorage.getItem("user_role") || "viewer");
+
+  // Проверка прав доступа
+  const canView = () => true; // Все могут просматривать
+  const canEdit = () => ["editor", "admin", "owner"].includes(userRole);
+  const canManage = () => ["admin", "owner"].includes(userRole);
+  const canFullAccess = () => userRole === "owner";
 
   // keep lang
   useEffect(() => {
@@ -575,6 +582,8 @@ export default function App() {
       setError("");
       localStorage.setItem("access_ok", "1");
       localStorage.setItem("admin_ok", "1");
+      localStorage.setItem("user_role", "owner");
+      setUserRole("owner");
       setAdminOk(true);
       setRoute({ name: "admin" });
       return;
@@ -621,8 +630,13 @@ export default function App() {
       setError("");
       localStorage.setItem("access_ok", "1");
       localStorage.setItem("user_role", userRole);
+      setUserRole(userRole);
       
       if (userRole === "admin" || userRole === "owner") {
+        localStorage.setItem("admin_ok", "1");
+        setAdminOk(true);
+        setRoute({ name: "admin" });
+      } else if (userRole === "editor") {
         localStorage.setItem("admin_ok", "1");
         setAdminOk(true);
         setRoute({ name: "admin" });
@@ -1499,7 +1513,7 @@ export default function App() {
                     bottom: 0,
                     width: "280px",
                     maxWidth: "80%",
-                    background: "linear-gradient(145deg, #ffffff, #fdfcff)",
+                    background: "linear-gradient(145deg, #FFF8E8, #FFECD2)",
                     boxShadow: "4px 0 24px rgba(0,0,0,.15)",
                     zIndex: 1000,
                     display: "flex",
@@ -1512,7 +1526,7 @@ export default function App() {
                   <div style={{ 
                     padding: "24px 20px", 
                     borderBottom: "2px solid rgba(111,0,255,.15)",
-                    background: "#fff"
+                    background: "linear-gradient(145deg, #FFF8E8, #FFECD2)"
                   }}>
                     <div style={{ fontSize: "20px", fontWeight: 900, color: "#6F00FF", marginBottom: "4px" }}>
                       Меню
@@ -1565,7 +1579,7 @@ export default function App() {
                         marginBottom: "8px",
                         border: "2px solid rgba(111,0,255,.15)",
                         borderRadius: "12px",
-                        background: "white",
+                        background: "#FFF8E8",
                         textAlign: "left",
                         cursor: "pointer",
                         display: "flex",
@@ -1581,7 +1595,7 @@ export default function App() {
                   <div style={{ 
                     padding: "16px", 
                     borderTop: "2px solid rgba(111,0,255,.15)",
-                    background: "#fff"
+                    background: "linear-gradient(145deg, #FFF8E8, #FFECD2)"
                   }}>
                     <button
                       onClick={() => {
@@ -1593,7 +1607,7 @@ export default function App() {
                         padding: "12px",
                         border: "2px solid rgba(176,0,32,.2)",
                         borderRadius: "12px",
-                        background: "white",
+                        background: "#FFF8E8",
                         color: "#b00020",
                         fontWeight: 800,
                         fontSize: "14px",
@@ -1639,7 +1653,7 @@ export default function App() {
             {/* Компактное приветствие */}
             <div style={{ 
               padding: "12px 16px",
-              background: "#fff",
+              background: "linear-gradient(145deg, #FFF8E8, #FFECD2)",
               borderBottom: "2px solid rgba(111,0,255,.15)"
             }}>
               <div style={{ fontSize: "16px", fontWeight: 800, color: "#6F00FF", marginBottom: "2px" }}>
@@ -1721,7 +1735,7 @@ export default function App() {
                     padding: "6px 12px",
                     border: "2px solid rgba(111,0,255,.2)",
                     borderRadius: "8px",
-                    background: "white",
+                    background: "#FFF8E8",
                     fontSize: "12px",
                     fontWeight: 700,
                     color: "#6F00FF",
@@ -1754,7 +1768,7 @@ export default function App() {
               left: 0,
               right: 0,
               height: "64px",
-              background: "linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.95))",
+              background: "linear-gradient(180deg, #FFF8E8, #FFECD2)",
               borderTop: "2px solid rgba(111,0,255,.15)",
               boxShadow: "0 -4px 16px rgba(0,0,0,.08)",
               display: "flex",
@@ -2285,34 +2299,62 @@ export default function App() {
 
             <div className="headerBlock">
               <div className="h2">{t.admin}</div>
-              <div className="sub">{t.manageSections}</div>
+              <div className="sub" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                {t.manageSections}
+                <span style={{ 
+                  padding: "4px 10px", 
+                  borderRadius: 6, 
+                  fontSize: 11, 
+                  fontWeight: 900,
+                  background: userRole === "owner" ? "#e74c3c" : userRole === "admin" ? "#e67e22" : userRole === "editor" ? "#9b59b6" : "#3498db",
+                  color: "#fff"
+                }}>
+                  {userRole === "owner" ? "👑 OWNER" : userRole === "admin" ? "⚙️ ADMIN" : userRole === "editor" ? "✏️ EDITOR" : "👁️ VIEWER"}
+                </span>
+              </div>
             </div>
 
             <div className="list">
               <div className="cardCream">
+                <div style={{ padding: "12px", background: "rgba(111,0,255,.05)", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", color: "#666" }}>
+                  {userRole === "owner" && "👑 Владелец - полный доступ ко всему"}
+                  {userRole === "admin" && "⚙️ Админ - управление новостями, FAQ, кодами"}
+                  {userRole === "editor" && "✏️ Редактор - редактирование разделов и карточек"}
+                  {userRole === "viewer" && "👁️ Просмотр - только чтение"}
+                </div>
                 <div className="adminCarousel">
-                  <button className="btnGhost" onClick={() => setAdminTab("sections")}>
-                    📂 {t.manageSections}
-                  </button>
-                  <button className="btnGhost" onClick={() => setAdminTab("cards")}>
-                    🗂️ {t.manageCards}
-                  </button>
-                  <button className="btnGhost" onClick={() => setAdminTab("news")}>
-                    📰 {t.manageNews}
-                  </button>
-                  <button className="btnGhost" onClick={() => setAdminTab("faq")}>
-                    ❓ {t.manageFaq}
-                  </button>
-                  <button className="btnGhost" onClick={() => setAdminTab("codes")}>
-                    🔑 {t.manageCodes}
-                  </button>
-                  <button className="btnGhost" onClick={async () => { await runCrawl(); alert('Краулинг завершён'); }}>
-                    🚀 Краулинг
-                  </button>
+                  {canEdit() && (
+                    <>
+                      <button className="btnGhost" onClick={() => setAdminTab("sections")}>
+                        📂 {t.manageSections}
+                      </button>
+                      <button className="btnGhost" onClick={() => setAdminTab("cards")}>
+                        🗂️ {t.manageCards}
+                      </button>
+                    </>
+                  )}
+                  {canManage() && (
+                    <>
+                      <button className="btnGhost" onClick={() => setAdminTab("news")}>
+                        📰 {t.manageNews}
+                      </button>
+                      <button className="btnGhost" onClick={() => setAdminTab("faq")}>
+                        ❓ {t.manageFaq}
+                      </button>
+                      <button className="btnGhost" onClick={() => setAdminTab("codes")}>
+                        🔑 {t.manageCodes}
+                      </button>
+                    </>
+                  )}
+                  {canFullAccess() && (
+                    <button className="btnGhost" onClick={async () => { await runCrawl(); alert('Краулинг завершён'); }}>
+                      🚀 Краулинг
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {adminTab === "sections" && (
+              {canEdit() && adminTab === "sections" && (
                 <div className="cardCream">
                   <div style={{ fontWeight: 950, marginBottom: 12 }}>{t.manageSections}</div>
 
@@ -2374,7 +2416,7 @@ export default function App() {
                 </div>
               )}
 
-              {adminTab === "cards" && (
+              {canEdit() && adminTab === "cards" && (
                 <div className="cardCream">
                   <div style={{ fontWeight: 950, marginBottom: 12 }}>{t.manageCards}</div>
 
@@ -2499,7 +2541,7 @@ export default function App() {
                 </div>
               )}
 
-              {adminTab === "news" && (
+              {canManage() && adminTab === "news" && (
                 <div className="cardCream">
                   <div style={{ fontWeight: 950, marginBottom: 12 }}>{t.manageNews}</div>
 
@@ -2582,7 +2624,7 @@ export default function App() {
                 </div>
               )}
 
-              {adminTab === "codes" && (
+              {canManage() && adminTab === "codes" && (
                 <div className="cardCream">
                   <div style={{ fontWeight: 950, marginBottom: 12, fontSize: "18px" }}>🔐 {t.manageCodes}</div>
                   
@@ -2783,7 +2825,7 @@ export default function App() {
                 </div>
               )}
 
-              {adminTab === "faq" && (
+              {canManage() && adminTab === "faq" && (
                 <>
 
                   <div className="headerBlock">
