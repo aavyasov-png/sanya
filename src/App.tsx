@@ -308,11 +308,79 @@ export default function App() {
   const [adminOk, setAdminOk] = useState<boolean>(() => localStorage.getItem("admin_ok") === "1");
   const [userName, setUserName] = useState<string>(() => localStorage.getItem("user_name") || "");
   const [userRole, setUserRole] = useState<string>(() => localStorage.getItem("user_role") || "viewer");
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [tempUserName, setTempUserName] = useState("");
 
   // Проверка прав доступа
   const canEdit = () => ["editor", "admin", "owner"].includes(userRole);
   const canManage = () => ["admin", "owner"].includes(userRole);
   const canFullAccess = () => userRole === "owner";
+
+  // Загрузка профиля пользователя из базы
+  const loadUserProfile = async (telegramId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('user_name')
+        .eq('telegram_id', telegramId)
+        .maybeSingle();
+
+      if (error) {
+        console.log('[Profile] Error loading:', error);
+        return;
+      }
+
+      if (data && data.user_name) {
+        setUserName(data.user_name);
+        localStorage.setItem('user_name', data.user_name);
+        console.log('[Profile] Loaded:', data.user_name);
+      }
+    } catch (err) {
+      console.error('[Profile] Load error:', err);
+    }
+  };
+
+  // Сохранение имени пользователя в базу
+  const saveUserProfile = async () => {
+    const tg = (window as any).Telegram?.WebApp;
+    const telegramId = tg?.initDataUnsafe?.user?.id;
+
+    if (!telegramId) {
+      showToast('Telegram ID не найден');
+      return;
+    }
+
+    if (!tempUserName.trim()) {
+      showToast('Введите имя');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('user_profiles')
+        .upsert({
+          telegram_id: telegramId.toString(),
+          user_name: tempUserName.trim(),
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'telegram_id'
+        });
+
+      if (error) {
+        showToast('Ошибка сохранения: ' + error.message);
+        return;
+      }
+
+      setUserName(tempUserName.trim());
+      localStorage.setItem('user_name', tempUserName.trim());
+      setIsEditingName(false);
+      showToast('✓ Имя сохранено');
+      console.log('[Profile] Saved:', tempUserName.trim());
+    } catch (err) {
+      console.error('[Profile] Save error:', err);
+      showToast('Ошибка сохранения');
+    }
+  };
 
   // keep lang
   useEffect(() => {
@@ -362,14 +430,16 @@ export default function App() {
           
           console.log("[TG] Setting user:", { firstName, lastName, fullName });
           
-          if (fullName) {
-            setUserName(fullName);
-            localStorage.setItem("user_name", fullName);
+          // Загружаем профиль из базы по Telegram ID
+          if (user.id) {
+            loadUserProfile(user.id.toString());
+            saveUserToDb(user.id, firstName, lastName);
           }
           
-          // Save user ID to database
-          if (user.id) {
-            saveUserToDb(user.id, firstName, lastName);
+          // Если профиля нет в базе, используем имя из Telegram
+          if (fullName && !userName) {
+            setUserName(fullName);
+            localStorage.setItem("user_name", fullName);
           }
         } else {
           console.log("[TG] ⚠ No user data");
@@ -1910,39 +1980,96 @@ export default function App() {
 
                 {/* Редактирование имени */}
                 <div style={{ marginBottom: "16px" }}>
-                  <label style={{ 
-                    fontSize: "12px", 
-                    fontWeight: 700, 
-                    color: "rgba(0,0,0,.6)", 
-                    marginBottom: "6px",
-                    display: "block"
+                  <div style={{ 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "space-between",
+                    marginBottom: "8px"
                   }}>
-                    Ваше имя
-                  </label>
-                  <input
-                    type="text"
-                    value={userName}
-                    onChange={(e) => {
-                      const newName = e.target.value;
-                      setUserName(newName);
-                      localStorage.setItem("user_name", newName);
-                    }}
-                    placeholder="Введите имя"
-                    style={{
-                      width: "100%",
+                    <label style={{ 
+                      fontSize: "12px", 
+                      fontWeight: 700, 
+                      color: "rgba(0,0,0,.6)"
+                    }}>
+                      Ваше имя
+                    </label>
+                    {!isEditingName && (
+                      <button
+                        onClick={() => {
+                          setIsEditingName(true);
+                          setTempUserName(userName);
+                        }}
+                        style={{
+                          padding: "4px 12px",
+                          borderRadius: "8px",
+                          border: "2px solid rgba(111,0,255,.2)",
+                          background: "#fff",
+                          fontSize: "12px",
+                          fontWeight: 700,
+                          color: "#6F00FF",
+                          cursor: "pointer",
+                          transition: "all .2s"
+                        }}
+                      >
+                        ✏️ Редактировать
+                      </button>
+                    )}
+                  </div>
+                  {isEditingName ? (
+                    <>
+                      <input
+                        type="text"
+                        value={tempUserName}
+                        onChange={(e) => setTempUserName(e.target.value)}
+                        placeholder="Введите имя"
+                        style={{
+                          width: "100%",
+                          padding: "12px",
+                          borderRadius: "12px",
+                          border: "2px solid rgba(111,0,255,.2)",
+                          background: "#fff",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          color: "#111",
+                          outline: "none",
+                          transition: "border-color .2s",
+                          marginBottom: "8px"
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = "#6F00FF"}
+                        onBlur={(e) => e.target.style.borderColor = "rgba(111,0,255,.2)"}
+                      />
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button
+                          onClick={saveUserProfile}
+                          className="btnPrimary"
+                          style={{ flex: 1 }}
+                        >
+                          💾 Сохранить
+                        </button>
+                        <button
+                          onClick={() => {
+                            setIsEditingName(false);
+                            setTempUserName("");
+                          }}
+                          className="btnGhost"
+                          style={{ flex: 1 }}
+                        >
+                          Отмена
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{
                       padding: "12px",
                       borderRadius: "12px",
-                      border: "2px solid rgba(111,0,255,.2)",
-                      background: "#fff",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      color: "#111",
-                      outline: "none",
-                      transition: "border-color .2s"
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = "#6F00FF"}
-                    onBlur={(e) => e.target.style.borderColor = "rgba(111,0,255,.2)"}
-                  />
+                      background: "rgba(111,0,255,.05)",
+                      fontSize: "16px",
+                      fontWeight: 700,
+                      color: "#111"
+                    }}>
+                      {userName || "Не указано"}
+                    </div>
+                  )}
                 </div>
 
                 {/* Выбор языка */}
