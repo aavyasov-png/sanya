@@ -198,9 +198,14 @@ export async function diagnoseApi(token: string): Promise<{
   workingUrl?: string;
   workingEndpoint?: string;
   data?: any;
-  attempts: Array<{ url: string; endpoint: string; status: number; error?: string }>;
+  attempts: Array<{ url: string; endpoint: string; status: number; error?: string; headers?: any }>;
 }> {
-  console.log('🔬 Starting API diagnosis...');
+  console.log('🔬 Starting comprehensive API diagnosis...');
+  console.log('📋 Token info:', {
+    length: token.length,
+    preview: token.substring(0, 20) + '...',
+    authScheme: 'Raw (no prefix)',
+  });
   
   const baseUrls = [
     'https://api-seller.uzum.uz/api/seller-openapi',
@@ -215,31 +220,55 @@ export async function diagnoseApi(token: string): Promise<{
     '/v1/seller/shops',
   ];
   
-  const attempts: Array<{ url: string; endpoint: string; status: number; error?: string }> = [];
+  const attempts: Array<{ url: string; endpoint: string; status: number; error?: string; headers?: any }> = [];
   
   for (const baseUrl of baseUrls) {
     for (const endpoint of endpoints) {
       const fullUrl = `${baseUrl}${endpoint}`;
-      console.log(`Testing: ${fullUrl}`);
+      console.log(`\n🔍 Testing: ${fullUrl}`);
+      
+      const requestHeaders = {
+        'Authorization': token,  // RAW token without Bearer
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      };
+      
+      console.log('📤 Request headers:', {
+        Authorization: token.substring(0, 15) + '...',
+        Accept: requestHeaders.Accept,
+        'Content-Type': requestHeaders['Content-Type'],
+      });
       
       try {
         const response = await fetch(fullUrl, {
           method: 'GET',
-          headers: {
-            'Authorization': token,
-            'Accept': 'application/json',
-          },
+          headers: requestHeaders,
         });
         
         const status = response.status;
-        console.log(`  Status: ${status}`);
+        const responseHeaders: any = {};
+        response.headers.forEach((value, key) => {
+          responseHeaders[key] = value;
+        });
+        
+        console.log(`📥 Response:`, {
+          status,
+          statusText: response.statusText,
+          contentType: responseHeaders['content-type'],
+        });
         
         if (status === 200) {
           const data = await response.json();
-          console.log(`✅ SUCCESS! Working URL found:`, fullUrl);
-          console.log(`  Data:`, data);
+          console.log(`✅ SUCCESS! Working URL found`);
+          console.log(`📊 Data:`, data);
           
-          attempts.push({ url: baseUrl, endpoint, status, error: undefined });
+          attempts.push({ 
+            url: baseUrl, 
+            endpoint, 
+            status, 
+            error: undefined,
+            headers: responseHeaders 
+          });
           
           return {
             success: true,
@@ -250,17 +279,32 @@ export async function diagnoseApi(token: string): Promise<{
           };
         } else {
           const errorText = await response.text();
-          attempts.push({ url: baseUrl, endpoint, status, error: errorText.substring(0, 100) });
-          console.log(`  Error: ${errorText.substring(0, 100)}`);
+          attempts.push({ 
+            url: baseUrl, 
+            endpoint, 
+            status, 
+            error: errorText.substring(0, 200),
+            headers: responseHeaders 
+          });
+          console.log(`❌ Error (${status}):`, errorText.substring(0, 200));
         }
       } catch (error: any) {
-        console.log(`  Exception:`, error.message);
-        attempts.push({ url: baseUrl, endpoint, status: 0, error: error.message });
+        console.log(`💥 Exception:`, error.message);
+        attempts.push({ 
+          url: baseUrl, 
+          endpoint, 
+          status: 0, 
+          error: error.message,
+          headers: undefined
+        });
       }
     }
   }
   
-  console.log('❌ No working URL found');
+  console.log('\n❌ No working URL found after testing all combinations');
+  console.log('📊 Total attempts:', attempts.length);
+  console.log('📋 Summary:', attempts.map(a => `${a.url}${a.endpoint}: ${a.status}`).join('\n'));
+  
   return { success: false, attempts };
 }
 
@@ -985,4 +1029,67 @@ export async function getOrders(
 
   const orders = result.data?.orders || result.data?.data || [];
   return { success: true, orders };
+}
+
+// ============================================================================
+// Manual Testing Helpers
+// ============================================================================
+
+/**
+ * Quick test function for console debugging
+ * Usage in browser console:
+ * 
+ * import { quickTest } from './lib/uzum-api';
+ * quickTest('your-token-here');
+ */
+export async function quickTest(token: string) {
+  console.log('🚀 Quick Test Started');
+  console.log('━'.repeat(60));
+  
+  // Test 1: Validate token
+  console.log('\n1️⃣ Testing token validation...');
+  const validation = await testToken(token);
+  console.log('Result:', validation);
+  
+  if (!validation.valid) {
+    console.log('\n⚠️ Token validation failed. Running full diagnosis...');
+    const diagnosis = await diagnoseApi(token);
+    console.log('\n📊 Diagnosis Results:');
+    console.table(diagnosis.attempts);
+    return;
+  }
+  
+  // Test 2: Get shops
+  console.log('\n2️⃣ Getting shops list...');
+  const shops = await getShops(token);
+  console.log('Shops:', shops);
+  
+  if (shops.success && shops.shops && shops.shops.length > 0) {
+    const shopId = shops.shops[0].id;
+    console.log(`\n3️⃣ Testing with shop ID: ${shopId}`);
+    
+    // Test 3: Get products
+    console.log('\n  📦 Getting products...');
+    const products = await getProducts(token, shopId);
+    console.log('  Products:', products);
+    
+    // Test 4: Get FBS orders count
+    console.log('\n  📋 Getting FBS orders count...');
+    const ordersCount = await getFbsOrdersCount(token);
+    console.log('  Orders count:', ordersCount);
+  }
+  
+  console.log('\n━'.repeat(60));
+  console.log('✅ Quick Test Complete');
+}
+
+/**
+ * Test a single endpoint manually
+ * Usage: testEndpoint('your-token', '/v1/shops')
+ */
+export async function testEndpoint(token: string, endpoint: string) {
+  console.log(`🔍 Testing endpoint: ${endpoint}`);
+  const result = await apiRequest<any>(endpoint, token, { method: 'GET' });
+  console.log('Result:', result);
+  return result;
 }
