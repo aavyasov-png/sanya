@@ -158,6 +158,7 @@ type Route =
   | { name: "welcome" }
   | { name: "home" }
   | { name: "faq" }
+  | { name: "profile" }
   | { name: "section"; sectionId: string }
   | { name: "card"; cardId: string }
   | { name: "news" }
@@ -183,9 +184,13 @@ function TopBar(props: {
 
   return (
     <div className="topbar" style={{ padding: "8px 16px", position: 'relative' }}>
-      <button className="smallIconBtn" onClick={onBack} aria-label={t.back}>
-        ←
-      </button>
+      {rightSlot ? (
+        rightSlot
+      ) : (
+        <button className="smallIconBtn" onClick={onBack} aria-label={t.back}>
+          ←
+        </button>
+      )}
 
       {showSearch ? (
         <div style={{ flex: 1, position: 'relative' }}>
@@ -213,11 +218,11 @@ function TopBar(props: {
         {lang.toUpperCase()}
       </button>
 
-      <button className="smallIconBtn" onClick={onHome} aria-label={t.home}>
-        ⌂
-      </button>
-
-      {rightSlot ? rightSlot : null}
+      {!rightSlot && (
+        <button className="smallIconBtn" onClick={onHome} aria-label={t.home}>
+          ⌂
+        </button>
+      )}
     </div>
   );
 }
@@ -1544,7 +1549,23 @@ export default function App() {
               setSearch={setSearch}
               onBack={() => setMenuOpen(true)}
               onHome={() => {}}
-              rightSlot={undefined}
+              rightSlot={
+                <button 
+                  className="smallIconBtn" 
+                  onClick={() => setMenuOpen(true)}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    gap: "3px",
+                    padding: "8px"
+                  }}
+                >
+                  <span style={{ display: "block", width: "20px", height: "2px", background: "#6F00FF", borderRadius: "1px" }}></span>
+                  <span style={{ display: "block", width: "20px", height: "2px", background: "#6F00FF", borderRadius: "1px" }}></span>
+                  <span style={{ display: "block", width: "20px", height: "2px", background: "#6F00FF", borderRadius: "1px" }}></span>
+                </button>
+              }
               searchDropdown={renderSearchResults()}
             />
 
@@ -1643,7 +1664,7 @@ export default function App() {
                   Все →
                 </button>
               </div>
-              <div className="list" style={{ paddingTop: 0 }}>
+              <div className="list" style={{ paddingTop: 0, paddingBottom: "80px" }}>
                 {news.slice(0, 6).map((n) => (
                   <div key={n.id} className="cardCream newsPreview" onClick={() => setRoute({ name: "news_card", newsId: n.id })}>
                     <div className="row" style={{ justifyContent: "space-between", marginBottom: "8px" }}>
@@ -1660,8 +1681,8 @@ export default function App() {
             </div>
 
             {/* Bottom Bar с FAQ */}
-            <div style={{
-              position: "fixed",
+            <div className="bottomBar" style={{
+              position: "absolute",
               bottom: 0,
               left: 0,
               right: 0,
@@ -1710,7 +1731,7 @@ export default function App() {
               </button>
               
               <button
-                onClick={signOut}
+                onClick={() => setRoute({ name: "profile" })}
                 style={{
                   display: "flex",
                   flexDirection: "column",
@@ -1723,9 +1744,103 @@ export default function App() {
                 }}
               >
                 <span style={{ fontSize: "24px" }}>👤</span>
-                <span style={{ fontSize: "11px", fontWeight: 700, color: "rgba(0,0,0,.6)" }}>{userName?.split(" ")[0] || "Выход"}</span>
+                <span style={{ fontSize: "11px", fontWeight: 700, color: "rgba(0,0,0,.6)" }}>{userName?.split(" ")[0] || "Профиль"}</span>
               </button>
             </div>
+          </div>
+        )}
+
+        {route.name === "profile" && (
+          <div className="page">
+            <TopBar
+              t={t}
+              lang={lang}
+              setLang={setLang}
+              showSearch={false}
+              search={search}
+              setSearch={setSearch}
+              onBack={goBack}
+              onHome={goHome}
+            />
+
+            <div className="headerBlock">
+              <div className="h2">Профиль</div>
+              <div className="sub">{userName || "Гость"}</div>
+            </div>
+
+            <div className="list">
+              <div className="cardCream">
+                <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "16px" }}>
+                  <div style={{ 
+                    width: "80px", 
+                    height: "80px", 
+                    borderRadius: "50%", 
+                    background: "linear-gradient(135deg, #6F00FF, #9d4edd)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "40px"
+                  }}>
+                    {getRandomEmoji()}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "20px", fontWeight: 900, color: "#111", marginBottom: "4px" }}>
+                      {userName || "Гость"}
+                    </div>
+                    <div style={{ fontSize: "14px", color: "rgba(0,0,0,.6)" }}>
+                      Пользователь
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ padding: "12px", background: "rgba(111,0,255,.05)", borderRadius: "12px", marginBottom: "12px" }}>
+                  <div style={{ fontSize: "12px", color: "rgba(0,0,0,.6)", marginBottom: "4px" }}>
+                    ID пользователя
+                  </div>
+                  <div style={{ fontFamily: "monospace", fontSize: "14px", fontWeight: 700 }}>
+                    {(window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id || "—"}
+                  </div>
+                </div>
+
+                <div style={{ padding: "12px", background: "rgba(111,0,255,.05)", borderRadius: "12px", marginBottom: "12px" }}>
+                  <div style={{ fontSize: "12px", color: "rgba(0,0,0,.6)", marginBottom: "4px" }}>
+                    Язык интерфейса
+                  </div>
+                  <div style={{ fontSize: "14px", fontWeight: 700 }}>
+                    {lang === "ru" ? "🇷🇺 Русский" : "🇺🇿 O'zbek"}
+                  </div>
+                </div>
+
+                <button
+                  className="btnPrimary"
+                  onClick={signOut}
+                  style={{
+                    width: "100%",
+                    background: "linear-gradient(135deg, #b00020, #d32f2f)",
+                    marginTop: "8px"
+                  }}
+                >
+                  {t.signOut}
+                </button>
+              </div>
+
+              {adminOk && (
+                <div className="cardCream">
+                  <div style={{ fontSize: "16px", fontWeight: 900, marginBottom: "12px", color: "#6F00FF" }}>
+                    ⚙️ Администрирование
+                  </div>
+                  <button
+                    className="btnGhost"
+                    onClick={() => setRoute({ name: "admin" })}
+                    style={{ width: "100%", padding: "12px" }}
+                  >
+                    Панель администратора
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
           </div>
         )}
 
