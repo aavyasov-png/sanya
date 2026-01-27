@@ -319,6 +319,7 @@ export default function App() {
   
   // Калькулятор прибыли
   const [showCalculator, setShowCalculator] = useState(false);
+  const [showCalcInstruction, setShowCalcInstruction] = useState(false);
   const [commissionHistory, setCommissionHistory] = useState<any[]>([]);
   const [calcSelectedCommission, setCalcSelectedCommission] = useState<any>(null);
   const [calcGabarit, setCalcGabarit] = useState<"МГТ" | "СГТ" | "КГТ">("МГТ");
@@ -2342,11 +2343,100 @@ export default function App() {
               <div className="list" style={{ padding: "0 16px", marginBottom: "16px" }}>
                 <div className="cardCream" style={{
                   background: "linear-gradient(145deg, rgba(111,0,255,.08), rgba(111,0,255,.03))",
-                  border: "3px solid #6F00FF"
+                  border: "3px solid #6F00FF",
+                  position: "relative"
                 }}>
-                  <div style={{ fontSize: "16px", fontWeight: 900, color: "#6F00FF", marginBottom: "16px" }}>
-                    💰 {lang === "ru" ? "Калькулятор прибыли" : "Foyda kalkulyatori"}
+                  {/* Заголовок с иконкой информации */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                    <div style={{ fontSize: "16px", fontWeight: 900, color: "#6F00FF" }}>
+                      💰 {lang === "ru" ? "Калькулятор прибыли" : "Foyda kalkulyatori"}
+                    </div>
+                    <button
+                      onClick={() => setShowCalcInstruction(!showCalcInstruction)}
+                      style={{
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "50%",
+                        background: showCalcInstruction ? "#6F00FF" : "rgba(111,0,255,.15)",
+                        color: showCalcInstruction ? "#fff" : "#6F00FF",
+                        border: "2px solid #6F00FF",
+                        fontSize: "14px",
+                        fontWeight: 900,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all .2s"
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!showCalcInstruction) {
+                          e.currentTarget.style.background = "rgba(111,0,255,.25)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!showCalcInstruction) {
+                          e.currentTarget.style.background = "rgba(111,0,255,.15)";
+                        }
+                      }}
+                    >
+                      i
+                    </button>
                   </div>
+
+                  {/* Всплывающая инструкция */}
+                  {showCalcInstruction && (
+                    <div style={{
+                      padding: "14px",
+                      background: "linear-gradient(135deg, rgba(111,0,255,.95), rgba(157,78,255,.95))",
+                      borderRadius: "10px",
+                      marginBottom: "16px",
+                      color: "#fff",
+                      fontSize: "12px",
+                      lineHeight: "1.6",
+                      boxShadow: "0 4px 12px rgba(111,0,255,.3)"
+                    }}>
+                      <div style={{ fontWeight: 900, marginBottom: "8px", fontSize: "13px" }}>
+                        ℹ️ {lang === "ru" ? "Как пользоваться калькулятором:" : "Kalkulyatordan qanday foydalanish:"}
+                      </div>
+                      {lang === "ru" ? (
+                        <>
+                          <div style={{ marginBottom: "4px" }}>1️⃣ Найдите нужную категорию через поиск выше</div>
+                          <div style={{ marginBottom: "4px" }}>2️⃣ Выберите её из истории поиска</div>
+                          <div style={{ marginBottom: "4px" }}>3️⃣ Выберите тип комиссии (FBO/FBS/DBS)</div>
+                          <div style={{ marginBottom: "4px" }}>4️⃣ Укажите габарит товара:</div>
+                          <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
+                            • МГТ (малогабаритный) — логистика 3000 сум
+                          </div>
+                          <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
+                            • СГТ (среднегабаритный) — логистика 5000 сум
+                          </div>
+                          <div style={{ marginLeft: "12px", marginBottom: "8px", opacity: 0.9 }}>
+                            • КГТ (крупногабаритный) — логистика 9000 сум
+                          </div>
+                          <div style={{ marginBottom: "4px" }}>5️⃣ Введите сумму продажи</div>
+                          <div>6️⃣ Получите чистую прибыль к выводу! 💰</div>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ marginBottom: "4px" }}>1️⃣ Yuqorida qidiruv orqali kerakli turkumni toping</div>
+                          <div style={{ marginBottom: "4px" }}>2️⃣ Uni qidiruv tarixidan tanlang</div>
+                          <div style={{ marginBottom: "4px" }}>3️⃣ Komissiya turini tanlang (FBO/FBS/DBS)</div>
+                          <div style={{ marginBottom: "4px" }}>4️⃣ Tovar oʻlchamini koʻrsating:</div>
+                          <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
+                            • МГТ (kichik) — logistika 3000 som
+                          </div>
+                          <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
+                            • СГТ (oʻrta) — logistika 5000 som
+                          </div>
+                          <div style={{ marginLeft: "12px", marginBottom: "8px", opacity: 0.9 }}>
+                            • КГТ (katta) — logistika 9000 som
+                          </div>
+                          <div style={{ marginBottom: "4px" }}>5️⃣ Sotish summasini kiriting</div>
+                          <div>6️⃣ Toza foydani oling! 💰</div>
+                        </>
+                      )}
+                    </div>
+                  )}
 
                   {/* Выбор комиссии из истории */}
                   <div style={{ marginBottom: "16px" }}>
