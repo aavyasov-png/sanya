@@ -14,7 +14,7 @@ export async function onRequestPost(context) {
       });
     }
 
-    const uzumApiUrl = `https://api.uzum.uz${path}`;
+    const uzumApiUrl = `https://api-seller.uzum.uz/api/seller-openapi${path}`;
     
     const requestOptions = {
       method,
