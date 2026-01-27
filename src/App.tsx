@@ -4,7 +4,7 @@ import "./App.css";
 // import Chat from "./Chat"; // ВРЕМЕННО ОТКЛЮЧЕНО - раскомментировать когда доработаешь
 import { runCrawl } from "../scripts/crawls";
 import { encryptToken, validatePin, isCryptoAvailable } from "./lib/crypto";
-import { testToken, getShops } from "./lib/uzum-api";
+import { getShops } from "./lib/uzum-api";
 import UzumDashboard from "./components/uzum/UzumDashboard";
 import UzumProducts from "./components/uzum/UzumProducts";
 import UzumOrders from "./components/uzum/UzumOrders";
@@ -583,20 +583,22 @@ export default function App() {
     setUzumError('');
 
     try {
-      const result = await testToken(uzumToken);
+      // Проверяем токен через получение магазинов
+      const shopsResult = await getShops(uzumToken);
       
-      if (!result.valid) {
-        setUzumError(result.error || 'Токен недействителен');
+      if (!shopsResult.success) {
+        setUzumError(shopsResult.error || 'Токен недействителен');
         setUzumLoading(false);
         return;
       }
 
-      setUzumSellerInfo(result.sellerInfo);
-      
-      // Try to get shops
-      const shopsResult = await getShops(uzumToken);
-      if (shopsResult.success && shopsResult.shops) {
+      if (shopsResult.shops && shopsResult.shops.length > 0) {
         setUzumShops(shopsResult.shops);
+        setUzumSellerInfo({ 
+          shops: shopsResult.shops,
+          shopId: shopsResult.shops[0].id,
+          shopName: shopsResult.shops[0].name
+        });
       }
 
       showToast('✓ Токен валиден!');
