@@ -326,6 +326,31 @@ export default function App() {
   const [calcSaleAmount, setCalcSaleAmount] = useState("");
   const [calcCommType, setCalcCommType] = useState<"fbo" | "fbs" | "dbs">("fbo");
 
+  // Загрузка истории комиссий при входе пользователя
+  useEffect(() => {
+    if (userName) {
+      try {
+        const savedHistory = localStorage.getItem(`commission_history_${userName}`);
+        if (savedHistory) {
+          setCommissionHistory(JSON.parse(savedHistory));
+        } else {
+          setCommissionHistory([]);
+        }
+      } catch {
+        setCommissionHistory([]);
+      }
+    } else {
+      setCommissionHistory([]);
+    }
+  }, [userName]);
+
+  // Сохранение истории комиссий в localStorage при изменении
+  useEffect(() => {
+    if (userName && commissionHistory.length > 0) {
+      localStorage.setItem(`commission_history_${userName}`, JSON.stringify(commissionHistory));
+    }
+  }, [commissionHistory, userName]);
+
   // Проверка прав доступа
   const canEdit = () => ["editor", "admin", "owner"].includes(userRole);
   const canManage = () => ["admin", "owner"].includes(userRole);
@@ -810,6 +835,10 @@ export default function App() {
     localStorage.setItem("access_ok", "0");
     localStorage.setItem("admin_ok", "0");
     setAdminOk(false);
+    // Сохраняем историю комиссий перед выходом
+    if (userName && commissionHistory.length > 0) {
+      localStorage.setItem(`commission_history_${userName}`, JSON.stringify(commissionHistory));
+    }
     setRoute({ name: "welcome" });
   };
 
@@ -2314,8 +2343,8 @@ export default function App() {
               <div className="sub">{lang === "ru" ? "Поиск комиссий по категории товара" : "Tovar turkumi bo'yicha komissiya qidirish"}</div>
             </div>
 
-            {/* Кнопка калькулятора */}
-            <div style={{ padding: "0 16px", marginBottom: "12px" }}>
+            {/* Кнопка калькулятора с отступом от заголовка */}
+            <div style={{ padding: "0 16px", marginTop: "20px", marginBottom: "16px" }}>
               <button
                 onClick={() => setShowCalculator(!showCalculator)}
                 style={{
