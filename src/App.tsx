@@ -2584,9 +2584,41 @@ export default function App() {
 
               {adminTab === "codes" && (
                 <div className="cardCream">
-                  <div style={{ fontWeight: 950, marginBottom: 12 }}>{t.manageCodes}</div>
+                  <div style={{ fontWeight: 950, marginBottom: 12, fontSize: "18px" }}>🔐 {t.manageCodes}</div>
+                  
                   <div style={{ padding: "12px", background: "rgba(111,0,255,.05)", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", color: "#666" }}>
-                    🔒 Код должен быть 6 цифр. Оставьте поле пустым для автогенерации. Хеширование bcrypt на сервере.
+                    🔒 Код должен быть 6 цифр. Оставьте поле пустым для автогенерации. Хеширование SHA-256.
+                  </div>
+
+                  {/* Выбор роли с карточками */}
+                  <div style={{ marginBottom: "16px" }}>
+                    <div style={{ fontWeight: 950, marginBottom: "8px", fontSize: "14px" }}>Выберите роль:</div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "8px" }}>
+                      {[
+                        { value: "viewer", icon: "👁️", title: "Viewer", desc: "Только просмотр", color: "#3498db" },
+                        { value: "editor", icon: "✏️", title: "Editor", desc: "Редактирование", color: "#9b59b6" },
+                        { value: "admin", icon: "⚙️", title: "Admin", desc: "Управление", color: "#e67e22" },
+                        { value: "owner", icon: "👑", title: "Owner", desc: "Полный доступ", color: "#e74c3c" },
+                      ].map((role) => (
+                        <div
+                          key={role.value}
+                          onClick={() => setCodeForm({ ...codeForm, role: role.value })}
+                          style={{
+                            padding: "12px",
+                            borderRadius: "8px",
+                            border: `2px solid ${codeForm.role === role.value ? role.color : "#ddd"}`,
+                            background: codeForm.role === role.value ? `${role.color}15` : "#fff",
+                            cursor: "pointer",
+                            transition: "all 0.2s",
+                            textAlign: "center",
+                          }}
+                        >
+                          <div style={{ fontSize: "24px", marginBottom: "4px" }}>{role.icon}</div>
+                          <div style={{ fontWeight: 950, fontSize: "13px", color: role.color }}>{role.title}</div>
+                          <div style={{ fontSize: "11px", color: "#666", marginTop: "2px" }}>{role.desc}</div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="split">
@@ -2598,20 +2630,6 @@ export default function App() {
                       maxLength={6}
                       pattern="\d{6}"
                     />
-                    <select
-                      className="input"
-                      value={codeForm.role}
-                      onChange={(e) => setCodeForm({ ...codeForm, role: e.target.value })}
-                      style={{ fontSize: 14, fontWeight: 700 }}
-                    >
-                      <option value="viewer">👁️ Viewer (Просмотр)</option>
-                      <option value="editor">✏️ Editor (Редактор)</option>
-                      <option value="admin">⚙️ Admin (Админ)</option>
-                      <option value="owner">👑 Owner (Владелец)</option>
-                    </select>
-                  </div>
-
-                  <div className="split" style={{ marginTop: 10 }}>
                     <input
                       className="input"
                       type="number"
@@ -2619,6 +2637,9 @@ export default function App() {
                       value={codeForm.max_uses ?? ""}
                       onChange={(e) => setCodeForm({ ...codeForm, max_uses: e.target.value ? parseInt(e.target.value) : null })}
                     />
+                  </div>
+
+                  <div className="split" style={{ marginTop: 10 }}>
                     <input
                       className="input"
                       type="datetime-local"
@@ -2626,9 +2647,6 @@ export default function App() {
                       value={codeForm.expires_at}
                       onChange={(e) => setCodeForm({ ...codeForm, expires_at: e.target.value })}
                     />
-                  </div>
-
-                  <div className="split" style={{ marginTop: 10 }}>
                     <input
                       className="input"
                       placeholder={t.note}
