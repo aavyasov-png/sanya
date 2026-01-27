@@ -937,6 +937,10 @@ export default function App() {
   };
 
   const adminSaveCode = async () => {
+    if (!codeForm.code.trim()) {
+      showToast("Введите код доступа");
+      return;
+    }
     const payload: any = {
       code: codeForm.code.trim().toUpperCase(),
       is_active: codeForm.is_active,
@@ -946,12 +950,12 @@ export default function App() {
     };
     const resp = await supabase.from("access_codes").upsert(payload as any);
     if (resp.error) {
-      showToast(t.error);
+      showToast(t.error + ": " + resp.error.message);
       return;
     }
     showToast(t.ok);
-    setCodeForm({ code: "", is_active: true, expires_at: "", note: "", role: "viewer" });
     await loadAccessCodes();
+    setCodeForm({ code: "", is_active: true, expires_at: "", note: "", role: "viewer" });
   };
 
   const fmtDM = (iso: string) => {
@@ -1439,7 +1443,9 @@ export default function App() {
                     zIndex: 1000,
                     display: "flex",
                     flexDirection: "column",
-                    animation: "slideInLeft 0.3s ease"
+                    animation: "slideInLeft 0.3s ease",
+                    maxHeight: "100vh",
+                    overflow: "hidden"
                   }}
                 >
                   <div style={{ 
@@ -1759,7 +1765,7 @@ export default function App() {
               showSearch={false}
               search={search}
               setSearch={setSearch}
-              onBack={goBack}
+              onBack={goHome}
               onHome={goHome}
             />
 
@@ -2571,7 +2577,7 @@ export default function App() {
                   </button>
 
                   <div style={{ marginTop: 16, fontWeight: 950, fontSize: 14 }}>Список кодов ({accessCodes.length})</div>
-                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10, maxHeight: "500px", overflowY: "auto", paddingRight: "4px" }}>
                     {accessCodes.length === 0 ? (
                       <div style={{ textAlign: "center", padding: 20, color: "rgba(0,0,0,.5)", fontStyle: "italic" }}>Нет кодов</div>
                     ) : (
