@@ -17,7 +17,7 @@
     "cf:deploy": "wrangler pages deploy dist"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.91.1",
+    "@supabase/supabase-js": "^2.93.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/dompurify": "^3.0.5",
     "@types/jsonwebtoken": "^9.0.10",

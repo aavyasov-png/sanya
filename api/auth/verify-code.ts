@@ -1,103 +1,114 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { VerifyAccessCodeSchema } from '../_lib/schemas';
-import { supabaseAdmin } from '../_lib/supabase';
-import { verifyPassword, createJWT } from '../_lib/auth';
-import { rateLimit, logAction, handleError, setCorsHeaders } from '../_lib/middleware';
-import { RATE_LIMIT, SESSION_CONFIG } from '../_lib/config';
+/**
+ * Cloudflare Pages Function: Проверка кода доступа
+ * POST /api/auth/verify-code
+ */
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  setCorsHeaders(res);
+import { createClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+interface Env {
+  VITE_SUPABASE_URL: string;
+  VITE_SUPABASE_ANON_KEY: string;
+}
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
+export async function onRequestPost(context: { request: Request; env: Env }) {
   try {
-    const ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown';
-    const identifier = Array.isArray(ip) ? ip[0] : ip;
+    const { code } = await context.request.json();
 
-    // Rate limiting
-    if (!rateLimit(identifier, RATE_LIMIT.CODE_CHECK.MAX_ATTEMPTS, RATE_LIMIT.CODE_CHECK.WINDOW_MS)) {
-      return res.status(429).json({ 
-        error: 'Too many attempts. Please try again later.' 
+    if (!code || typeof code !== 'string') {
+      return new Response(JSON.stringify({ error: 'Invalid code format' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    // Валидация входных данных
-    const body = VerifyAccessCodeSchema.parse(req.body);
-    const { code, telegram_id, full_name } = body;
+    // Инициализация Supabase
+    const supabase = createClient(
+      context.env.VITE_SUPABASE_URL,
+      context.env.VITE_SUPABASE_ANON_KEY
+    );
 
-    // Нормализуем код (убираем дефисы, приводим к верхнему регистру)
-    const normalizedCode = code.replace(/[-\s]/g, '').toUpperCase();
+    console.log('[AUTH] Checking code:', code.slice(-2));
 
-    console.log('[AUTH] Verifying access code...');
-
-    // Получаем все активные коды из БД
-    const { data: codes, error: codesError } = await supabaseAdmin
+    // Получаем все активные коды
+    const { data: codes, error: codesError } = await supabase
       .from('access_codes')
-      .select('*')
-      .eq('is_disabled', false);
+      .select('id,code_hash,role,is_active,expires_at,max_uses,uses_count')
+      .eq('is_active', true);
 
     if (codesError) {
-      console.error('[AUTH] Error fetching codes:', codesError);
-      return res.status(500).json({ error: 'Database error' });
+      console.error('[AUTH] DB error:', codesError);
+      return new Response(JSON.stringify({ error: 'Database error' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
     if (!codes || codes.length === 0) {
-      return res.status(401).json({ error: 'Invalid access code' });
+      return new Response(JSON.stringify({ error: 'Invalid access code' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    // Проверяем каждый код (bcrypt.compare)
+    // Проверяем каждый хеш
     let validCode: typeof codes[0] | null = null;
-
     for (const codeRecord of codes) {
-      const isValid = await verifyPassword(normalizedCode, codeRecord.code_hash);
-      if (isValid) {
+      const isMatch = await bcrypt.compare(code, codeRecord.code_hash);
+      if (isMatch) {
         validCode = codeRecord;
         break;
       }
     }
 
     if (!validCode) {
-      console.log('[AUTH] Invalid code provided');
-      await logAction(null, 'failed_code_verification', 'access_code', null, { code: code.slice(-4) }, req);
-      return res.status(401).json({ error: 'Invalid access code' });
+      console.log('[AUTH] No matching hash');
+      return new Response(JSON.stringify({ error: 'Invalid access code' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    // Проверяем срок действия
+    // Проверка срока действия
     if (validCode.expires_at && new Date(validCode.expires_at) < new Date()) {
-      console.log('[AUTH] Code expired');
-      return res.status(401).json({ error: 'Access code expired' });
+      return new Response(JSON.stringify({ error: 'Code expired' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    // Проверяем лимит использований
+    // Проверка лимита использований
     if (validCode.max_uses !== null && validCode.uses_count >= validCode.max_uses) {
-      console.log('[AUTH] Code usage limit reached');
-      return res.status(401).json({ error: 'Access code usage limit reached' });
+      return new Response(JSON.stringify({ error: 'Usage limit reached' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
 
-    console.log('[AUTH] Code is valid, role:', validCode.role_to_assign);
+    // Увеличиваем счётчик
+    await supabase
+      .from('access_codes')
+      .update({ uses_count: validCode.uses_count + 1 })
+      .eq('code_hash', validCode.code_hash);
 
-    // Создаём или обновляем пользователя
-    let user;
+    return new Response(JSON.stringify({
+      success: true,
+      user: {
+        role: validCode.role
+      }
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
 
-    if (telegram_id) {
-      // Проверяем существующего пользователя по telegram_id
-      const { data: existingUser } = await supabaseAdmin
-        .from('users')
-        .select('*')
-        .eq('telegram_id', telegram_id)
-        .single();
-
-      if (existingUser) {
-        // Обновляем существующего пользователя
-        const { data: updatedUser, error: updateError } = await supabaseAdmin
-          .from('users')
-          .update({
+  } catch (error) {
+    console.error('[AUTH] Exception:', error);
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
             full_name: full_name || existingUser.full_name,
             role: validCode.role_to_assign, // обновляем роль
             is_active: true,

@@ -1,87 +1,159 @@
-import type { VercelResponse } from '@vercel/node';
-import { CreateAccessCodeSchema } from '../_lib/schemas';
-import { supabaseAdmin } from '../_lib/supabase';
-import { hashPassword, generateAccessCode } from '../_lib/auth';
-import { requireAuth, logAction, handleError, setCorsHeaders, type AuthenticatedRequest } from '../_lib/middleware';
+/**
+ * Cloudflare Pages Function: Управление кодами доступа
+ * GET /api/admin/access-codes - список
+ * POST /api/admin/access-codes - создание
+ * DELETE /api/admin/access-codes - удаление
+ */
 
-export default async function handler(req: AuthenticatedRequest, res: VercelResponse) {
-  setCorsHeaders(res);
+import { createClient } from '@supabase/supabase-js';
+import bcrypt from 'bcryptjs';
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
+interface Env {
+  VITE_SUPABASE_URL: string;
+  VITE_SUPABASE_ANON_KEY: string;
+}
 
+// GET: Список кодов
+export async function onRequestGet(context: { env: Env }) {
   try {
-    // Требуем авторизацию и права на управление кодами
-    const user = await requireAuth(req, res, 'codes:create');
-    if (!user) return;
+    const supabase = createClient(
+      context.env.VITE_SUPABASE_URL,
+      context.env.VITE_SUPABASE_ANON_KEY
+    );
 
-    if (req.method === 'GET') {
-      // Получить список кодов (без самих кодов, только метаданные)
-      const { data, error } = await supabaseAdmin
-        .from('access_codes')
-        .select('id, role_to_assign, max_uses, uses_count, expires_at, is_disabled, created_at, note')
-        .order('created_at', { ascending: false });
+    const { data, error } = await supabase
+      .from('access_codes')
+      .select('id,code_hash,role,is_active,expires_at,max_uses,uses_count,note,display_code,created_at')
+      .order('created_at', { ascending: false });
 
-      if (error) throw error;
-
-      return res.status(200).json({ codes: data });
-    }
-
-    if (req.method === 'POST') {
-      // Создать новый код
-      const body = CreateAccessCodeSchema.parse(req.body);
-      
-      // Генерируем код
-      const plainCode = generateAccessCode(12);
-      const codeHash = await hashPassword(plainCode.replace(/[-\s]/g, '').toUpperCase());
-
-      const { data, error } = await supabaseAdmin
-        .from('access_codes')
-        .insert({
-          code_hash: codeHash,
-          role_to_assign: body.role_to_assign,
-          max_uses: body.max_uses,
-          expires_at: body.expires_at,
-          note: body.note,
-          created_by: user.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      await logAction(user.id, 'create', 'access_code', data.id, { role: body.role_to_assign }, req);
-
-      // Возвращаем код ТОЛЬКО один раз при создании
-      return res.status(201).json({
-        code: plainCode, // !!! Показываем только при создании
-        id: data.id,
-        role_to_assign: data.role_to_assign,
-        expires_at: data.expires_at,
-        max_uses: data.max_uses,
+    if (error) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    if (req.method === 'DELETE') {
-      // Удалить/деактивировать код
-      const { id } = req.query;
-      if (!id || typeof id !== 'string') {
-        return res.status(400).json({ error: 'Missing code ID' });
-      }
+    return new Response(JSON.stringify({ codes: data }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
 
-      const { error } = await supabaseAdmin
-        .from('access_codes')
-        .update({ is_disabled: true })
-        .eq('id', id);
+// POST: Создание нового кода
+export async function onRequestPost(context: { request: Request; env: Env }) {
+  try {
+    const body = await context.request.json();
+    const { code, role, max_uses, expires_at, note } = body;
 
-      if (error) throw error;
-
-      await logAction(user.id, 'delete', 'access_code', id, {}, req);
-
-      return res.status(200).json({ success: true });
+    // Генерация или валидация кода
+    let plainCode = code?.trim();
+    if (!plainCode) {
+      plainCode = Math.floor(100000 + Math.random() * 900000).toString();
     }
 
-    return res.status(405).json({ error: 'Method not allowed' });
+    // Проверка формата
+    if (!/^\d{6}$/.test(plainCode)) {
+      return new Response(JSON.stringify({ error: 'Code must be 6 digits' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const supabase = createClient(
+      context.env.VITE_SUPABASE_URL,
+      context.env.VITE_SUPABASE_ANON_KEY
+    );
+
+    // Хеширование на сервере
+    const codeHash = await bcrypt.hash(plainCode, 10);
+    console.log('[ADMIN] Hash generated for code:', plainCode.slice(-2));
+
+    // Маскированный код для отображения
+    const displayCode = '****' + plainCode.slice(-2);
+
+    const payload = {
+      code_hash: codeHash,
+      role: role || 'viewer',
+      max_uses: max_uses ?? null,
+      expires_at: expires_at || null,
+      note: note || null,
+      display_code: displayCode,
+    };
+
+    const { error } = await supabase
+      .from('access_codes')
+      .insert(payload);
+
+    if (error) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Возвращаем код ТОЛЬКО при создании
+    return new Response(JSON.stringify({
+      success: true,
+      code: plainCode
+    }), {
+      status: 201,
+      headers: { 'Content-Type': 'application/json' }
+    });
+
   } catch (error) {
-    return handleError(res, error, 'access-codes');
+    console.error('[ADMIN] Error:', error);
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// DELETE: Деактивация кода
+export async function onRequestDelete(context: { request: Request; env: Env }) {
+  try {
+    const url = new URL(context.request.url);
+    const id = url.searchParams.get('id');
+
+    if (!id) {
+      return new Response(JSON.stringify({ error: 'Missing id parameter' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const supabase = createClient(
+      context.env.VITE_SUPABASE_URL,
+      context.env.VITE_SUPABASE_ANON_KEY
+    );
+
+    const { error } = await supabase
+      .from('access_codes')
+      .update({ is_active: false })
+      .eq('id', id);
+
+    if (error) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+  } catch (error) {
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
