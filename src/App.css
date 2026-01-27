@@ -459,20 +459,11 @@ body{
   overflow-y: hidden;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
+  scrollbar-width: none;
 }
 
 .adminCarousel::-webkit-scrollbar {
-  height: 4px;
-}
-
-.adminCarousel::-webkit-scrollbar-thumb {
-  background: rgba(111,0,255,.3);
-  border-radius: 2px;
-}
-
-.adminCarousel::-webkit-scrollbar-track {
-  background: rgba(111,0,255,.08);
+  display: none;
 }
 
 .cardCream::before{

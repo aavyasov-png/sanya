@@ -1451,7 +1451,7 @@ export default function App() {
                   <div style={{ 
                     padding: "24px 20px", 
                     borderBottom: "2px solid rgba(111,0,255,.15)",
-                    background: "linear-gradient(135deg, rgba(111,0,255,.08), rgba(111,0,255,.05))"
+                    background: "#fff"
                   }}>
                     <div style={{ fontSize: "20px", fontWeight: 900, color: "#6F00FF", marginBottom: "4px" }}>
                       Меню
@@ -1520,7 +1520,7 @@ export default function App() {
                   <div style={{ 
                     padding: "16px", 
                     borderTop: "2px solid rgba(111,0,255,.15)",
-                    background: "rgba(111,0,255,.03)"
+                    background: "#fff"
                   }}>
                     <button
                       onClick={() => {
@@ -1578,7 +1578,7 @@ export default function App() {
             {/* Компактное приветствие */}
             <div style={{ 
               padding: "12px 16px",
-              background: "linear-gradient(135deg, rgba(111,0,255,.05), rgba(111,0,255,.08))",
+              background: "#fff",
               borderBottom: "2px solid rgba(111,0,255,.15)"
             }}>
               <div style={{ fontSize: "16px", fontWeight: 800, color: "#6F00FF", marginBottom: "2px" }}>
