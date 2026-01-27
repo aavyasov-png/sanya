@@ -32,24 +32,32 @@ async function apiRequest<T>(
   token: string,
   options: RequestInit = {}
 ): Promise<{ data?: T; error?: string; status: number }> {
+  console.log(`🔵 API Request: ${endpoint}`, { 
+    useProxy: USE_PROXY, 
+    method: options.method || 'GET' 
+  });
+  
   try {
     let response: Response;
 
     if (USE_PROXY) {
       // Используем Cloudflare Function прокси
+      const requestBody = {
+        path: endpoint,
+        method: options.method || 'GET',
+        headers: {
+          'Authorization': buildAuthHeader(token),
+        },
+        body: options.body ? JSON.parse(options.body as string) : undefined,
+      };
+      console.log('🔵 Proxy request body:', requestBody);
+      
       response = await fetch(PROXY_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          path: endpoint,
-          method: options.method || 'GET',
-          headers: {
-            'Authorization': buildAuthHeader(token),
-          },
-          body: options.body ? JSON.parse(options.body as string) : undefined,
-        }),
+        body: JSON.stringify(requestBody),
       });
     } else {
       // Прямой запрос (может не работать из-за CORS)
@@ -65,9 +73,13 @@ async function apiRequest<T>(
     }
 
     const status = response.status;
+    console.log(`🟢 API Response: ${endpoint} - Status ${status}`);
 
     // Handle errors
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`🔴 API Error: ${endpoint}`, { status, errorText });
+      
       if (status === 401) {
         return { error: 'Неверный токен (401 Unauthorized)', status };
       }
@@ -86,9 +98,11 @@ async function apiRequest<T>(
     // Try to parse JSON response
     try {
       const data = await response.json();
+      console.log(`✅ API Data: ${endpoint}`, data);
       return { data, status };
     } catch {
       // Some endpoints may return empty response
+      console.log(`⚪ API Empty: ${endpoint}`);
       return { data: {} as T, status };
     }
   } catch (error: any) {

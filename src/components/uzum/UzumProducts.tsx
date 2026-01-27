@@ -76,9 +76,11 @@ export default function UzumProducts({ lang, token }: UzumProductsProps) {
     setLoading(true);
     try {
       const shopsResult = await getShops(token);
+      console.log('🏪 [Products] Shops:', shopsResult);
       if (shopsResult.success && shopsResult.shops && shopsResult.shops.length > 0) {
         const shopId = shopsResult.shops[0].id;
         const productsResult = await getProducts(token, shopId);
+        console.log('📦 [Products] Products:', productsResult);
         
         if (productsResult.success && productsResult.products) {
           setProducts(productsResult.products);

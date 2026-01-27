@@ -58,6 +58,7 @@ export default function UzumDashboard({ lang, token, onNavigate }: UzumDashboard
     try {
       // Load shops
       const shopsResult = await getShops(token);
+      console.log('🏪 Shops result:', shopsResult);
       if (shopsResult.success && shopsResult.shops) {
         setShops(shopsResult.shops);
 
@@ -65,6 +66,7 @@ export default function UzumDashboard({ lang, token, onNavigate }: UzumDashboard
         if (shopsResult.shops.length > 0) {
           const shopId = shopsResult.shops[0].id;
           const productsResult = await getProducts(token, shopId);
+          console.log('📦 Products result:', productsResult);
           
           if (productsResult.success && productsResult.products) {
             setStats(prev => ({
@@ -77,6 +79,7 @@ export default function UzumDashboard({ lang, token, onNavigate }: UzumDashboard
 
       // Load orders count
       const ordersResult = await getFbsOrdersCount(token);
+      console.log('📋 Orders count result:', ordersResult);
       if (ordersResult.success && ordersResult.count !== undefined) {
         setStats(prev => ({
           ...prev,

@@ -2633,13 +2633,7 @@ export default function App() {
               showSearch={false}
               search={search}
               setSearch={setSearch}
-              onBack={() => {
-                if (uzumConnected && uzumCurrentPage !== 'dashboard') {
-                  setUzumCurrentPage('dashboard');
-                } else {
-                  goBack();
-                }
-              }}
+              onBack={uzumCurrentPage !== 'dashboard' ? () => setUzumCurrentPage('dashboard') : goBack}
               onHome={goHome}
               rightSlot={
                 uzumConnected ? (

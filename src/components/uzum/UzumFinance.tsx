@@ -74,11 +74,13 @@ export default function UzumFinance({ lang, token }: UzumFinanceProps) {
 
       if (activeTab === 'orders') {
         const result = await getFinanceOrders(token, params);
+        console.log('💰 [Finance] Orders:', result);
         if (result.success && result.orders) {
           setOrders(Array.isArray(result.orders) ? result.orders : []);
         }
       } else {
         const result = await getFinanceExpenses(token, params);
+        console.log('💸 [Finance] Expenses:', result);
         if (result.success && result.expenses) {
           setExpenses(Array.isArray(result.expenses) ? result.expenses : []);
         }
