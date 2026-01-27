@@ -1,14 +1,35 @@
 # Настройка переменных окружения в Cloudflare Pages
 
-## Важно! 
-Для фронтенд-приложения переменные встраиваются **на этапе сборки** (build time), а не runtime.
+## ⚠️ ВАЖНО! Решение ошибки "Variables cannot be added to a Worker that only has static assets"
 
-## Шаг 1: Перейти в настройки Cloudflare Pages
+Если вы видите эту ошибку, значит в настройках проекта указана команда деплоя через Wrangler. Это нужно исправить!
 
-1. Откройте ваш проект на Cloudflare Pages
-2. Перейдите в **Settings** → **Environment variables**
+## Шаг 1: Правильные настройки сборки в Cloudflare Pages
 
-## Шаг 2: Добавить переменные окружения
+1. Откройте ваш проект на [Cloudflare Pages Dashboard](https://dash.cloudflare.com/)
+2. Перейдите в **Settings** → **Builds & deployments**
+3. Убедитесь, что настройки такие:
+
+### ✅ Правильная конфигурация:
+
+```
+Framework preset: None (или Vite)
+Build command: npm run build
+Build output directory: /dist
+Root directory: (оставьте пустым)
+```
+
+### ❌ УДАЛИТЕ если есть:
+- Любые упоминания `wrangler deploy`
+- Любые упоминания Workers
+- Поле "Deploy command" должно быть пустым или отсутствовать
+
+## Шаг 2: Перейти в настройки переменных окружения
+
+1. В том же проекте перейдите в **Settings** → **Environment variables**
+2. Теперь вы сможете добавлять переменные без ошибок
+
+## Шаг 3: Добавить переменные окружения
 
 Для **Production** и **Preview** окружений добавьте следующие переменные:
 
@@ -27,7 +48,16 @@ VITE_AI_PROVIDER=groq
 VITE_GROQ_API_KEY=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
 ```
 
-## Шаг 3: Настройки сборки
+## Шаг 4: Пересоберите проект
+
+После изменения настроек:
+1. Перейдите в **Deployments**
+2. Нажмите **Retry deployment** на последнем деплое
+3. Или сделайте новый commit и push - автоматически запустится новая сборка
+
+---
+
+## Старые настройки (Шаг 3-4) - оставлены для справки
 
 В настройках Cloudflare Pages должно быть:
 
