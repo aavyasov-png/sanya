@@ -1134,123 +1134,266 @@ export default function App() {
         </div>
 
         {route.name === "welcome" && (
-          <div className="page">
-            <div className="center">
-              <div className="logoBox">
-                <img className="logoImg" src="/uzum-logo.png" alt="Uzum" />
+          <div className="page" style={{ 
+            display: "flex", 
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+            minHeight: "100vh"
+          }}>
+            <div style={{ 
+              width: "100%", 
+              maxWidth: "480px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "24px"
+            }}>
+              {/* Логотип */}
+              <div style={{
+                display: "flex",
+                justifyContent: "center",
+                marginBottom: "8px"
+              }}>
+                <div className="logoBox" style={{
+                  width: "120px",
+                  height: "120px",
+                  background: "linear-gradient(145deg, #ffffff, #f8f7ff)",
+                  borderRadius: "32px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 8px 32px rgba(111,0,255,.25), 0 2px 8px rgba(0,0,0,.05)",
+                  border: "3px solid rgba(255,255,255,.9)"
+                }}>
+                  <div style={{
+                    width: "80px",
+                    height: "80px",
+                    background: "linear-gradient(135deg, #6F00FF, #9d4edd)",
+                    borderRadius: "24px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "48px",
+                    boxShadow: "inset 0 2px 8px rgba(0,0,0,.15)"
+                  }}>
+                    ⚡
+                  </div>
+                </div>
               </div>
 
-              <div className="h1">{t.welcome}</div>
+              {/* Заголовок */}
+              <div style={{
+                textAlign: "center",
+                marginBottom: "8px"
+              }}>
+                <h1 style={{
+                  fontSize: "36px",
+                  fontWeight: 900,
+                  margin: 0,
+                  background: "linear-gradient(135deg, #6F00FF, #9d4edd)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  lineHeight: 1.2,
+                  letterSpacing: "-0.5px"
+                }}>
+                  {t.welcome}
+                </h1>
+              </div>
 
-              <div className="cardCream">
-                <div style={{ fontWeight: 950, marginBottom: 10 }}>{t.enterCode}</div>
+              {/* Основная карточка */}
+              <div style={{
+                background: "linear-gradient(145deg, #ffffff, #fdfcff)",
+                borderRadius: "24px",
+                padding: "32px 24px",
+                boxShadow: "0 12px 48px rgba(111,0,255,.12), 0 4px 12px rgba(0,0,0,.06)",
+                border: "2px solid rgba(111,0,255,.1)"
+              }}>
+                {/* Поле ввода кода */}
+                <div style={{ marginBottom: "20px" }}>
+                  <label style={{
+                    display: "block",
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    color: "rgba(20,18,26,.7)",
+                    marginBottom: "8px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px"
+                  }}>
+                    {t.enterCode}
+                  </label>
+                  <input
+                    className="input"
+                    placeholder="4565"
+                    value={code}
+                    onChange={(e) => {
+                      setCode(e.target.value);
+                      if (error) setError("");
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") submitCode();
+                    }}
+                    style={{
+                      fontSize: "20px",
+                      fontWeight: 700,
+                      letterSpacing: "1px",
+                      textAlign: "center"
+                    }}
+                  />
+                </div>
 
-                <input
-                  className="input"
-                  value={code}
-                  onChange={(e) => {
-                    setCode(e.target.value);
-                    if (error) setError("");
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") submitCode();
-                  }}
-                />
-
-                {/* Правила пользования - accordion */}
-                <div style={{ marginTop: 12 }}>
+                {/* Правила - аккордеон */}
+                <div style={{ marginBottom: "20px" }}>
                   <button 
-                    className="rulesToggle"
                     onClick={() => setRulesExpanded(!rulesExpanded)}
                     style={{
                       width: "100%",
-                      padding: "10px",
-                      border: "2px solid rgba(111,0,255,.3)",
-                      borderRadius: "12px",
-                      background: "transparent",
-                      color: "rgba(20,18,26,.8)",
-                      fontWeight: 900,
+                      padding: "14px 16px",
+                      border: "2px solid rgba(111,0,255,.2)",
+                      borderRadius: "14px",
+                      background: rulesExpanded ? "rgba(111,0,255,.05)" : "transparent",
+                      color: "rgba(20,18,26,.85)",
+                      fontWeight: 700,
+                      fontSize: "14px",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
-                      fontSize: 13,
-                      transition: "all .3s ease"
+                      transition: "all .25s ease"
                     }}
                   >
-                    <span>📋 Правила пользования</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      📋 Правила пользования
+                    </span>
                     <span style={{ 
-                      fontSize: 16, 
+                      fontSize: "12px",
                       transition: "transform .3s ease", 
                       transform: rulesExpanded ? "rotate(180deg)" : "rotate(0deg)",
                       display: "inline-block"
-                    }}>▼</span>
+                    }}>
+                      ▼
+                    </span>
                   </button>
                   
                   {rulesExpanded && (
-                    <div className="rulesContent" style={{
-                      marginTop: 10,
-                      padding: "10px",
-                      background: "rgba(111,0,255,.05)",
-                      borderRadius: 8,
-                      animation: "slideDown 0.3s ease"
+                    <div style={{
+                      marginTop: "12px",
+                      padding: "16px",
+                      background: "rgba(111,0,255,.04)",
+                      borderRadius: "12px",
+                      border: "1px solid rgba(111,0,255,.1)"
                     }}>
-                      <ul style={{ margin: "0 0 0 20px", paddingLeft: 0, fontSize: 12, color: "rgba(20,18,26,.7)", lineHeight: 1.8 }}>
-                        <li>Используйте помощника исключительно в рабочих целях.</li>
+                      <ul style={{ 
+                        margin: 0, 
+                        paddingLeft: "20px", 
+                        fontSize: "13px", 
+                        color: "rgba(20,18,26,.75)", 
+                        lineHeight: 1.8 
+                      }}>
+                        <li>Используйте помощника исключительно в рабочих целях</li>
                         <li>Не распространяйте коды доступа третьим лицам</li>
-                        <li>Чего-то не хватает поделитесь</li>
-                        <li>Пользуйтесь и наслаждайтесь!</li>
+                        <li>Чего-то не хватает? Поделитесь с нами!</li>
+                        <li>Пользуйтесь и наслаждайтесь! 🎉</li>
                         <li>Администратор имеет право отключить доступ в любой момент</li>
                       </ul>
                     </div>
                   )}
                 </div>
 
-                <label htmlFor="rules-checkbox" className="row" style={{ marginTop: 16, color: "rgba(20,18,26,.88)", cursor: "pointer", gap: 12, alignItems: "center" }}>
+                {/* Чекбокс */}
+                <label 
+                  htmlFor="rules-checkbox" 
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    padding: "14px",
+                    background: "rgba(111,0,255,.03)",
+                    borderRadius: "12px",
+                    cursor: "pointer",
+                    border: "2px solid " + (rules ? "rgba(111,0,255,.25)" : "rgba(111,0,255,.1)"),
+                    transition: "all .2s ease",
+                    marginBottom: "20px"
+                  }}
+                >
                   <input
                     id="rules-checkbox"
                     type="checkbox"
                     checked={rules}
                     onChange={(e) => {
-                      console.log("Checkbox changed:", e.target.checked);
                       setRules(e.target.checked);
                       if (error) setError("");
                     }}
                     style={{ cursor: "pointer", flexShrink: 0 }}
                   />
-                  <span style={{ fontWeight: 900, fontSize: 15 }}>{t.acceptRules}</span>
+                  <span style={{ 
+                    fontWeight: 700, 
+                    fontSize: "14px",
+                    color: "rgba(20,18,26,.85)",
+                    flex: 1
+                  }}>
+                    {t.acceptRules}
+                  </span>
                 </label>
 
-                {error ? (
-                  <div style={{ marginTop: 10, color: "#b00020", fontWeight: 950 }}>{error}</div>
-                ) : null}
+                {/* Ошибка */}
+                {error && (
+                  <div style={{
+                    padding: "12px 16px",
+                    background: "rgba(176,0,32,.08)",
+                    border: "2px solid rgba(176,0,32,.2)",
+                    borderRadius: "12px",
+                    color: "#b00020",
+                    fontWeight: 700,
+                    fontSize: "14px",
+                    marginBottom: "16px",
+                    textAlign: "center"
+                  }}>
+                    {error}
+                  </div>
+                )}
 
+                {/* Кнопка продолжить */}
                 <button
                   className="btnPrimary"
-                  style={{
-                    marginTop: 14,
-                    opacity: canContinue ? 1 : 0.55,
-                    cursor: canContinue ? "pointer" : "not-allowed",
-                    width: "100%",
-                  }}
                   onClick={submitCode}
+                  disabled={!canContinue}
+                  style={{
+                    width: "100%",
+                    height: "56px",
+                    fontSize: "16px",
+                    fontWeight: 800,
+                    opacity: canContinue ? 1 : 0.5,
+                    cursor: canContinue ? "pointer" : "not-allowed",
+                    transition: "all .2s ease",
+                    marginBottom: "20px"
+                  }}
                 >
                   {t.continue}
                 </button>
 
+                {/* Информация о получении кода */}
                 <div style={{
-                  marginTop: 24,
-                  padding: "12px",
-                  background: "rgba(111,0,255,.08)",
-                  borderRadius: 8,
+                  padding: "16px",
+                  background: "linear-gradient(135deg, rgba(111,0,255,.06), rgba(111,0,255,.08))",
+                  borderRadius: "14px",
                   textAlign: "center",
-                  fontSize: 12,
-                  color: "rgba(20,18,26,.7)",
-                  lineHeight: 1.6
+                  border: "1px solid rgba(111,0,255,.15)"
                 }}>
-                  <div>Для получения кода доступа</div>
-                  <div style={{ fontWeight: 900, color: "#6F00FF", marginTop: 4 }}>
-                    обратитесь к <strong>@alex_uzumm</strong>
+                  <div style={{ 
+                    fontSize: "13px", 
+                    color: "rgba(20,18,26,.65)",
+                    marginBottom: "6px"
+                  }}>
+                    Для получения кода доступа
+                  </div>
+                  <div style={{ 
+                    fontSize: "15px",
+                    fontWeight: 800,
+                    color: "#6F00FF"
+                  }}>
+                    обратитесь к @alex_uzumm
                   </div>
                 </div>
               </div>
