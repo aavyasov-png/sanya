@@ -1,381 +1,85 @@
 /**
  * Uzum Seller API Client
  * 
- * Base URL: https://api-seller.uzum.uz/api/seller-openapi/
- * 
- * Auth: RAW token without prefix
- * Authorization: <token>
- * 
- * Official Swagger Endpoints:
- * 
- * DBS (Delivery by Seller):
- * - GET  /v2/dbs/sku/stocks - Получение остатков по SKU
- * - POST /v2/dbs/sku/stocks - Обновление остатков по SKU
- * 
- * FBS (Fulfillment by Seller):
- * - GET  /v1/fbs/order/{orderId} - Получение информации о заказе
- * - POST /v1/fbs/order/{orderId}/cancel - Отмена заказа
- * - POST /v1/fbs/order/{orderId}/confirm - Подтверждение заказа
- * - GET  /v1/fbs/order/{orderId}/labels/print - Получить этикетку для FBS заказа
- * - GET  /v1/fbs/order/return-reasons - Получение причин возврата
- * - GET  /v2/fbs/orders - Получение заказов продавца
- * - GET  /v2/fbs/orders/count - Получить количество заказов
- * - GET  /v2/fbs/sku/stocks - Получение остатков по SKU
- * - POST /v2/fbs/sku/stocks - Обновление остатков по SKU
- * 
- * Finance:
- * - GET /v1/finance/expenses - Получение списка расходов продавца
- * - GET /v1/finance/orders - Получение списка заказов
- * 
- * Invoice:
- * - GET /v1/invoice - Получение списка накладных
- * - GET /v1/return - Получение возвратов продавца
- * - GET /v1/shop/{shopId}/invoice - Получение накладных поставки по ID магазина
- * - GET /v1/shop/{shopId}/invoice/products - Получение состава накладной
- * - GET /v1/shop/{shopId}/return - Получение накладных возврата
- * - GET /v1/shop/{shopId}/return/{returnId} - Получение состава накладной возврата
- * 
- * Product:
- * - POST /v1/product/{shopId}/sendPriceData - Изменение цен SKU
- * - GET  /v1/product/shop/{shopId} - Получение SKU по ID магазина
- * 
- * Shop:
- * - GET /v1/shops - Получение списка собственных магазинов
+ * Base URL: https://api-seller.uzum.uz/api/seller-openapi
+ * Auth: RAW token without Bearer prefix
+ * Authorization header: <token>
  */
 
 const BASE_URL = 'https://api-seller.uzum.uz/api/seller-openapi';
-const USE_PROXY = import.meta.env.VITE_USE_UZUM_PROXY !== 'false'; // По умолчанию используем прокси
-const PROXY_URL = '/api/uzum-proxy';
-
-// Uzum uses RAW token without Bearer prefix
-// Можно изменить на 'Bearer' или 'Token' для тестирования
-let AUTH_SCHEME = 'Raw';
-
-// Альтернативные URL для тестирования
-const ALTERNATIVE_URLS = [
-  'https://api-seller.uzum.uz/api/seller-openapi',
-  'https://api-seller.uzum.uz/api',
-  'https://api.uzum.uz/api/seller',
-  'https://seller-api.uzum.uz/api',
-];
 
 /**
- * Set auth scheme for testing
- */
-export function setAuthScheme(scheme: 'Raw' | 'Bearer' | 'Token') {
-  AUTH_SCHEME = scheme;
-  console.log(`🔧 Auth scheme changed to: ${scheme}`);
-}
-
-/**
- * Build Authorization header based on scheme
- */
-function buildAuthHeader(token: string): string {
-  if (AUTH_SCHEME === 'Raw') {
-    return token;
-  }
-  return `${AUTH_SCHEME} ${token}`;
-}
-
-/**
- * Base API request with error handling
+ * Base API request handler
  */
 async function apiRequest<T>(
   endpoint: string,
   token: string,
   options: RequestInit = {}
 ): Promise<{ data?: T; error?: string; status: number }> {
-  const fullUrl = USE_PROXY ? PROXY_URL : `${BASE_URL}${endpoint}`;
-  console.log(`🔵 API Request:`, { 
-    endpoint,
-    fullUrl,
-    useProxy: USE_PROXY, 
-    method: options.method || 'GET',
-    authScheme: AUTH_SCHEME,
-    tokenPrefix: token.substring(0, 20) + '...'
-  });
+  const url = `${BASE_URL}${endpoint}`;
   
   try {
-    let response: Response;
-
-    if (USE_PROXY) {
-      // Используем Cloudflare Function прокси
-      const requestBody = {
-        path: endpoint,
-        method: options.method || 'GET',
-        headers: {
-          'Authorization': buildAuthHeader(token),
-        },
-        body: options.body ? JSON.parse(options.body as string) : undefined,
-      };
-      console.log('🔵 Proxy request body:', requestBody);
-      
-      response = await fetch(PROXY_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-    } else {
-      // Прямой запрос (может не работать из-за CORS)
-      const url = `${BASE_URL}${endpoint}`;
-      const headers = {
-        'Authorization': buildAuthHeader(token),
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Authorization': token,
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         ...options.headers,
-      };
-      
-      console.log('🔵 Direct request:', {
-        url,
-        method: options.method || 'GET',
-        headers: {
-          ...headers,
-          Authorization: `${headers.Authorization.substring(0, 10)}...` // Скрываем токен
-        }
-      });
-      
-      response = await fetch(url, {
-        ...options,
-        headers,
-      });
-    }
+      },
+    });
 
     const status = response.status;
-    console.log(`🟢 API Response: ${endpoint} - Status ${status}`);
 
-    // Handle errors
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`🔴 API Error: ${endpoint}`, { status, errorText });
       
-      if (status === 401) {
-        return { error: 'Неверный токен (401 Unauthorized)', status };
-      }
-      if (status === 403) {
-        return { error: 'Доступ запрещён (403 Forbidden)', status };
-      }
-      if (status === 404) {
-        return { error: 'Ресурс не найден (404 Not Found)', status };
-      }
-      if (status >= 500) {
-        return { error: `Ошибка сервера Uzum (${status})`, status };
-      }
-      return { error: `HTTP ошибка ${status}`, status };
+      if (status === 401) return { error: 'Неверный токен', status };
+      if (status === 403) return { error: 'Доступ запрещён', status };
+      if (status === 404) return { error: 'Ресурс не найден', status };
+      if (status >= 500) return { error: 'Ошибка сервера', status };
+      
+      return { error: `Ошибка ${status}`, status };
     }
 
-    // Try to parse JSON response
-    try {
-      const data = await response.json();
-      console.log(`✅ API Data: ${endpoint}`, data);
-      return { data, status };
-    } catch {
-      // Some endpoints may return empty response
-      console.log(`⚪ API Empty: ${endpoint}`);
-      return { data: {} as T, status };
-    }
+    const data = await response.json();
+    return { data, status };
   } catch (error: any) {
-    // Network error or CORS
-    if (error.message?.includes('Failed to fetch') || error.name === 'TypeError') {
-      return {
-        error: 'CORS блокировка или сеть недоступна. Требуется backend-прокси.',
-        status: 0
-      };
-    }
     return {
-      error: error.message || 'Неизвестная ошибка',
+      error: error.message || 'Ошибка сети',
       status: 0
     };
   }
 }
 
+// ============================================================================
+// Shop - Магазины
+// ============================================================================
+
 /**
- * Diagnose API connectivity by testing different URL combinations
- * Tests official base URL with different endpoints
+ * GET /v1/shops - Получение списка собственных магазинов
  */
-export async function diagnoseApi(token: string): Promise<{
+export async function getShops(token: string): Promise<{
   success: boolean;
-  workingUrl?: string;
-  workingEndpoint?: string;
-  data?: any;
-  attempts: Array<{ url: string; endpoint: string; status: number; error?: string; headers?: any }>;
-}> {
-  console.log('🔬 Starting comprehensive API diagnosis...');
-  console.log('📋 Token info:', {
-    length: token.length,
-    preview: token.substring(0, 20) + '...',
-    authScheme: 'Raw (no prefix)',
-  });
-  
-  const baseUrls = [
-    'https://api-seller.uzum.uz/api/seller-openapi',
-    'https://api-seller.uzum.uz/api',
-    'https://api.uzum.uz/seller',
-    'https://seller-api.uzum.uz',
-  ];
-  
-  const endpoints = [
-    '/v1/shops',
-    '/shops',
-    '/v1/seller/shops',
-  ];
-  
-  const attempts: Array<{ url: string; endpoint: string; status: number; error?: string; headers?: any }> = [];
-  
-  for (const baseUrl of baseUrls) {
-    for (const endpoint of endpoints) {
-      const fullUrl = `${baseUrl}${endpoint}`;
-      console.log(`\n🔍 Testing: ${fullUrl}`);
-      
-      const requestHeaders = {
-        'Authorization': token,  // RAW token without Bearer
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      };
-      
-      console.log('📤 Request headers:', {
-        Authorization: token.substring(0, 15) + '...',
-        Accept: requestHeaders.Accept,
-        'Content-Type': requestHeaders['Content-Type'],
-      });
-      
-      try {
-        const response = await fetch(fullUrl, {
-          method: 'GET',
-          headers: requestHeaders,
-        });
-        
-        const status = response.status;
-        const responseHeaders: any = {};
-        response.headers.forEach((value, key) => {
-          responseHeaders[key] = value;
-        });
-        
-        console.log(`📥 Response:`, {
-          status,
-          statusText: response.statusText,
-          contentType: responseHeaders['content-type'],
-        });
-        
-        if (status === 200) {
-          const data = await response.json();
-          console.log(`✅ SUCCESS! Working URL found`);
-          console.log(`📊 Data:`, data);
-          
-          attempts.push({ 
-            url: baseUrl, 
-            endpoint, 
-            status, 
-            error: undefined,
-            headers: responseHeaders 
-          });
-          
-          return {
-            success: true,
-            workingUrl: baseUrl,
-            workingEndpoint: endpoint,
-            data,
-            attempts,
-          };
-        } else {
-          const errorText = await response.text();
-          attempts.push({ 
-            url: baseUrl, 
-            endpoint, 
-            status, 
-            error: errorText.substring(0, 200),
-            headers: responseHeaders 
-          });
-          console.log(`❌ Error (${status}):`, errorText.substring(0, 200));
-        }
-      } catch (error: any) {
-        console.log(`💥 Exception:`, error.message);
-        attempts.push({ 
-          url: baseUrl, 
-          endpoint, 
-          status: 0, 
-          error: error.message,
-          headers: undefined
-        });
-      }
-    }
-  }
-  
-  console.log('\n❌ No working URL found after testing all combinations');
-  console.log('📊 Total attempts:', attempts.length);
-  console.log('📋 Summary:', attempts.map(a => `${a.url}${a.endpoint}: ${a.status}`).join('\n'));
-  
-  return { success: false, attempts };
-}
-
-/**
- * Test if token is valid
- * Uses /v1/shops endpoint to verify token and get shop info
- * Based on official Swagger: GET /v1/shops - Получение списка собственных магазинов
- */
-export async function testToken(token: string): Promise<{
-  valid: boolean;
+  shops?: any[];
   error?: string;
-  sellerInfo?: any;
 }> {
-  if (!token || token.trim().length === 0) {
-    return { valid: false, error: 'Токен пустой' };
+  const result = await apiRequest<any[]>('/v1/shops', token, { method: 'GET' });
+
+  if (result.error) {
+    return { success: false, error: result.error };
   }
 
-  console.log('🔍 Testing token with official endpoint: /v1/shops');
-  console.log('📝 Token length:', token.length);
-  console.log('📝 Token preview:', token.substring(0, 20) + '...');
-  console.log('📝 Full URL will be: https://api-seller.uzum.uz/api/seller-openapi/v1/shops');
-  
-  // Используем официальный эндпоинт из Swagger
-  const result = await apiRequest<any>('/v1/shops', token, { method: 'GET' });
-  
-  if (result.error) {
-    console.error('❌ Token validation failed:', result.error);
-    console.log('');
-    console.log('💡 Running full API diagnosis...');
-    
-    // Запускаем диагностику если основной эндпоинт не работает
-    const diagnosis = await diagnoseApi(token);
-    console.log('📊 Diagnosis complete:', diagnosis);
-    
-    if (diagnosis.success && diagnosis.data) {
-      console.log('✅ Found alternative working endpoint!');
-      return {
-        valid: true,
-        sellerInfo: {
-          shops: diagnosis.data,
-          shopId: diagnosis.data?.[0]?.id,
-          shopName: diagnosis.data?.[0]?.name,
-          workingUrl: diagnosis.workingUrl,
-          workingEndpoint: diagnosis.workingEndpoint,
-        }
-      };
-    }
-    
-    return { valid: false, error: result.error };
-  }
-  
-  if (!result.data) {
-    console.error('❌ No data returned from /v1/shops');
-    return { valid: false, error: 'API не вернул данные' };
-  }
-  
-  console.log('✅ Token is valid! Shops data:', result.data);
-  
-  return { 
-    valid: true, 
-    sellerInfo: { 
-      shops: result.data,
-      shopId: result.data?.[0]?.id,
-      shopName: result.data?.[0]?.name,
-    } 
-  };
+  const shops = Array.isArray(result.data) ? result.data : [];
+  return { success: true, shops };
 }
 
+// ============================================================================
+// Product - Товары
+// ============================================================================
+
 /**
- * Get products list
- * Endpoint: /v1/product/shop/{shopId}
+ * GET /v1/product/shop/{shopId} - Получение SKU по ID магазина
  */
 export async function getProducts(
   token: string,
@@ -385,10 +89,6 @@ export async function getProducts(
   products?: any[];
   error?: string;
 }> {
-  if (!shopId) {
-    return { success: false, error: 'shopId обязателен' };
-  }
-
   const result = await apiRequest<any[]>(
     `/v1/product/shop/${shopId}`,
     token,
@@ -399,42 +99,43 @@ export async function getProducts(
     return { success: false, error: result.error };
   }
 
-  // API returns array of products
   const products = Array.isArray(result.data) ? result.data : [];
   return { success: true, products };
 }
 
 /**
- * Get shops list
- * Endpoint: /v1/shops
+ * POST /v1/product/{shopId}/sendPriceData - Изменение цен SKU
  */
-export async function getShops(token: string): Promise<{
+export async function updateProductPrices(
+  token: string,
+  shopId: number | string,
+  prices: Array<{ sku: string; price: number }>
+): Promise<{
   success: boolean;
-  shops?: any[];
   error?: string;
 }> {
-  const result = await apiRequest<any[]>(
-    '/v1/shops',
+  const result = await apiRequest<any>(
+    `/v1/product/${shopId}/sendPriceData`,
     token,
-    { method: 'GET' }
+    {
+      method: 'POST',
+      body: JSON.stringify({ prices })
+    }
   );
 
   if (result.error) {
     return { success: false, error: result.error };
   }
 
-  // API returns array of shops
-  const shops = Array.isArray(result.data) ? result.data : [];
-  return { success: true, shops };
+  return { success: true };
 }
 
 // ============================================================================
-// FBS (Fulfillment by Seller) - Заказы FBS
+// FBS - Заказы
 // ============================================================================
 
 /**
- * Get FBS orders
- * Endpoint: /v2/fbs/orders
+ * GET /v2/fbs/orders - Получение заказов продавца
  */
 export async function getFbsOrders(
   token: string,
@@ -472,8 +173,7 @@ export async function getFbsOrders(
 }
 
 /**
- * Get FBS orders count
- * Endpoint: /v2/fbs/orders/count
+ * GET /v2/fbs/orders/count - Получить количество заказов
  */
 export async function getFbsOrdersCount(
   token: string,
@@ -507,8 +207,7 @@ export async function getFbsOrdersCount(
 }
 
 /**
- * Get FBS order details
- * Endpoint: /v1/fbs/order/{orderId}
+ * GET /v1/fbs/order/{orderId} - Получение информации о заказе
  */
 export async function getFbsOrder(
   token: string,
@@ -532,8 +231,7 @@ export async function getFbsOrder(
 }
 
 /**
- * Confirm FBS order
- * Endpoint: /v1/fbs/order/{orderId}/confirm
+ * POST /v1/fbs/order/{orderId}/confirm - Подтверждение заказа
  */
 export async function confirmFbsOrder(
   token: string,
@@ -556,13 +254,11 @@ export async function confirmFbsOrder(
 }
 
 /**
- * Cancel FBS order
- * Endpoint: /v1/fbs/order/{orderId}/cancel
+ * POST /v1/fbs/order/{orderId}/cancel - Отмена заказа
  */
 export async function cancelFbsOrder(
   token: string,
-  orderId: string | number,
-  reason?: string
+  orderId: string | number
 ): Promise<{
   success: boolean;
   error?: string;
@@ -570,10 +266,7 @@ export async function cancelFbsOrder(
   const result = await apiRequest<any>(
     `/v1/fbs/order/${orderId}/cancel`,
     token,
-    {
-      method: 'POST',
-      body: reason ? JSON.stringify({ reason }) : undefined
-    }
+    { method: 'POST' }
   );
 
   if (result.error) {
@@ -584,8 +277,7 @@ export async function cancelFbsOrder(
 }
 
 /**
- * Get FBS order label
- * Endpoint: /v1/fbs/order/{orderId}/labels/print
+ * GET /v1/fbs/order/{orderId}/labels/print - Получить этикетку для FBS заказа
  */
 export async function getFbsOrderLabel(
   token: string,
@@ -609,17 +301,14 @@ export async function getFbsOrderLabel(
 }
 
 /**
- * Get FBS return reasons
- * Endpoint: /v1/fbs/order/return-reasons
+ * GET /v1/fbs/order/return-reasons - Получение причин возврата
  */
-export async function getFbsReturnReasons(
-  token: string
-): Promise<{
+export async function getFbsReturnReasons(token: string): Promise<{
   success: boolean;
   reasons?: any[];
   error?: string;
 }> {
-  const result = await apiRequest<any[]>(
+  const result = await apiRequest<any>(
     '/v1/fbs/order/return-reasons',
     token,
     { method: 'GET' }
@@ -632,15 +321,18 @@ export async function getFbsReturnReasons(
   return { success: true, reasons: result.data };
 }
 
+// ============================================================================
+// DBS/FBS Stocks - Остатки
+// ============================================================================
+
 /**
- * Get FBS SKU stocks
- * Endpoint: /v2/fbs/sku/stocks
+ * GET /v2/fbs/sku/stocks - Получение остатков по SKU
  */
 export async function getFbsSkuStocks(
   token: string,
   params?: {
-    shopId?: number;
-    sku?: string;
+    limit?: number;
+    offset?: number;
   }
 ): Promise<{
   success: boolean;
@@ -648,8 +340,8 @@ export async function getFbsSkuStocks(
   error?: string;
 }> {
   const queryParams = new URLSearchParams();
-  if (params?.shopId) queryParams.append('shopId', String(params.shopId));
-  if (params?.sku) queryParams.append('sku', params.sku);
+  if (params?.limit) queryParams.append('limit', String(params.limit));
+  if (params?.offset) queryParams.append('offset', String(params.offset));
 
   const query = queryParams.toString() ? `?${queryParams.toString()}` : '';
   const result = await apiRequest<any>(
@@ -666,15 +358,11 @@ export async function getFbsSkuStocks(
 }
 
 /**
- * Update FBS SKU stocks
- * Endpoint: /v2/fbs/sku/stocks
+ * POST /v2/fbs/sku/stocks - Обновление остатков по SKU
  */
 export async function updateFbsSkuStocks(
   token: string,
-  stocks: Array<{
-    sku: string;
-    stock: number;
-  }>
+  stocks: Array<{ sku: string; stock: number }>
 ): Promise<{
   success: boolean;
   error?: string;
@@ -700,8 +388,7 @@ export async function updateFbsSkuStocks(
 // ============================================================================
 
 /**
- * Get finance orders
- * Endpoint: /v1/finance/orders
+ * GET /v1/finance/orders - Получение списка заказов
  */
 export async function getFinanceOrders(
   token: string,
@@ -737,8 +424,7 @@ export async function getFinanceOrders(
 }
 
 /**
- * Get finance expenses
- * Endpoint: /v1/finance/expenses
+ * GET /v1/finance/expenses - Получение списка расходов продавца
  */
 export async function getFinanceExpenses(
   token: string,
@@ -778,8 +464,7 @@ export async function getFinanceExpenses(
 // ============================================================================
 
 /**
- * Get invoices
- * Endpoint: /v1/invoice
+ * GET /v1/invoice - Получение списка накладных
  */
 export async function getInvoices(
   token: string,
@@ -811,8 +496,7 @@ export async function getInvoices(
 }
 
 /**
- * Get shop invoices
- * Endpoint: /v1/shop/{shopId}/invoice
+ * GET /v1/shop/{shopId}/invoice - Получение накладных поставки по ID магазина
  */
 export async function getShopInvoices(
   token: string,
@@ -845,8 +529,7 @@ export async function getShopInvoices(
 }
 
 /**
- * Get shop invoice products
- * Endpoint: /v1/shop/{shopId}/invoice/products
+ * GET /v1/shop/{shopId}/invoice/products - Получение состава накладной
  */
 export async function getShopInvoiceProducts(
   token: string,
@@ -876,9 +559,12 @@ export async function getShopInvoiceProducts(
   return { success: true, products: result.data };
 }
 
+// ============================================================================
+// Return - Возвраты
+// ============================================================================
+
 /**
- * Get returns
- * Endpoint: /v1/return
+ * GET /v1/return - Получение возвратов продавца
  */
 export async function getReturns(
   token: string,
@@ -910,8 +596,7 @@ export async function getReturns(
 }
 
 /**
- * Get shop returns
- * Endpoint: /v1/shop/{shopId}/return
+ * GET /v1/shop/{shopId}/return - Получение накладных возврата
  */
 export async function getShopReturns(
   token: string,
@@ -944,13 +629,12 @@ export async function getShopReturns(
 }
 
 /**
- * Get shop return details
- * Endpoint: /v1/shop/{shopId}/return/{returnId}
+ * GET /v1/shop/{shopId}/return/{returnId} - Получение состава накладной возврата
  */
 export async function getShopReturnDetails(
   token: string,
   shopId: number | string,
-  returnId: number | string
+  returnId: string | number
 ): Promise<{
   success: boolean;
   returnDetails?: any;
@@ -967,183 +651,4 @@ export async function getShopReturnDetails(
   }
 
   return { success: true, returnDetails: result.data };
-}
-
-// ============================================================================
-// Product - Товары
-// ============================================================================
-
-/**
- * Update product prices
- * Endpoint: /v1/product/{shopId}/sendPriceData
- */
-export async function updateProductPrices(
-  token: string,
-  shopId: number | string,
-  prices: Array<{
-    sku: string;
-    price: number;
-  }>
-): Promise<{
-  success: boolean;
-  error?: string;
-}> {
-  const result = await apiRequest<any>(
-    `/v1/product/${shopId}/sendPriceData`,
-    token,
-    {
-      method: 'POST',
-      body: JSON.stringify({ prices })
-    }
-  );
-
-  if (result.error) {
-    return { success: false, error: result.error };
-  }
-
-  return { success: true };
-}
-
-/**
- * Get orders (legacy)
- * Endpoint may vary, check API docs
- */
-export async function getOrders(
-  token: string,
-  shopId?: number | string
-): Promise<{
-  success: boolean;
-  orders?: any[];
-  error?: string;
-}> {
-  const params = shopId ? `?shopId=${shopId}` : '';
-  const result = await apiRequest<{ orders?: any[]; data?: any[] }>(
-    `/orders${params}`,
-    token,
-    { method: 'GET' }
-  );
-
-  if (result.error) {
-    return { success: false, error: result.error };
-  }
-
-  const orders = result.data?.orders || result.data?.data || [];
-  return { success: true, orders };
-}
-
-// ============================================================================
-// Manual Testing Helpers
-// ============================================================================
-
-/**
- * Quick test function for console debugging
- * Usage in browser console:
- * 
- * import { quickTest } from './lib/uzum-api';
- * quickTest('your-token-here');
- */
-export async function quickTest(token: string) {
-  console.log('🚀 Quick Test Started');
-  console.log('━'.repeat(60));
-  
-  // Test 1: Validate token
-  console.log('\n1️⃣ Testing token validation...');
-  const validation = await testToken(token);
-  console.log('Result:', validation);
-  
-  if (!validation.valid) {
-    console.log('\n⚠️ Token validation failed. Running full diagnosis...');
-    const diagnosis = await diagnoseApi(token);
-    console.log('\n📊 Diagnosis Results:');
-    console.table(diagnosis.attempts);
-    return;
-  }
-  
-  // Test 2: Get shops
-  console.log('\n2️⃣ Getting shops list...');
-  const shops = await getShops(token);
-  console.log('Shops:', shops);
-  
-  if (shops.success && shops.shops && shops.shops.length > 0) {
-    const shopId = shops.shops[0].id;
-    console.log(`\n3️⃣ Testing with shop ID: ${shopId}`);
-    
-    // Test 3: Get products
-    console.log('\n  📦 Getting products...');
-    const products = await getProducts(token, shopId);
-    console.log('  Products:', products);
-    
-    // Test 4: Get FBS orders count
-    console.log('\n  📋 Getting FBS orders count...');
-    const ordersCount = await getFbsOrdersCount(token);
-    console.log('  Orders count:', ordersCount);
-  }
-  
-  console.log('\n━'.repeat(60));
-  console.log('✅ Quick Test Complete');
-}
-
-/**
- * Test a single endpoint manually
- * Usage: testEndpoint('your-token', '/v1/shops')
- */
-export async function testEndpoint(token: string, endpoint: string) {
-  console.log(`🔍 Testing endpoint: ${endpoint}`);
-  const result = await apiRequest<any>(endpoint, token, { method: 'GET' });
-  console.log('Result:', result);
-  return result;
-}
-
-/**
- * Get Swagger documentation
- * Usage: getSwagger()
- */
-export async function getSwagger(): Promise<any> {
-  console.log('📚 Fetching Swagger documentation...');
-  
-  try {
-    const response = await fetch('https://api-seller.uzum.uz/api/seller-openapi/swagger/api-docs');
-    
-    if (!response.ok) {
-      console.error('Failed to fetch Swagger:', response.status, response.statusText);
-      return null;
-    }
-    
-    const swagger = await response.json();
-    console.log('✅ Swagger documentation loaded:', swagger);
-    console.log('\n📊 Available endpoints:');
-    
-    // Показываем все эндпоинты
-    if (swagger.paths) {
-      Object.keys(swagger.paths).forEach(path => {
-        const methods = Object.keys(swagger.paths[path]);
-        console.log(`  ${path}`);
-        methods.forEach(method => {
-          const operation = swagger.paths[path][method];
-          console.log(`    ${method.toUpperCase()}: ${operation.summary || operation.description || ''}`);
-        });
-      });
-    }
-    
-    return swagger;
-  } catch (error: any) {
-    console.error('Error fetching Swagger:', error.message);
-    return null;
-  }
-}
-
-// Экспортируем для использования в консоли браузера
-if (typeof window !== 'undefined') {
-  (window as any).uzumApi = {
-    testToken,
-    diagnoseApi,
-    quickTest,
-    testEndpoint,
-    getSwagger,
-    getShops,
-    getProducts,
-    getFbsOrders,
-    getFbsOrdersCount,
-  };
-  console.log('🔧 Uzum API utils available in window.uzumApi');
 }
