@@ -8,3 +8,9 @@ binding = "ASSETS"
 not_found_handling = "single-page-application"
 # API routes обрабатываются Worker'ом первыми
 run_worker_first = ["/api/*"]
+
+# Environment variables для Cloudflare Functions
+# Реальные значения устанавливаются в Cloudflare Dashboard
+[vars]
+# Эти переменные будут доступны в context.env
+# VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY задаются через Dashboard -> Settings -> Environment variables

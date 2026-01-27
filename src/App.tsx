@@ -571,8 +571,10 @@ export default function App() {
       return;
     }
 
-    // user access codes via API (bcrypt hashing)
+    // user access codes via API (bcrypt on server)
     try {
+      console.log("[CODE] Calling API to verify code...");
+      
       const resp = await fetch("/api/auth/verify-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -597,7 +599,6 @@ export default function App() {
       setError("");
       localStorage.setItem("access_ok", "1");
       localStorage.setItem("user_role", userRole);
-      localStorage.setItem("session_token", data.token);
       
       // Если роль admin или owner, открываем админ-панель
       if (userRole === "admin" || userRole === "owner") {
@@ -680,7 +681,7 @@ export default function App() {
     answer_uz: "",
     sort: 0,
   });
-  const [codeForm, setCodeForm] = useState({ role_to_assign: "viewer", max_uses: null as number | null, expires_at: "", note: "" });
+  const [codeForm, setCodeForm] = useState({ code: "", role: "viewer", max_uses: null as number | null, expires_at: "", note: "" });
   const [accessCodes, setAccessCodes] = useState<any[]>([]);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
 
@@ -911,13 +912,7 @@ export default function App() {
 
   const loadAccessCodes = async () => {
     try {
-      const token = localStorage.getItem("session_token");
-      const resp = await fetch("/api/admin/access-codes", {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const resp = await fetch("/api/admin/access-codes");
       
       if (!resp.ok) {
         console.error("Failed to load access codes:", resp.status);
@@ -935,15 +930,10 @@ export default function App() {
     if (adminTab === "codes") loadAccessCodes();
   }, [adminTab]);
 
-  const deleteAccessCode = async (codeId: string) => {
+  const deleteAccessCode = async (codeHash: string) => {
     try {
-      const token = localStorage.getItem("session_token");
-      const resp = await fetch(`/api/admin/access-codes?id=${codeId}`, {
+      const resp = await fetch(`/api/admin/access-codes?hash=${encodeURIComponent(codeHash)}`, {
         method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
       });
       
       if (!resp.ok) {
@@ -961,20 +951,19 @@ export default function App() {
 
   const adminSaveCode = async () => {
     try {
-      const token = localStorage.getItem("session_token");
       const payload = {
-        role_to_assign: codeForm.role_to_assign,
+        code: codeForm.code.trim() || undefined, // Пустой = автогенерация
+        role: codeForm.role,
         max_uses: codeForm.max_uses,
         expires_at: codeForm.expires_at ? new Date(codeForm.expires_at).toISOString() : null,
         note: codeForm.note || null,
       };
       
+      console.log("[ADMIN] Creating code via API...");
+      
       const resp = await fetch("/api/admin/access-codes", {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       
@@ -985,10 +974,12 @@ export default function App() {
       }
       
       const data = await resp.json();
-      setGeneratedCode(data.code); // Сохраняем сгенерированный код для отображения
+      console.log("[ADMIN] Code created:", data.code);
+      
+      setGeneratedCode(data.code);
       showToast("Код создан: " + data.code);
       await loadAccessCodes();
-      setCodeForm({ role_to_assign: "viewer", max_uses: null, expires_at: "", note: "" });
+      setCodeForm({ code: "", role: "viewer", max_uses: null, expires_at: "", note: "" });
     } catch (err) {
       console.error("Error creating access code:", err);
       showToast(t.error);
@@ -2562,14 +2553,22 @@ export default function App() {
                 <div className="cardCream">
                   <div style={{ fontWeight: 950, marginBottom: 12 }}>{t.manageCodes}</div>
                   <div style={{ padding: "12px", background: "rgba(111,0,255,.05)", borderRadius: "8px", marginBottom: "16px", fontSize: "13px", color: "#666" }}>
-                    ℹ️ Код генерируется автоматически на сервере с bcrypt-хешированием. После создания код показывается ОДИН раз.
+                    🔒 Код должен быть 6 цифр. Оставьте поле пустым для автогенерации. Хеширование bcrypt на сервере.
                   </div>
 
                   <div className="split">
+                    <input
+                      className="input"
+                      placeholder="Код (6 цифр, пусто = авто)"
+                      value={codeForm.code}
+                      onChange={(e) => setCodeForm({ ...codeForm, code: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                      maxLength={6}
+                      pattern="\d{6}"
+                    />
                     <select
                       className="input"
-                      value={codeForm.role_to_assign}
-                      onChange={(e) => setCodeForm({ ...codeForm, role_to_assign: e.target.value })}
+                      value={codeForm.role}
+                      onChange={(e) => setCodeForm({ ...codeForm, role: e.target.value })}
                       style={{ fontSize: 14, fontWeight: 700 }}
                     >
                       <option value="viewer">👁️ Viewer (Просмотр)</option>
@@ -2577,12 +2576,22 @@ export default function App() {
                       <option value="admin">⚙️ Admin (Админ)</option>
                       <option value="owner">👑 Owner (Владелец)</option>
                     </select>
+                  </div>
+
+                  <div className="split" style={{ marginTop: 10 }}>
                     <input
                       className="input"
                       type="number"
-                      placeholder="Макс. использований (0 = ∞)"
+                      placeholder="Макс. использований (пусто = ∞)"
                       value={codeForm.max_uses ?? ""}
                       onChange={(e) => setCodeForm({ ...codeForm, max_uses: e.target.value ? parseInt(e.target.value) : null })}
+                    />
+                    <input
+                      className="input"
+                      type="datetime-local"
+                      placeholder={t.expiresAt}
+                      value={codeForm.expires_at}
+                      onChange={(e) => setCodeForm({ ...codeForm, expires_at: e.target.value })}
                     />
                   </div>
 
@@ -2592,13 +2601,6 @@ export default function App() {
                       placeholder={t.note}
                       value={codeForm.note}
                       onChange={(e) => setCodeForm({ ...codeForm, note: e.target.value })}
-                    />
-                    <input
-                      className="input"
-                      type="datetime-local"
-                      placeholder={t.expiresAt}
-                      value={codeForm.expires_at}
-                      onChange={(e) => setCodeForm({ ...codeForm, expires_at: e.target.value })}
                     />
                   </div>
 
