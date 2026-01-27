@@ -166,6 +166,7 @@ type Route =
   | { name: "news_card"; newsId: string }
   | { name: "admin" }
   | { name: "sections_all" }
+  | { name: "commissions" }
   | { name: "chat" };
 
 function TopBar(props: {
@@ -311,6 +312,11 @@ export default function App() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [tempUserName, setTempUserName] = useState("");
 
+  // Состояние для страницы комиссий
+  const [commissionSearch, setCommissionSearch] = useState("");
+  const [commissionResults, setCommissionResults] = useState<any[]>([]);
+  const [selectedCommission, setSelectedCommission] = useState<any>(null);
+
   // Проверка прав доступа
   const canEdit = () => ["editor", "admin", "owner"].includes(userRole);
   const canManage = () => ["admin", "owner"].includes(userRole);
@@ -337,6 +343,34 @@ export default function App() {
       }
     } catch (err) {
       console.error('[Profile] Load error:', err);
+    }
+  };
+
+  // Поиск комиссий по категории
+  const searchCommissions = async (query: string) => {
+    if (!query || query.trim().length < 2) {
+      setCommissionResults([]);
+      return;
+    }
+
+    try {
+      const searchTerm = query.trim().toLowerCase();
+      
+      // Ищем по всем уровням категорий
+      const { data, error } = await supabase
+        .from('product_categories')
+        .select('*')
+        .or(`category1_${lang}.ilike.%${searchTerm}%,category2_${lang}.ilike.%${searchTerm}%,category3_${lang}.ilike.%${searchTerm}%,category4_${lang}.ilike.%${searchTerm}%,category5_${lang}.ilike.%${searchTerm}%,category6_${lang}.ilike.%${searchTerm}%`)
+        .limit(20);
+
+      if (error) {
+        console.error('Commission search error:', error);
+        return;
+      }
+
+      setCommissionResults(data || []);
+    } catch (err) {
+      console.error('Commission search error:', err);
     }
   };
 
@@ -742,7 +776,7 @@ export default function App() {
       const secId = cards.find((x) => x.id === route.cardId)?.section_id || "";
       return setRoute({ name: "section", sectionId: secId });
     }
-    if (route.name === "section" || route.name === "news" || route.name === "news_item" || route.name === "news_card" || route.name === "faq" || route.name === "admin") {
+    if (route.name === "section" || route.name === "news" || route.name === "news_item" || route.name === "news_card" || route.name === "faq" || route.name === "commissions" || route.name === "admin") {
       return setRoute({ name: "home" });
     }
   };
@@ -1682,6 +1716,29 @@ export default function App() {
                       <span style={{ fontSize: "24px" }}>❓</span>
                       <span style={{ fontWeight: 700, fontSize: "14px", color: "#111" }}>{t.faq}</span>
                     </button>
+
+                    <button
+                      onClick={() => {
+                        setRoute({ name: "commissions" });
+                        setMenuOpen(false);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        marginBottom: "8px",
+                        border: "2px solid rgba(111,0,255,.15)",
+                        borderRadius: "12px",
+                        background: "#FFF8E8",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px"
+                      }}
+                    >
+                      <span style={{ fontSize: "24px" }}>💰</span>
+                      <span style={{ fontWeight: 700, fontSize: "14px", color: "#111" }}>{lang === "ru" ? "Комиссии" : "Komissiyalar"}</span>
+                    </button>
                   </div>
                   
                   <div style={{ 
@@ -2208,6 +2265,227 @@ export default function App() {
               {faq.map((item) => (
                 <FaqItem key={item.id} question={lang === "ru" ? item.question_ru : item.question_uz} answer={lang === "ru" ? item.answer_ru : item.answer_uz} />
               ))}
+            </div>
+
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
+          </div>
+        )}
+
+        {route.name === "commissions" && (
+          <div className="page">
+            <TopBar
+              t={t}
+              lang={lang}
+              setLang={setLang}
+              showSearch={false}
+              search={search}
+              setSearch={setSearch}
+              onBack={goBack}
+              onHome={goHome}
+            />
+
+            <div className="headerBlock">
+              <div className="h2">{lang === "ru" ? "Комиссии" : "Komissiyalar"}</div>
+              <div className="sub">{lang === "ru" ? "Поиск комиссий по категории товара" : "Tovar turkumi bo'yicha komissiya qidirish"}</div>
+            </div>
+
+            <div className="list">
+              {/* Поле поиска */}
+              <div className="cardCream">
+                <label style={{ 
+                  fontSize: "14px", 
+                  fontWeight: 700, 
+                  color: "rgba(0,0,0,.7)", 
+                  marginBottom: "8px",
+                  display: "block"
+                }}>
+                  {lang === "ru" ? "Введите название категории товара" : "Tovar turkumini kiriting"}
+                </label>
+                <input
+                  type="text"
+                  value={commissionSearch}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setCommissionSearch(value);
+                    searchCommissions(value);
+                  }}
+                  placeholder={lang === "ru" ? "Например: Холодильники, Книги, Плиты..." : "Masalan: Muzlatgichlar, Kitoblar, Pechkalar..."}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    borderRadius: "12px",
+                    border: "2px solid rgba(111,0,255,.2)",
+                    background: "#fff",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    color: "#111",
+                    outline: "none",
+                    transition: "border-color .2s"
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = "#6F00FF"}
+                  onBlur={(e) => e.target.style.borderColor = "rgba(111,0,255,.2)"}
+                />
+
+                {/* Выпадающий список результатов */}
+                {commissionResults.length > 0 && (
+                  <div style={{
+                    marginTop: "12px",
+                    maxHeight: "300px",
+                    overflowY: "auto",
+                    border: "2px solid rgba(111,0,255,.15)",
+                    borderRadius: "12px",
+                    background: "#fff"
+                  }}>
+                    {commissionResults.map((item) => {
+                      // Собираем полный путь категории (с конца к началу)
+                      const categoryPath: string[] = [];
+                      for (let i = 6; i >= 1; i--) {
+                        const cat = item[`category${i}_${lang}`];
+                        if (cat) categoryPath.unshift(cat);
+                      }
+
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setSelectedCommission(item);
+                            setCommissionResults([]);
+                            setCommissionSearch(categoryPath.join(" → "));
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "12px",
+                            borderBottom: "1px solid rgba(111,0,255,.1)",
+                            background: "transparent",
+                            textAlign: "left",
+                            cursor: "pointer",
+                            border: "none",
+                            transition: "background .2s"
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = "rgba(111,0,255,.05)"}
+                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                        >
+                          <div style={{ fontSize: "13px", fontWeight: 700, color: "#111", marginBottom: "4px" }}>
+                            {categoryPath.join(" → ")}
+                          </div>
+                          <div style={{ fontSize: "11px", color: "#666" }}>
+                            FBO: {item.comm_fbo}% | FBS: {item.comm_fbs}% | DBS: {item.comm_dbs}%
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Результат выбора */}
+              {selectedCommission && (
+                <div className="cardCream" style={{
+                  background: "linear-gradient(145deg, rgba(111,0,255,.05), rgba(111,0,255,.02))",
+                  border: "3px solid #6F00FF"
+                }}>
+                  <div style={{ fontSize: "16px", fontWeight: 900, color: "#6F00FF", marginBottom: "12px" }}>
+                    {lang === "ru" ? "Найденная комиссия" : "Topilgan komissiya"}
+                  </div>
+                  
+                  {/* Путь категории */}
+                  <div style={{ marginBottom: "16px" }}>
+                    <div style={{ fontSize: "12px", color: "rgba(0,0,0,.6)", marginBottom: "6px" }}>
+                      {lang === "ru" ? "Категория" : "Turkum"}
+                    </div>
+                    {(() => {
+                      const categoryPath = [];
+                      for (let i = 6; i >= 1; i--) {
+                        const cat = selectedCommission[`category${i}_${lang}`];
+                        if (cat) categoryPath.unshift(cat);
+                      }
+                      return (
+                        <div style={{ fontSize: "14px", fontWeight: 700, color: "#111" }}>
+                          {categoryPath.join(" → ")}
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Комиссии */}
+                  <div style={{ 
+                    display: "grid", 
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: "12px"
+                  }}>
+                    <div style={{
+                      padding: "16px",
+                      background: "rgba(111,0,255,.1)",
+                      borderRadius: "12px",
+                      textAlign: "center"
+                    }}>
+                      <div style={{ fontSize: "11px", color: "rgba(0,0,0,.6)", marginBottom: "6px" }}>FBO</div>
+                      <div style={{ fontSize: "24px", fontWeight: 900, color: "#6F00FF" }}>
+                        {selectedCommission.comm_fbo}%
+                      </div>
+                    </div>
+                    <div style={{
+                      padding: "16px",
+                      background: "rgba(111,0,255,.1)",
+                      borderRadius: "12px",
+                      textAlign: "center"
+                    }}>
+                      <div style={{ fontSize: "11px", color: "rgba(0,0,0,.6)", marginBottom: "6px" }}>FBS</div>
+                      <div style={{ fontSize: "24px", fontWeight: 900, color: "#6F00FF" }}>
+                        {selectedCommission.comm_fbs}%
+                      </div>
+                    </div>
+                    <div style={{
+                      padding: "16px",
+                      background: "rgba(111,0,255,.1)",
+                      borderRadius: "12px",
+                      textAlign: "center"
+                    }}>
+                      <div style={{ fontSize: "11px", color: "rgba(0,0,0,.6)", marginBottom: "6px" }}>DBS</div>
+                      <div style={{ fontSize: "24px", fontWeight: 900, color: "#6F00FF" }}>
+                        {selectedCommission.comm_dbs}%
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Кнопка очистки */}
+                  <button
+                    onClick={() => {
+                      setSelectedCommission(null);
+                      setCommissionSearch("");
+                    }}
+                    style={{
+                      width: "100%",
+                      marginTop: "16px",
+                      padding: "12px",
+                      borderRadius: "12px",
+                      border: "2px solid rgba(111,0,255,.2)",
+                      background: "#fff",
+                      color: "#6F00FF",
+                      fontWeight: 700,
+                      fontSize: "14px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    {lang === "ru" ? "Новый поиск" : "Yangi qidiruv"}
+                  </button>
+                </div>
+              )}
+
+              {/* Подсказка */}
+              {!selectedCommission && commissionSearch === "" && (
+                <div style={{
+                  padding: "20px",
+                  textAlign: "center",
+                  color: "rgba(0,0,0,.5)",
+                  fontSize: "14px"
+                }}>
+                  {lang === "ru" 
+                    ? "Введите название категории товара для поиска комиссии"
+                    : "Komissiyani qidirish uchun tovar turkumini kiriting"
+                  }
+                </div>
+              )}
             </div>
 
             <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
