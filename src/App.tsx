@@ -310,7 +310,6 @@ export default function App() {
   const [userRole, setUserRole] = useState<string>(() => localStorage.getItem("user_role") || "viewer");
 
   // Проверка прав доступа
-  const canView = () => true; // Все могут просматривать
   const canEdit = () => ["editor", "admin", "owner"].includes(userRole);
   const canManage = () => ["admin", "owner"].includes(userRole);
   const canFullAccess = () => userRole === "owner";
