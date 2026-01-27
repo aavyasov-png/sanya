@@ -4,10 +4,9 @@ import { getFbsOrders, confirmFbsOrder, cancelFbsOrder } from '../../lib/uzum-ap
 interface UzumOrdersProps {
   lang: 'ru' | 'uz';
   token: string;
-  onBack: () => void;
 }
 
-export default function UzumOrders({ lang, token, onBack }: UzumOrdersProps) {
+export default function UzumOrders({ lang, token }: UzumOrdersProps) {
   const [orders, setOrders] = useState<any[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -213,95 +212,45 @@ export default function UzumOrders({ lang, token, onBack }: UzumOrdersProps) {
   }
 
   return (
-    <div style={{
-      padding: '24px',
-      maxWidth: '1400px',
-      margin: '0 auto',
-    }}>
+    <div className="list">
       {/* Header */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: '24px',
-        flexWrap: 'wrap',
-        gap: '16px',
+        marginBottom: '12px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={onBack}
-            style={{
-              padding: '10px 16px',
-              backgroundColor: '#f3f4f6',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#374151',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#e5e7eb';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f3f4f6';
-            }}
-          >
-            ← {t.back}
-          </button>
-          <h1 style={{
-            fontSize: '28px',
-            fontWeight: '700',
-            margin: 0,
-            color: '#111827',
-          }}>
-            📋 {t.title}
-          </h1>
+        <div style={{
+          fontSize: '18px',
+          fontWeight: 700,
+          color: '#111',
+        }}>
+          📋 {t.title}
         </div>
         <div style={{
-          padding: '10px 20px',
+          padding: '6px 12px',
           backgroundColor: '#22c55e',
           color: 'white',
           borderRadius: '8px',
-          fontWeight: '600',
+          fontWeight: 600,
+          fontSize: '14px',
         }}>
           {filteredOrders.length}
         </div>
       </div>
 
       {/* Status Filter */}
-      <div style={{
+      <div className="cardCream" style={{
         display: 'flex',
         gap: '8px',
-        marginBottom: '24px',
+        marginBottom: '12px',
         flexWrap: 'wrap',
       }}>
         {statusOptions.map((option) => (
           <button
             key={option.value}
             onClick={() => setStatusFilter(option.value)}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: statusFilter === option.value ? '#22c55e' : '#f3f4f6',
-              color: statusFilter === option.value ? 'white' : '#374151',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              if (statusFilter !== option.value) {
-                e.currentTarget.style.backgroundColor = '#e5e7eb';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (statusFilter !== option.value) {
-                e.currentTarget.style.backgroundColor = '#f3f4f6';
-              }
-            }}
+            className={statusFilter === option.value ? "btnPrimary" : "split"}
           >
             {option.label}
           </button>
@@ -310,7 +259,7 @@ export default function UzumOrders({ lang, token, onBack }: UzumOrdersProps) {
 
       {/* Orders List */}
       {filteredOrders.length === 0 ? (
-        <div style={{
+        <div className="cardCream" style={{
           textAlign: 'center',
           padding: '60px 20px',
           color: '#9ca3af',

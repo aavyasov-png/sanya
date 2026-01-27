@@ -2753,21 +2753,18 @@ export default function App() {
                     <UzumProducts 
                       lang={lang} 
                       token={uzumToken} 
-                      onBack={() => setUzumCurrentPage('dashboard')} 
                     />
                   )}
                   {uzumCurrentPage === 'orders' && (
                     <UzumOrders 
                       lang={lang} 
                       token={uzumToken} 
-                      onBack={() => setUzumCurrentPage('dashboard')} 
                     />
                   )}
                   {uzumCurrentPage === 'finance' && (
                     <UzumFinance 
                       lang={lang} 
                       token={uzumToken} 
-                      onBack={() => setUzumCurrentPage('dashboard')} 
                     />
                   )}
                 </div>

@@ -4,10 +4,9 @@ import { getFinanceOrders, getFinanceExpenses } from '../../lib/uzum-api';
 interface UzumFinanceProps {
   lang: 'ru' | 'uz';
   token: string;
-  onBack: () => void;
 }
 
-export default function UzumFinance({ lang, token, onBack }: UzumFinanceProps) {
+export default function UzumFinance({ lang, token }: UzumFinanceProps) {
   const [activeTab, setActiveTab] = useState<'orders' | 'expenses'>('orders');
   const [orders, setOrders] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -115,127 +114,74 @@ export default function UzumFinance({ lang, token, onBack }: UzumFinanceProps) {
   const totals = calculateTotals();
 
   return (
-    <div style={{
-      padding: '24px',
-      maxWidth: '1400px',
-      margin: '0 auto',
-    }}>
+    <div className="list">
       {/* Header */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: '24px',
-        flexWrap: 'wrap',
-        gap: '16px',
+        marginBottom: '12px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={onBack}
-            style={{
-              padding: '10px 16px',
-              backgroundColor: '#f3f4f6',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#374151',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#e5e7eb';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f3f4f6';
-            }}
-          >
-            ← {t.back}
-          </button>
-          <h1 style={{
-            fontSize: '28px',
-            fontWeight: '700',
-            margin: 0,
-            color: '#111827',
-          }}>
-            💰 {t.title}
-          </h1>
+        <div style={{
+          fontSize: '18px',
+          fontWeight: 700,
+          color: '#111',
+        }}>
+          💰 {t.title}
         </div>
       </div>
 
       {/* Summary Cards */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-        gap: '16px',
-        marginBottom: '24px',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        marginBottom: '12px',
       }}>
-        <div style={{
-          padding: '20px',
-          backgroundColor: 'white',
-          borderRadius: '16px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          border: '2px solid #dcfce7',
-        }}>
+        <div className="cardCream" style={{ textAlign: 'center' }}>
           <div style={{
-            fontSize: '14px',
-            color: '#6b7280',
-            marginBottom: '8px',
-            fontWeight: '600',
+            fontSize: '12px',
+            color: '#666',
+            marginBottom: '6px',
           }}>
             💰 {t.revenue}
           </div>
           <div style={{
-            fontSize: '28px',
-            fontWeight: '700',
+            fontSize: '20px',
+            fontWeight: 700,
             color: '#22c55e',
           }}>
             {formatPrice(totals.revenue)}
           </div>
         </div>
 
-        <div style={{
-          padding: '20px',
-          backgroundColor: 'white',
-          borderRadius: '16px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          border: '2px solid #fee2e2',
-        }}>
+        <div className="cardCream" style={{ textAlign: 'center' }}>
           <div style={{
-            fontSize: '14px',
-            color: '#6b7280',
-            marginBottom: '8px',
-            fontWeight: '600',
+            fontSize: '12px',
+            color: '#666',
+            marginBottom: '6px',
           }}>
             📉 {t.totalExpenses}
           </div>
           <div style={{
-            fontSize: '28px',
-            fontWeight: '700',
+            fontSize: '20px',
+            fontWeight: 700,
             color: '#ef4444',
           }}>
             {formatPrice(totals.totalExpenses)}
           </div>
         </div>
 
-        <div style={{
-          padding: '20px',
-          backgroundColor: 'white',
-          borderRadius: '16px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          border: '2px solid #dbeafe',
-        }}>
+        <div className="cardCream" style={{ textAlign: 'center' }}>
           <div style={{
-            fontSize: '14px',
-            color: '#6b7280',
-            marginBottom: '8px',
-            fontWeight: '600',
+            fontSize: '12px',
+            color: '#666',
+            marginBottom: '6px',
           }}>
             📈 {t.profit}
           </div>
           <div style={{
-            fontSize: '28px',
-            fontWeight: '700',
+            fontSize: '20px',
+            fontWeight: 700,
             color: totals.profit >= 0 ? '#3b82f6' : '#ef4444',
           }}>
             {formatPrice(totals.profit)}
@@ -244,7 +190,7 @@ export default function UzumFinance({ lang, token, onBack }: UzumFinanceProps) {
       </div>
 
       {/* Tabs */}
-      <div style={{
+      <div className="cardCream" style={{
         display: 'flex',
         gap: '8px',
         marginBottom: '24px',
