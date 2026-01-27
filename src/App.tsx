@@ -3,6 +3,8 @@ import { supabase } from "./supabase";
 import "./App.css";
 // import Chat from "./Chat"; // ВРЕМЕННО ОТКЛЮЧЕНО - раскомментировать когда доработаешь
 import { runCrawl } from "../scripts/crawls";
+import { encryptToken, decryptToken, validatePin, isCryptoAvailable } from "./lib/crypto";
+import { testToken, getShops } from "./lib/uzum-api";
 
 type Lang = "ru" | "uz";
 
@@ -167,6 +169,7 @@ type Route =
   | { name: "admin" }
   | { name: "sections_all" }
   | { name: "commissions" }
+  | { name: "uzum" }
   | { name: "chat" };
 
 function TopBar(props: {
@@ -325,6 +328,16 @@ export default function App() {
   const [calcGabarit, setCalcGabarit] = useState<"МГТ" | "СГТ" | "КГТ">("МГТ");
   const [calcSaleAmount, setCalcSaleAmount] = useState("");
   const [calcCommType, setCalcCommType] = useState<"fbo" | "fbs" | "dbs">("fbo");
+
+  // Uzum Integration State
+  const [uzumToken, setUzumToken] = useState("");
+  const [uzumPin, setUzumPin] = useState("");
+  const [uzumConnected, setUzumConnected] = useState(false);
+  const [uzumLoading, setUzumLoading] = useState(false);
+  const [uzumError, setUzumError] = useState("");
+  const [uzumShops, setUzumShops] = useState<any[]>([]);
+  const [uzumSellerInfo, setUzumSellerInfo] = useState<any>(null);
+  const [uzumIntegrationId, setUzumIntegrationId] = useState<string | null>(null);
 
   // Загрузка истории комиссий при входе пользователя
   useEffect(() => {
@@ -488,6 +501,222 @@ export default function App() {
       console.log("[DB] ⚠ Error saving user:", err);
     }
   };
+
+  // ============================================
+  // UZUM INTEGRATION FUNCTIONS
+  // ============================================
+
+  // Get Telegram user ID
+  const getTelegramUserId = (): string | null => {
+    try {
+      const tg = (window as any).Telegram?.WebApp;
+      const userId = tg?.initDataUnsafe?.user?.id;
+      return userId ? userId.toString() : null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Load existing Uzum integration from DB
+  const loadUzumIntegration = async () => {
+    const userId = getTelegramUserId();
+    if (!userId) {
+      console.log('[Uzum] No Telegram user ID');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('integrations')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('provider', 'uzum')
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('[Uzum] Load error:', error);
+        return;
+      }
+
+      if (data) {
+        setUzumIntegrationId(data.id);
+        setUzumConnected(true);
+        setUzumShops(data.metadata?.shops || []);
+        setUzumSellerInfo(data.metadata?.sellerInfo || null);
+        console.log('[Uzum] ✓ Integration loaded');
+      }
+    } catch (err) {
+      console.error('[Uzum] Load exception:', err);
+    }
+  };
+
+  // Test token validity
+  const handleTestToken = async () => {
+    if (!uzumToken.trim()) {
+      setUzumError('Введите токен');
+      return;
+    }
+
+    if (!isCryptoAvailable()) {
+      setUzumError('WebCrypto API недоступен в вашем браузере');
+      return;
+    }
+
+    setUzumLoading(true);
+    setUzumError('');
+
+    try {
+      const result = await testToken(uzumToken);
+      
+      if (!result.valid) {
+        setUzumError(result.error || 'Токен недействителен');
+        setUzumLoading(false);
+        return;
+      }
+
+      setUzumSellerInfo(result.sellerInfo);
+      
+      // Try to get shops
+      const shopsResult = await getShops(uzumToken);
+      if (shopsResult.success && shopsResult.shops) {
+        setUzumShops(shopsResult.shops);
+      }
+
+      showToast('✓ Токен валиден!');
+      setUzumLoading(false);
+    } catch (error: any) {
+      setUzumError(error.message || 'Ошибка проверки токена');
+      setUzumLoading(false);
+    }
+  };
+
+  // Save encrypted token to database
+  const handleSaveToken = async () => {
+    if (!uzumToken.trim()) {
+      setUzumError('Введите токен');
+      return;
+    }
+
+    if (!uzumPin.trim()) {
+      setUzumError('Введите PIN');
+      return;
+    }
+
+    const pinValidation = validatePin(uzumPin);
+    if (!pinValidation.valid) {
+      setUzumError(pinValidation.error || 'Неверный PIN');
+      return;
+    }
+
+    if (!isCryptoAvailable()) {
+      setUzumError('WebCrypto API недоступен');
+      return;
+    }
+
+    const userId = getTelegramUserId();
+    if (!userId) {
+      setUzumError('Telegram user ID не найден');
+      return;
+    }
+
+    setUzumLoading(true);
+    setUzumError('');
+
+    try {
+      // Encrypt token
+      const encrypted = await encryptToken(uzumToken, uzumPin);
+
+      // Prepare metadata
+      const metadata = {
+        shops: uzumShops,
+        sellerInfo: uzumSellerInfo,
+        lastVerified: new Date().toISOString()
+      };
+
+      // Save to database
+      const { data, error } = await supabase
+        .from('integrations')
+        .upsert({
+          user_id: userId,
+          provider: 'uzum',
+          token_cipher: encrypted.cipher,
+          token_iv: encrypted.iv,
+          token_salt: encrypted.salt,
+          kdf_iterations: 200000,
+          metadata
+        }, {
+          onConflict: 'user_id,provider'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setUzumIntegrationId(data.id);
+      setUzumConnected(true);
+      
+      // Clear sensitive data from state
+      setUzumToken('');
+      setUzumPin('');
+
+      showToast('✓ Токен сохранён!');
+      setUzumLoading(false);
+    } catch (error: any) {
+      setUzumError(error.message || 'Ошибка сохранения');
+      setUzumLoading(false);
+    }
+  };
+
+  // Disconnect integration
+  const handleDisconnect = async () => {
+    if (!window.confirm('Удалить интеграцию с Uzum?')) {
+      return;
+    }
+
+    const userId = getTelegramUserId();
+    if (!userId) {
+      setUzumError('Telegram user ID не найден');
+      return;
+    }
+
+    setUzumLoading(true);
+
+    try {
+      const { error } = await supabase
+        .from('integrations')
+        .delete()
+        .eq('user_id', userId)
+        .eq('provider', 'uzum');
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // Clear state
+      setUzumConnected(false);
+      setUzumIntegrationId(null);
+      setUzumShops([]);
+      setUzumSellerInfo(null);
+      setUzumToken('');
+      setUzumPin('');
+      setUzumError('');
+
+      showToast('✓ Интеграция отключена');
+      setUzumLoading(false);
+    } catch (error: any) {
+      setUzumError(error.message || 'Ошибка удаления');
+      setUzumLoading(false);
+    }
+  };
+
+  // Load integration on mount
+  useEffect(() => {
+    if (route.name === 'uzum') {
+      loadUzumIntegration();
+    }
+  }, [route.name]);
 
   // Get Telegram user info
   useEffect(() => {
@@ -826,7 +1055,7 @@ export default function App() {
       const secId = cards.find((x) => x.id === route.cardId)?.section_id || "";
       return setRoute({ name: "section", sectionId: secId });
     }
-    if (route.name === "section" || route.name === "news" || route.name === "news_item" || route.name === "news_card" || route.name === "faq" || route.name === "commissions" || route.name === "admin" || route.name === "sections_all") {
+    if (route.name === "section" || route.name === "news" || route.name === "news_item" || route.name === "news_card" || route.name === "faq" || route.name === "commissions" || route.name === "admin" || route.name === "sections_all" || route.name === "uzum") {
       return setRoute({ name: "home" });
     }
   };
@@ -1974,7 +2203,7 @@ export default function App() {
               </div>
             </div>
 
-            {/* Bottom Bar с FAQ */}
+            {/* Bottom Bar */}
             <div className="bottomBar" style={{
               position: "absolute",
               bottom: 0,
@@ -2022,6 +2251,23 @@ export default function App() {
               >
                 <span style={{ fontSize: "24px" }}>📂</span>
                 <span style={{ fontSize: "11px", fontWeight: 700, color: "#6F00FF" }}>Разделы</span>
+              </button>
+              
+              <button
+                onClick={() => setRoute({ name: "uzum" })}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "4px",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  flex: 1
+                }}
+              >
+                <span style={{ fontSize: "20px" }}>🛒</span>
+                <span style={{ fontSize: "11px", fontWeight: 700, color: "#6F00FF" }}>Uzum</span>
               </button>
               
               <button
@@ -2364,6 +2610,427 @@ export default function App() {
                   </button>
                 </div>
               )}
+            </div>
+
+            <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
+          </div>
+        )}
+
+        {route.name === "uzum" && (
+          <div className="page">
+            <TopBar
+              t={t}
+              lang={lang}
+              setLang={setLang}
+              showSearch={false}
+              search={search}
+              setSearch={setSearch}
+              onBack={goBack}
+              onHome={goHome}
+            />
+            <div className="headerBlock" style={{
+              background: uzumConnected 
+                ? "linear-gradient(135deg, #059669, #10b981)" 
+                : "linear-gradient(135deg, #7E22CE, #6F00FF)",
+              color: "white",
+              padding: "24px 20px",
+              position: "relative",
+              overflow: "hidden"
+            }}>
+              {/* Декоративные элементы */}
+              <div style={{
+                position: "absolute",
+                width: "150px",
+                height: "150px",
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.1)",
+                filter: "blur(40px)",
+                top: "-50px",
+                right: "-30px"
+              }} />
+              <div style={{
+                position: "absolute",
+                width: "100px",
+                height: "100px",
+                borderRadius: "50%",
+                background: "rgba(255,255,255,0.08)",
+                filter: "blur(30px)",
+                bottom: "-20px",
+                left: "-20px"
+              }} />
+              
+              <div style={{ position: "relative", zIndex: 1 }}>
+                <div style={{
+                  fontSize: "28px",
+                  fontWeight: 900,
+                  marginBottom: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px"
+                }}>
+                  <span style={{ fontSize: "32px" }}>🛒</span>
+                  Uzum Integration
+                </div>
+                <div style={{
+                  fontSize: "14px",
+                  opacity: 0.95,
+                  fontWeight: 700,
+                  lineHeight: "1.4",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}>
+                  {uzumConnected ? (
+                    <>
+                      <span style={{ fontSize: "16px" }}>✓</span>
+                      Подключено
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ fontSize: "16px" }}>○</span>
+                      Не подключено
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="list">
+              {/* Connection Status */}
+              {uzumConnected && uzumSellerInfo && (
+                <div className="cardCream" style={{
+                  background: "linear-gradient(135deg, #ecfdf5, #d1fae5)",
+                  border: "2px solid #10b981"
+                }}>
+                  <div style={{
+                    fontSize: "16px",
+                    fontWeight: 900,
+                    marginBottom: "12px",
+                    color: "#059669",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px"
+                  }}>
+                    <span>✓</span>
+                    Интеграция активна
+                  </div>
+                  {uzumSellerInfo && (
+                    <div style={{ fontSize: "14px", color: "rgba(0,0,0,0.7)", marginBottom: "12px" }}>
+                      <div><strong>Seller:</strong> {uzumSellerInfo.name || 'N/A'}</div>
+                      {uzumShops.length > 0 && (
+                        <div style={{ marginTop: "8px" }}>
+                          <strong>Магазины:</strong>
+                          <ul style={{ margin: "4px 0 0 20px", padding: 0 }}>
+                            {uzumShops.map((shop: any, idx: number) => (
+                              <li key={idx}>{shop.name || shop.id}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <button
+                    className="menuBtn danger"
+                    style={{ width: "100%", fontSize: "14px" }}
+                    onClick={handleDisconnect}
+                    disabled={uzumLoading}
+                  >
+                    🔌 Отключить интеграцию
+                  </button>
+                </div>
+              )}
+
+              {/* Error Display */}
+              {uzumError && (
+                <div className="cardCream" style={{
+                  background: "#fee2e2",
+                  border: "2px solid #ef4444",
+                  marginBottom: "12px"
+                }}>
+                  <div style={{
+                    fontSize: "14px",
+                    color: "#991b1b",
+                    fontWeight: 600
+                  }}>
+                    ⚠️ {uzumError}
+                  </div>
+                </div>
+              )}
+
+              {/* Setup Form (only if not connected) */}
+              {!uzumConnected && (
+                <>
+                  <div className="cardCream">
+                    <div style={{
+                      fontSize: "18px",
+                      fontWeight: 900,
+                      marginBottom: "16px",
+                      color: "#6F00FF",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px"
+                    }}>
+                      <span>🔑</span>
+                      Настройка интеграции
+                    </div>
+                    
+                    {/* Token Input */}
+                    <div style={{ marginBottom: "16px" }}>
+                      <label style={{
+                        display: "block",
+                        fontSize: "13px",
+                        fontWeight: 700,
+                        marginBottom: "8px",
+                        color: "rgba(0,0,0,0.7)"
+                      }}>
+                        Uzum API Token
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="uzum_api_token_..."
+                        value={uzumToken}
+                        onChange={(e) => {
+                          setUzumToken(e.target.value);
+                          setUzumError('');
+                        }}
+                        disabled={uzumLoading}
+                        style={{
+                          width: "100%",
+                          padding: "14px 16px",
+                          border: "2px solid rgba(111,0,255,0.2)",
+                          borderRadius: "12px",
+                          fontSize: "15px",
+                          fontFamily: "inherit",
+                          outline: "none",
+                          transition: "all 0.2s ease",
+                          background: "white"
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = "#6F00FF";
+                          e.target.style.boxShadow = "0 0 0 3px rgba(111,0,255,0.1)";
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = "rgba(111,0,255,0.2)";
+                          e.target.style.boxShadow = "none";
+                        }}
+                      />
+                    </div>
+
+                    {/* PIN Input */}
+                    <div style={{ marginBottom: "16px" }}>
+                      <label style={{
+                        display: "block",
+                        fontSize: "13px",
+                        fontWeight: 700,
+                        marginBottom: "8px",
+                        color: "rgba(0,0,0,0.7)"
+                      }}>
+                        PIN для шифрования (6-10 символов)
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="Создайте PIN для защиты токена"
+                        value={uzumPin}
+                        onChange={(e) => {
+                          setUzumPin(e.target.value);
+                          setUzumError('');
+                        }}
+                        disabled={uzumLoading}
+                        style={{
+                          width: "100%",
+                          padding: "14px 16px",
+                          border: "2px solid rgba(111,0,255,0.2)",
+                          borderRadius: "12px",
+                          fontSize: "15px",
+                          fontFamily: "inherit",
+                          outline: "none",
+                          transition: "all 0.2s ease",
+                          background: "white"
+                        }}
+                        onFocus={(e) => {
+                          e.target.style.borderColor = "#6F00FF";
+                          e.target.style.boxShadow = "0 0 0 3px rgba(111,0,255,0.1)";
+                        }}
+                        onBlur={(e) => {
+                          e.target.style.borderColor = "rgba(111,0,255,0.2)";
+                          e.target.style.boxShadow = "none";
+                        }}
+                      />
+                      <div style={{
+                        fontSize: "12px",
+                        color: "rgba(0,0,0,0.5)",
+                        marginTop: "6px"
+                      }}>
+                        PIN используется для client-side шифрования токена
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div style={{ display: "flex", gap: "12px" }}>
+                      <button
+                        className="menuBtn"
+                        style={{ flex: 1 }}
+                        onClick={handleTestToken}
+                        disabled={uzumLoading || !uzumToken.trim()}
+                      >
+                        {uzumLoading ? '⏳ Проверка...' : '🔍 Проверить'}
+                      </button>
+                      <button
+                        className="menuBtn accent"
+                        style={{ flex: 1 }}
+                        onClick={handleSaveToken}
+                        disabled={uzumLoading || !uzumToken.trim() || !uzumPin.trim()}
+                      >
+                        {uzumLoading ? '⏳ Сохранение...' : '💾 Сохранить'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Info Card */}
+                  <div className="cardCream" style={{
+                    background: "linear-gradient(135deg, #FFF8E8, #FFECD2)",
+                    border: "2px solid rgba(111,0,255,0.15)"
+                  }}>
+                    <div style={{
+                      fontSize: "16px",
+                      fontWeight: 900,
+                      marginBottom: "12px",
+                      color: "#6F00FF",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px"
+                    }}>
+                      <span>ℹ️</span>
+                      Как получить API токен?
+                    </div>
+                    <ol style={{
+                      fontSize: "14px",
+                      lineHeight: "1.6",
+                      color: "rgba(0,0,0,0.8)",
+                      paddingLeft: "20px",
+                      margin: 0
+                    }}>
+                      <li style={{ marginBottom: "8px" }}>
+                        Войдите в <strong>Uzum Seller Cabinet</strong>
+                      </li>
+                      <li style={{ marginBottom: "8px" }}>
+                        Перейдите в раздел <strong>Настройки → API</strong>
+                      </li>
+                      <li style={{ marginBottom: "8px" }}>
+                        Создайте новый API токен с правами на чтение заказов
+                      </li>
+                      <li>
+                        Скопируйте токен и вставьте его в поле выше
+                      </li>
+                    </ol>
+                  </div>
+
+                  {/* Security Notice */}
+                  <div className="cardCream" style={{
+                    background: "rgba(59, 130, 246, 0.1)",
+                    border: "2px solid rgba(59, 130, 246, 0.3)"
+                  }}>
+                    <div style={{
+                      fontSize: "14px",
+                      fontWeight: 900,
+                      marginBottom: "8px",
+                      color: "#2563eb",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px"
+                    }}>
+                      <span>🔒</span>
+                      Безопасность
+                    </div>
+                    <div style={{
+                      fontSize: "13px",
+                      lineHeight: "1.5",
+                      color: "rgba(0,0,0,0.7)"
+                    }}>
+                      • Токен шифруется на вашем устройстве (AES-GCM-256)<br/>
+                      • PIN никогда не покидает ваш браузер<br/>
+                      • В базе хранится только зашифрованный токен<br/>
+                      • Даже мы не можем прочитать ваш токен
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Features */}
+              <div className="cardCream">
+                <div style={{
+                  fontSize: "16px",
+                  fontWeight: 900,
+                  marginBottom: "12px",
+                  color: "#6F00FF",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}>
+                  <span>🚀</span>
+                  Возможности интеграции
+                </div>
+                <div style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px"
+                }}>
+                  <div style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "12px",
+                    padding: "12px",
+                    background: "rgba(111,0,255,0.05)",
+                    borderRadius: "8px"
+                  }}>
+                    <span style={{ fontSize: "20px" }}>📦</span>
+                    <div>
+                      <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "4px" }}>
+                        Синхронизация заказов
+                      </div>
+                      <div style={{ fontSize: "13px", color: "rgba(0,0,0,0.6)" }}>
+                        Автоматическая загрузка новых заказов из Uzum
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "12px",
+                    padding: "12px",
+                    background: "rgba(111,0,255,0.05)",
+                    borderRadius: "8px"
+                  }}>
+                    <span style={{ fontSize: "20px" }}>📊</span>
+                    <div>
+                      <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "4px" }}>
+                        Аналитика продаж
+                      </div>
+                      <div style={{ fontSize: "13px", color: "rgba(0,0,0,0.6)" }}>
+                        Подробная статистика по продажам и комиссиям
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "12px",
+                    padding: "12px",
+                    background: "rgba(111,0,255,0.05)",
+                    borderRadius: "8px"
+                  }}>
+                    <span style={{ fontSize: "20px" }}>🔔</span>
+                    <div>
+                      <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "4px" }}>
+                        Уведомления
+                      </div>
+                      <div style={{ fontSize: "13px", color: "rgba(0,0,0,0.6)" }}>
+                        Мгновенные уведомления о новых заказах в Telegram
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <BottomBar userName={userName} userPhoto="" onSignOut={signOut} />
