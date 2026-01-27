@@ -672,7 +672,7 @@ export default function App() {
     answer_uz: "",
     sort: 0,
   });
-  const [codeForm, setCodeForm] = useState({ code: "", is_active: true, expires_at: "", note: "" });
+  const [codeForm, setCodeForm] = useState({ code: "", is_active: true, expires_at: "", note: "", role: "viewer" });
   const [accessCodes, setAccessCodes] = useState<any[]>([]);
 
   const adminSignOut = async () => {
@@ -901,7 +901,7 @@ export default function App() {
   };
 
   const loadAccessCodes = async () => {
-    const resp = await supabase.from("access_codes").select("code,is_active,expires_at,note").order("expires_at", { ascending: false });
+    const resp = await supabase.from("access_codes").select("code,is_active,expires_at,note,role").order("expires_at", { ascending: false });
     if (resp.error) return;
     setAccessCodes((resp.data ?? []) as any[]);
   };
@@ -936,6 +936,7 @@ export default function App() {
       is_active: codeForm.is_active,
       note: codeForm.note || null,
       expires_at: codeForm.expires_at ? new Date(codeForm.expires_at).toISOString() : null,
+      role: codeForm.role,
     };
     const resp = await supabase.from("access_codes").upsert(payload as any);
     if (resp.error) {
@@ -943,7 +944,7 @@ export default function App() {
       return;
     }
     showToast(t.ok);
-    setCodeForm({ code: "", is_active: true, expires_at: "", note: "" });
+    setCodeForm({ code: "", is_active: true, expires_at: "", note: "", role: "viewer" });
     await loadAccessCodes();
   };
 
@@ -2181,6 +2182,20 @@ export default function App() {
                       value={codeForm.code}
                       onChange={(e) => setCodeForm({ ...codeForm, code: e.target.value })}
                     />
+                    <select
+                      className="input"
+                      value={codeForm.role}
+                      onChange={(e) => setCodeForm({ ...codeForm, role: e.target.value })}
+                      style={{ fontSize: 14, fontWeight: 700 }}
+                    >
+                      <option value="viewer">👁️ Viewer (Просмотр)</option>
+                      <option value="editor">✏️ Editor (Редактор)</option>
+                      <option value="admin">⚙️ Admin (Админ)</option>
+                      <option value="owner">👑 Owner (Владелец)</option>
+                    </select>
+                  </div>
+
+                  <div className="split" style={{ marginTop: 10 }}>
                     <input
                       className="input"
                       placeholder={t.note}
@@ -2235,6 +2250,16 @@ export default function App() {
                                 {ac.code}
                               </div>
                               <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                <span style={{ 
+                                  padding: "4px 10px", 
+                                  borderRadius: 6, 
+                                  fontSize: 11, 
+                                  fontWeight: 900,
+                                  background: "#e3f2fd",
+                                  color: "#1565c0"
+                                }}>
+                                  {ac.role === "owner" ? "👑 OWNER" : ac.role === "admin" ? "⚙️ ADMIN" : ac.role === "editor" ? "✏️ EDITOR" : "👁️ VIEWER"}
+                                </span>
                                 <span style={{ 
                                   padding: "4px 10px", 
                                   borderRadius: 6, 
