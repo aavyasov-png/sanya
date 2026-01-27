@@ -367,21 +367,21 @@ export default function App() {
         return;
       }
 
-      // Фильтруем по последнему заполненному уровню категории
+      // Фильтруем по последним ДВУМ заполненным уровням категории
       const filtered = (data || []).filter((item: any) => {
-        // Находим последний заполненный уровень (с 6 до 1)
+        // Находим последние два заполненных уровня (с 6 до 1)
         // Ищем в текущем языке (ru или uz)
-        let lastCategory = null;
+        const lastTwoCategories: string[] = [];
         for (let i = 6; i >= 1; i--) {
           const cat = item[`category${i}_${lang}`];
           if (cat && cat.trim()) {
-            lastCategory = cat.toLowerCase();
-            break;
+            lastTwoCategories.push(cat.toLowerCase());
+            if (lastTwoCategories.length === 2) break;
           }
         }
         
-        // Ищем только в последнем заполненном уровне текущего языка
-        return lastCategory && lastCategory.includes(searchTerm);
+        // Ищем в последних двух заполненных уровнях текущего языка
+        return lastTwoCategories.some(cat => cat.includes(searchTerm));
       }).slice(0, 20);
 
       setCommissionResults(filtered);

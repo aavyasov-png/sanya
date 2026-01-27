@@ -22,15 +22,17 @@ async function testSearch(query, lang = 'uz') {
   const searchTerm = query.toLowerCase();
   
   const filtered = (data || []).filter((item) => {
-    let lastCategory = null;
+    // Находим последние ДВА заполненных уровня
+    const lastTwoCategories = [];
     for (let i = 6; i >= 1; i--) {
       const cat = item[`category${i}_${lang}`];
       if (cat && cat.trim()) {
-        lastCategory = cat.toLowerCase();
-        break;
+        lastTwoCategories.push(cat.toLowerCase());
+        if (lastTwoCategories.length === 2) break;
       }
     }
-    return lastCategory && lastCategory.includes(searchTerm);
+    // Ищем в последних двух уровнях
+    return lastTwoCategories.some(cat => cat.includes(searchTerm));
   }).slice(0, 5);
 
   console.log(`\n✅ Найдено: ${filtered.length} результатов\n`);
