@@ -5,6 +5,42 @@
  * 
  * Auth: RAW token without prefix
  * Authorization: <token>
+ * 
+ * Official Swagger Endpoints:
+ * 
+ * DBS (Delivery by Seller):
+ * - GET  /v2/dbs/sku/stocks - Получение остатков по SKU
+ * - POST /v2/dbs/sku/stocks - Обновление остатков по SKU
+ * 
+ * FBS (Fulfillment by Seller):
+ * - GET  /v1/fbs/order/{orderId} - Получение информации о заказе
+ * - POST /v1/fbs/order/{orderId}/cancel - Отмена заказа
+ * - POST /v1/fbs/order/{orderId}/confirm - Подтверждение заказа
+ * - GET  /v1/fbs/order/{orderId}/labels/print - Получить этикетку для FBS заказа
+ * - GET  /v1/fbs/order/return-reasons - Получение причин возврата
+ * - GET  /v2/fbs/orders - Получение заказов продавца
+ * - GET  /v2/fbs/orders/count - Получить количество заказов
+ * - GET  /v2/fbs/sku/stocks - Получение остатков по SKU
+ * - POST /v2/fbs/sku/stocks - Обновление остатков по SKU
+ * 
+ * Finance:
+ * - GET /v1/finance/expenses - Получение списка расходов продавца
+ * - GET /v1/finance/orders - Получение списка заказов
+ * 
+ * Invoice:
+ * - GET /v1/invoice - Получение списка накладных
+ * - GET /v1/return - Получение возвратов продавца
+ * - GET /v1/shop/{shopId}/invoice - Получение накладных поставки по ID магазина
+ * - GET /v1/shop/{shopId}/invoice/products - Получение состава накладной
+ * - GET /v1/shop/{shopId}/return - Получение накладных возврата
+ * - GET /v1/shop/{shopId}/return/{returnId} - Получение состава накладной возврата
+ * 
+ * Product:
+ * - POST /v1/product/{shopId}/sendPriceData - Изменение цен SKU
+ * - GET  /v1/product/shop/{shopId} - Получение SKU по ID магазина
+ * 
+ * Shop:
+ * - GET /v1/shops - Получение списка собственных магазинов
  */
 
 const BASE_URL = 'https://api-seller.uzum.uz/api/seller-openapi';
@@ -156,6 +192,7 @@ async function apiRequest<T>(
 /**
  * Test if token is valid
  * Uses /v1/shops endpoint to verify token and get shop info
+ * Based on official Swagger: GET /v1/shops - Получение списка собственных магазинов
  */
 export async function testToken(token: string): Promise<{
   valid: boolean;
@@ -166,38 +203,34 @@ export async function testToken(token: string): Promise<{
     return { valid: false, error: 'Токен пустой' };
   }
 
-  // Попробуем несколько вариантов эндпоинтов
-  const endpointsToTry = [
-    '/v1/shops',
-    '/shops',
-    '/seller/shops',
-    '/seller-info',
-    '/v1/seller/shops',
-  ];
+  console.log('🔍 Testing token with official endpoint: /v1/shops');
+  console.log('📝 Token length:', token.length);
+  console.log('📝 Token preview:', token.substring(0, 20) + '...');
+  console.log('📝 Full URL will be: https://api-seller.uzum.uz/api/seller-openapi/v1/shops');
   
-  console.log('🔍 Testing different endpoints...');
+  // Используем официальный эндпоинт из Swagger
+  const result = await apiRequest<any>('/v1/shops', token, { method: 'GET' });
   
-  for (const endpoint of endpointsToTry) {
-    console.log(`Testing: ${endpoint}`);
-    const result = await apiRequest<any>(endpoint, token, { method: 'GET' });
-    
-    if (!result.error && result.data) {
-      console.log(`✅ Found working endpoint: ${endpoint}`, result.data);
-      return { 
-        valid: true, 
-        sellerInfo: { 
-          shops: result.data,
-          shopId: result.data?.[0]?.id,
-          shopName: result.data?.[0]?.name,
-          workingEndpoint: endpoint
-        } 
-      };
-    } else {
-      console.log(`❌ ${endpoint} failed:`, result.error);
-    }
+  if (result.error) {
+    console.error('❌ Token validation failed:', result.error);
+    return { valid: false, error: result.error };
   }
-
-  return { valid: false, error: 'Не удалось найти рабочий эндпоинт API' };
+  
+  if (!result.data) {
+    console.error('❌ No data returned from /v1/shops');
+    return { valid: false, error: 'API не вернул данные' };
+  }
+  
+  console.log('✅ Token is valid! Shops data:', result.data);
+  
+  return { 
+    valid: true, 
+    sellerInfo: { 
+      shops: result.data,
+      shopId: result.data?.[0]?.id,
+      shopName: result.data?.[0]?.name,
+    } 
+  };
 }
 
 /**
