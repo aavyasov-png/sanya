@@ -1139,33 +1139,33 @@ export default function App() {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            padding: "20px",
+            padding: "16px",
             minHeight: "100vh"
           }}>
             <div style={{ 
               width: "100%", 
-              maxWidth: "480px",
+              maxWidth: "440px",
               display: "flex",
               flexDirection: "column",
-              gap: "24px"
+              gap: "16px"
             }}>
               {/* Логотип */}
               <div style={{
                 display: "flex",
                 justifyContent: "center",
-                marginBottom: "8px"
+                marginBottom: "4px"
               }}>
                 <div className="logoBox" style={{
-                  width: "120px",
-                  height: "120px",
+                  width: "90px",
+                  height: "90px",
                   background: "linear-gradient(145deg, #ffffff, #f8f7ff)",
-                  borderRadius: "32px",
+                  borderRadius: "24px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  boxShadow: "0 8px 32px rgba(111,0,255,.25), 0 2px 8px rgba(0,0,0,.05)",
-                  border: "3px solid rgba(255,255,255,.9)",
-                  padding: "16px"
+                  boxShadow: "0 6px 24px rgba(111,0,255,.2), 0 2px 6px rgba(0,0,0,.05)",
+                  border: "2px solid rgba(255,255,255,.9)",
+                  padding: "12px"
                 }}>
                   <img 
                     className="logoImg" 
@@ -1183,10 +1183,10 @@ export default function App() {
               {/* Заголовок */}
               <div style={{
                 textAlign: "center",
-                marginBottom: "8px"
+                marginBottom: "4px"
               }}>
                 <h1 style={{
-                  fontSize: "36px",
+                  fontSize: "28px",
                   fontWeight: 900,
                   margin: 0,
                   background: "linear-gradient(135deg, #6F00FF, #9d4edd)",
@@ -1203,19 +1203,19 @@ export default function App() {
               {/* Основная карточка */}
               <div style={{
                 background: "linear-gradient(145deg, #ffffff, #fdfcff)",
-                borderRadius: "24px",
-                padding: "32px 24px",
-                boxShadow: "0 12px 48px rgba(111,0,255,.12), 0 4px 12px rgba(0,0,0,.06)",
+                borderRadius: "20px",
+                padding: "20px 18px",
+                boxShadow: "0 8px 32px rgba(111,0,255,.1), 0 3px 8px rgba(0,0,0,.05)",
                 border: "2px solid rgba(111,0,255,.1)"
               }}>
                 {/* Поле ввода кода */}
-                <div style={{ marginBottom: "20px" }}>
+                <div style={{ marginBottom: "14px" }}>
                   <label style={{
                     display: "block",
-                    fontSize: "14px",
+                    fontSize: "12px",
                     fontWeight: 700,
                     color: "rgba(20,18,26,.7)",
-                    marginBottom: "8px",
+                    marginBottom: "6px",
                     textTransform: "uppercase",
                     letterSpacing: "0.5px"
                   }}>
@@ -1233,27 +1233,28 @@ export default function App() {
                       if (e.key === "Enter") submitCode();
                     }}
                     style={{
-                      fontSize: "20px",
+                      fontSize: "18px",
                       fontWeight: 700,
                       letterSpacing: "1px",
-                      textAlign: "center"
+                      textAlign: "center",
+                      height: "50px"
                     }}
                   />
                 </div>
 
                 {/* Правила - аккордеон */}
-                <div style={{ marginBottom: "20px" }}>
+                <div style={{ marginBottom: "14px" }}>
                   <button 
                     onClick={() => setRulesExpanded(!rulesExpanded)}
                     style={{
                       width: "100%",
-                      padding: "14px 16px",
+                      padding: "11px 14px",
                       border: "2px solid rgba(111,0,255,.2)",
-                      borderRadius: "14px",
+                      borderRadius: "12px",
                       background: rulesExpanded ? "rgba(111,0,255,.05)" : "transparent",
                       color: "rgba(20,18,26,.85)",
                       fontWeight: 700,
-                      fontSize: "14px",
+                      fontSize: "13px",
                       cursor: "pointer",
                       display: "flex",
                       alignItems: "center",
@@ -1261,11 +1262,11 @@ export default function App() {
                       transition: "all .25s ease"
                     }}
                   >
-                    <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                       📋 Правила пользования
                     </span>
                     <span style={{ 
-                      fontSize: "12px",
+                      fontSize: "11px",
                       transition: "transform .3s ease", 
                       transform: rulesExpanded ? "rotate(180deg)" : "rotate(0deg)",
                       display: "inline-block"
@@ -1276,24 +1277,23 @@ export default function App() {
                   
                   {rulesExpanded && (
                     <div style={{
-                      marginTop: "12px",
-                      padding: "16px",
+                      marginTop: "10px",
+                      padding: "12px",
                       background: "rgba(111,0,255,.04)",
-                      borderRadius: "12px",
+                      borderRadius: "10px",
                       border: "1px solid rgba(111,0,255,.1)"
                     }}>
                       <ul style={{ 
                         margin: 0, 
-                        paddingLeft: "20px", 
-                        fontSize: "13px", 
+                        paddingLeft: "18px", 
+                        fontSize: "12px", 
                         color: "rgba(20,18,26,.75)", 
-                        lineHeight: 1.8 
+                        lineHeight: 1.6 
                       }}>
-                        <li>Используйте помощника исключительно в рабочих целях</li>
-                        <li>Не распространяйте коды доступа третьим лицам</li>
-                        <li>Чего-то не хватает? Поделитесь с нами!</li>
+                        <li>Используйте помощника в рабочих целях</li>
+                        <li>Не распространяйте коды доступа</li>
+                        <li>Чего-то не хватает? Поделитесь!</li>
                         <li>Пользуйтесь и наслаждайтесь! 🎉</li>
-                        <li>Администратор имеет право отключить доступ в любой момент</li>
                       </ul>
                     </div>
                   )}
@@ -1305,14 +1305,14 @@ export default function App() {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: "12px",
-                    padding: "14px",
+                    gap: "10px",
+                    padding: "11px",
                     background: "rgba(111,0,255,.03)",
-                    borderRadius: "12px",
+                    borderRadius: "10px",
                     cursor: "pointer",
                     border: "2px solid " + (rules ? "rgba(111,0,255,.25)" : "rgba(111,0,255,.1)"),
                     transition: "all .2s ease",
-                    marginBottom: "20px"
+                    marginBottom: "14px"
                   }}
                 >
                   <input
@@ -1327,7 +1327,7 @@ export default function App() {
                   />
                   <span style={{ 
                     fontWeight: 700, 
-                    fontSize: "14px",
+                    fontSize: "13px",
                     color: "rgba(20,18,26,.85)",
                     flex: 1
                   }}>
@@ -1338,14 +1338,14 @@ export default function App() {
                 {/* Ошибка */}
                 {error && (
                   <div style={{
-                    padding: "12px 16px",
+                    padding: "10px 14px",
                     background: "rgba(176,0,32,.08)",
                     border: "2px solid rgba(176,0,32,.2)",
-                    borderRadius: "12px",
+                    borderRadius: "10px",
                     color: "#b00020",
                     fontWeight: 700,
-                    fontSize: "14px",
-                    marginBottom: "16px",
+                    fontSize: "13px",
+                    marginBottom: "12px",
                     textAlign: "center"
                   }}>
                     {error}
@@ -1359,13 +1359,13 @@ export default function App() {
                   disabled={!canContinue}
                   style={{
                     width: "100%",
-                    height: "56px",
-                    fontSize: "16px",
+                    height: "50px",
+                    fontSize: "15px",
                     fontWeight: 800,
                     opacity: canContinue ? 1 : 0.5,
                     cursor: canContinue ? "pointer" : "not-allowed",
                     transition: "all .2s ease",
-                    marginBottom: "20px"
+                    marginBottom: "14px"
                   }}
                 >
                   {t.continue}
@@ -1373,21 +1373,21 @@ export default function App() {
 
                 {/* Информация о получении кода */}
                 <div style={{
-                  padding: "16px",
+                  padding: "12px",
                   background: "linear-gradient(135deg, rgba(111,0,255,.06), rgba(111,0,255,.08))",
-                  borderRadius: "14px",
+                  borderRadius: "12px",
                   textAlign: "center",
                   border: "1px solid rgba(111,0,255,.15)"
                 }}>
                   <div style={{ 
-                    fontSize: "13px", 
+                    fontSize: "11px", 
                     color: "rgba(20,18,26,.65)",
-                    marginBottom: "6px"
+                    marginBottom: "4px"
                   }}>
                     Для получения кода доступа
                   </div>
                   <div style={{ 
-                    fontSize: "15px",
+                    fontSize: "13px",
                     fontWeight: 800,
                     color: "#6F00FF"
                   }}>
