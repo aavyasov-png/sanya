@@ -2138,6 +2138,17 @@ export default function App() {
                     <button
                       className="menuBtn accent"
                       onClick={() => {
+                        setRoute({ name: "calculator" });
+                        setMenuOpen(false);
+                      }}
+                    >
+                      <span style={{ fontSize: "24px" }}>🧮</span>
+                      <span>{lang === "ru" ? "Калькулятор" : "Kalkulyator"}</span>
+                    </button>
+
+                    <button
+                      className="menuBtn accent"
+                      onClick={() => {
                         setRoute({ name: "commissions" });
                         setMenuOpen(false);
                       }}
@@ -2343,8 +2354,8 @@ export default function App() {
               </div>
             </div>
 
-            {/* Блок новостей - увеличенный */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+            {/* Блок новостей */}
+            <div style={{ display: "flex", flexDirection: "column", flexShrink: 0 }}>
               <div style={{ 
                 fontSize: "18px", 
                 fontWeight: 900, 
@@ -2371,7 +2382,7 @@ export default function App() {
                   {lang === "ru" ? "Показать все" : "Barchasini ko'rsatish"}
                 </button>
               </div>
-              <div className="list" style={{ paddingTop: 0, paddingBottom: "80px" }}>
+              <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: "14px" }}>
                 {news.slice(0, 2).map((n) => (
                   <div key={n.id} className="cardCream newsPreview" onClick={() => setRoute({ name: "news_card", newsId: n.id })}>
                     <div className="row" style={{ justifyContent: "space-between", marginBottom: "8px" }}>
