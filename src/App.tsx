@@ -4169,13 +4169,13 @@ export default function App() {
                         <div style={{ marginBottom: "4px" }}>3️⃣ Выберите тип комиссии (FBO/FBS/DBS)</div>
                         <div style={{ marginBottom: "4px" }}>4️⃣ Укажите габарит товара:</div>
                         <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
-                          • МГТ (малогабаритный) — логистика 3000 сум
+                          • МГТ (малогабаритный) — логистика 5000 сум
                         </div>
                         <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
-                          • СГТ (среднегабаритный) — логистика 5000 сум
+                          • СГТ (среднегабаритный) — логистика 8000 сум
                         </div>
                         <div style={{ marginLeft: "12px", marginBottom: "8px", opacity: 0.9 }}>
-                          • КГТ (крупногабаритный) — логистика 9000 сум
+                          • КГТ (крупногабаритный) — логистика 20000 сум
                         </div>
                         <div style={{ marginBottom: "4px" }}>5️⃣ Введите сумму продажи</div>
                         <div>6️⃣ Получите чистую прибыль к выводу! 💰</div>
@@ -4187,13 +4187,13 @@ export default function App() {
                         <div style={{ marginBottom: "4px" }}>3️⃣ Komissiya turini tanlang (FBO/FBS/DBS)</div>
                         <div style={{ marginBottom: "4px" }}>4️⃣ Tovar oʻlchamini koʻrsating:</div>
                         <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
-                          • МГТ (kichik) — logistika 3000 som
+                          • МГТ (kichik) — logistika 5000 som
                         </div>
                         <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
-                          • СГТ (oʻrta) — logistika 5000 som
+                          • СГТ (oʻrta) — logistika 8000 som
                         </div>
                         <div style={{ marginLeft: "12px", marginBottom: "8px", opacity: 0.9 }}>
-                          • КГТ (katta) — logistika 9000 som
+                          • КГТ (katta) — logistika 20000 som
                         </div>
                         <div style={{ marginBottom: "4px" }}>5️⃣ Sotish summasini kiriting</div>
                         <div>6️⃣ Toza foydani oling! 💰</div>
@@ -4316,7 +4316,7 @@ export default function App() {
                           >
                             {gab}
                             <div style={{ fontSize: "10px", fontWeight: 500, marginTop: "2px" }}>
-                              {gab === "МГТ" ? "3000" : gab === "СГТ" ? "5000" : "9000"}
+                              {gab === "МГТ" ? "5000" : gab === "СГТ" ? "8000" : "20000"}
                             </div>
                           </button>
                         ))}
@@ -4368,7 +4368,7 @@ export default function App() {
                           const saleAmount = parseFloat(calcSaleAmount);
                           const commPercent = calcSelectedCommission[`comm_${calcCommType}`];
                           const commAmount = saleAmount * (commPercent / 100);
-                          const logisticFee = calcGabarit === "МГТ" ? 3000 : calcGabarit === "СГТ" ? 5000 : 9000;
+                          const logisticFee = calcGabarit === "МГТ" ? 5000 : calcGabarit === "СГТ" ? 8000 : 20000;
                           const totalDeduction = commAmount + logisticFee;
                           const netProfit = saleAmount - totalDeduction;
 
