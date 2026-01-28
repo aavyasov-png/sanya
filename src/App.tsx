@@ -341,6 +341,10 @@ export default function App() {
   const [commissionResults, setCommissionResults] = useState<any[]>([]);
   const [selectedCommission, setSelectedCommission] = useState<any>(null);
   
+  // Онбординг
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
+  
   // Калькулятор прибыли
   const [showCalcInstruction, setShowCalcInstruction] = useState(false);
   const [commissionHistory, setCommissionHistory] = useState<any[]>([]);
@@ -393,6 +397,15 @@ export default function App() {
   const canEdit = () => ["editor", "admin", "owner"].includes(userRole);
   const canManage = () => ["admin", "owner"].includes(userRole);
   const canFullAccess = () => userRole === "owner";
+
+  // Функция для запуска онбординга если нужно
+  const startOnboardingIfNeeded = () => {
+    const done = localStorage.getItem("onboarding_done") === "1";
+    if (!done) {
+      setShowOnboarding(true);
+      setOnboardingStep(0);
+    }
+  };
 
   // Загрузка профиля пользователя из базы
   const loadUserProfile = async (telegramId: string) => {
@@ -1083,7 +1096,7 @@ export default function App() {
       localStorage.setItem("access_ok", "1");
       localStorage.setItem("user_role", "viewer");
       setUserRole("viewer");
-      setRoute({ name: "home" });
+      startOnboardingIfNeeded();
       return;
     }
 
@@ -1159,7 +1172,7 @@ export default function App() {
       } else {
         localStorage.removeItem("admin_ok");
         setAdminOk(false);
-        setRoute({ name: "home" });
+        startOnboardingIfNeeded();
       }
     } catch (err) {
       console.error("[CODE] Exception:", err);
@@ -1783,6 +1796,141 @@ export default function App() {
           <div className="grape grape-7">🍇</div>
           <div className="grape grape-8">🍇</div>
         </div>
+
+        {/* ОНБОРДИНГ */}
+        {showOnboarding && (
+          <div className="page" style={{ background: "#fff" }}>
+            {/* Индикатор прогресса */}
+            <div style={{
+              padding: "16px",
+              display: "flex",
+              justifyContent: "center",
+              gap: "8px",
+              background: "linear-gradient(135deg, #7000FF 0%, #9D4EFF 100%)"
+            }}>
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: "8px",
+                    height: "8px",
+                    borderRadius: "50%",
+                    background: i === onboardingStep ? "#fff" : "rgba(255,255,255,.3)",
+                    transition: "all 0.3s"
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Контент слайда */}
+            <div style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              padding: "40px 24px",
+              textAlign: "center"
+            }}>
+              {/* Заголовок и текст */}
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "16px" }}>
+                <div style={{ fontSize: "28px", fontWeight: 900, color: "#111" }}>
+                  {onboardingStep === 0 && "Посчитайте прибыль"}
+                  {onboardingStep === 1 && "Проверьте комиссии"}
+                  {onboardingStep === 2 && "Можно без интеграции"}
+                </div>
+                <div style={{ fontSize: "16px", color: "rgba(0,0,0,.7)", lineHeight: "1.5" }}>
+                  {onboardingStep === 0 && "Введите закупочную и цену продажи — получите примерную чистую прибыль."}
+                  {onboardingStep === 1 && "Комиссия зависит от категории. Сверьте её перед выставлением цены."}
+                  {onboardingStep === 2 && "Если данных по продажам пока нет — это нормально. Начните с калькулятора и комиссий, а интеграцию подключите позже."}
+                </div>
+
+                {/* Иконка слайда */}
+                <div style={{ fontSize: "64px", marginTop: "16px" }}>
+                  {onboardingStep === 0 && "🧮"}
+                  {onboardingStep === 1 && "💰"}
+                  {onboardingStep === 2 && "🔗"}
+                </div>
+              </div>
+
+              {/* Кнопки внизу */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingTop: "24px" }}>
+                {/* Кнопки навигации */}
+                <div style={{ display: "flex", gap: "12px" }}>
+                  <button
+                    onClick={() => setOnboardingStep(Math.max(0, onboardingStep - 1))}
+                    disabled={onboardingStep === 0}
+                    style={{
+                      flex: 1,
+                      padding: "14px",
+                      background: onboardingStep === 0 ? "rgba(111,0,255,.1)" : "#fff",
+                      color: onboardingStep === 0 ? "rgba(111,0,255,.4)" : "#6F00FF",
+                      border: `2px solid ${onboardingStep === 0 ? "rgba(111,0,255,.2)" : "#6F00FF"}`,
+                      borderRadius: "12px",
+                      fontSize: "15px",
+                      fontWeight: 700,
+                      cursor: onboardingStep === 0 ? "not-allowed" : "pointer",
+                      transition: "all 0.2s"
+                    }}
+                  >
+                    ← Назад
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (onboardingStep === 2) {
+                        localStorage.setItem("onboarding_done", "1");
+                        setShowOnboarding(false);
+                        setRoute({ name: "home" });
+                      } else {
+                        setOnboardingStep(onboardingStep + 1);
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "14px",
+                      background: "linear-gradient(135deg, #6F00FF, #9D4EFF)",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "12px",
+                      fontSize: "15px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      boxShadow: "0 4px 12px rgba(111,0,255,.3)",
+                      transition: "all 0.2s"
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
+                  >
+                    {onboardingStep === 2 ? "Готово →" : "Далее →"}
+                  </button>
+                </div>
+
+                {/* Кнопка пропустить */}
+                <button
+                  onClick={() => {
+                    localStorage.setItem("onboarding_done", "1");
+                    setShowOnboarding(false);
+                    setRoute({ name: "home" });
+                  }}
+                  style={{
+                    padding: "12px",
+                    background: "none",
+                    color: "rgba(111,0,255,.6)",
+                    border: "none",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = "rgba(111,0,255,.9)"}
+                  onMouseLeave={(e) => e.currentTarget.style.color = "rgba(111,0,255,.6)"}
+                >
+                  Пропустить
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {route.name === "welcome" && (
           <div className="page" style={{ 
