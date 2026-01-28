@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getShops, getFinanceOrders, getFinanceExpenses } from '../../lib/uzum-api';
 import EmptyState from '../EmptyState';
+import ContextualTooltip from '../ContextualTooltip';
 
 interface UzumFinanceProps {
   lang: 'ru' | 'uz';
@@ -199,11 +200,20 @@ export default function UzumFinance({ lang, token, onNavigateBack, onNavigateHom
       }}>
         <div className="cardCream" style={{ textAlign: 'center' }}>
           <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
             fontSize: '12px',
             color: '#666',
             marginBottom: '6px',
           }}>
             💰 {t.revenue}
+            <ContextualTooltip
+              content={lang === 'ru' ? 'Общая сумма всех продаж' : 'Barcha sotishlarning umumiy summasi'}
+              position="top"
+              trigger="click"
+            />
           </div>
           <div style={{
             fontSize: '20px',
@@ -216,11 +226,20 @@ export default function UzumFinance({ lang, token, onNavigateBack, onNavigateHom
 
         <div className="cardCream" style={{ textAlign: 'center' }}>
           <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
             fontSize: '12px',
             color: '#666',
             marginBottom: '6px',
           }}>
             📉 {t.totalExpenses}
+            <ContextualTooltip
+              content={lang === 'ru' ? 'Сумма всех расходов и комиссий' : 'Barcha xarajatlar va komissiyalarning summasi'}
+              position="top"
+              trigger="click"
+            />
           </div>
           <div style={{
             fontSize: '20px',
@@ -233,11 +252,20 @@ export default function UzumFinance({ lang, token, onNavigateBack, onNavigateHom
 
         <div className="cardCream" style={{ textAlign: 'center' }}>
           <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
             fontSize: '12px',
             color: '#666',
             marginBottom: '6px',
           }}>
             📈 {t.profit}
+            <ContextualTooltip
+              content={lang === 'ru' ? 'Выручка минус все расходы и комиссии' : 'Daromad minus barcha xarajatlar va komissiyalar'}
+              position="top"
+              trigger="click"
+            />
           </div>
           <div style={{
             fontSize: '20px',
@@ -324,9 +352,9 @@ export default function UzumFinance({ lang, token, onNavigateBack, onNavigateHom
             }}>
               {orders.length === 0 ? (
                 <EmptyState
-                  icon="📋"
-                  title={lang === 'ru' ? 'Финансовые заказы не найдены' : 'Moliya buyurtmalari topilmadi'}
-                  subtitle={lang === 'ru' ? 'У вас ещё нет финансовых данных за выбранный период' : 'Tanlangan davr uchun moliya ma\'lumotlari yo\'q'}
+                  icon="�"
+                  title={lang === 'ru' ? 'Аналитика пока недоступна' : 'Tahliliyot hozir mavjud emas'}
+                  subtitle={lang === 'ru' ? 'Появится, когда будут первые продажи' : 'Birinchi sotishdan keyin paydo boladi'}
                 />
               ) : (
                 <div style={{ overflowX: 'auto' }}>
@@ -435,9 +463,9 @@ export default function UzumFinance({ lang, token, onNavigateBack, onNavigateHom
             }}>
               {expenses.length === 0 ? (
                 <EmptyState
-                  icon="💸"
+                  icon="�"
                   title={lang === 'ru' ? 'Расходы не найдены' : 'Xarajatlar topilmadi'}
-                  subtitle={lang === 'ru' ? 'У вас нет расходов за выбранный период' : 'Tanlangan davr uchun xarajatlar yo\'q'}
+                  subtitle={lang === 'ru' ? 'Это нормально. Появятся при хозяйственной деятельности' : 'Bu normal. Xarajatlar faoliyat boshlanishi bilan paydo boladi'}
                 />
               ) : (
                 <div style={{ overflowX: 'auto' }}>

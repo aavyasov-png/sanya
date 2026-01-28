@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getShops, getProducts, getFbsOrdersCount } from '../../lib/uzum-api';
 import EmptyState from '../EmptyState';
+import ContextualTooltip from '../ContextualTooltip';
 
 interface UzumDashboardProps {
   lang: 'ru' | 'uz';
@@ -123,9 +124,9 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
     return (
       <EmptyState
         icon="🏪"
-        title={lang === 'ru' ? 'Магазины не найдены' : 'Do\'konlar topilmadi'}
-        subtitle={lang === 'ru' ? 'Похоже, у вас ещё нет магазинов на Uzum. Создайте магазин в Seller Cabinet и попробуйте снова.' : 'Sizda hali Uzumda do\'konlar yo\'q. Seller Cabinet\'da do\'kon yarating va qayta urinib ko\'ring.'}
-        actionText={lang === 'ru' ? 'К настройкам' : 'Sozlamalarga'}
+        title={lang === 'ru' ? 'Интеграция не подключена' : 'Integratsiya ulanmagan'}
+        subtitle={lang === 'ru' ? 'Подключите Uzum для заказов и аналитики' : 'Buyurtmalar va tahlil uchun Uzumni ulanging'}
+        actionText={lang === 'ru' ? 'Подключить' : 'Ulang'}
         onAction={onNavigateBack}
       />
     );
@@ -171,12 +172,20 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
       {shops.length > 0 && (
         <div style={{ marginBottom: '20px' }}>
           <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
             fontSize: '18px',
             fontWeight: 700,
             marginBottom: '12px',
             color: '#111',
           }}>
             {t.shops}
+            <ContextualTooltip
+              content={lang === 'ru' ? 'Если данных нет — это нормально для нового магазина.' : 'Agar ma\'lumot bo\'lmasa - bu yangi do\'kon uchun normal.'}
+              position="right"
+              trigger="click"
+            />
           </div>
           <div style={{
             display: 'grid',

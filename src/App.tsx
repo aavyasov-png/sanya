@@ -11,6 +11,7 @@ import UzumOrders from "./components/uzum/UzumOrders";
 import UzumFinance from "./components/uzum/UzumFinance";
 import UzumStatusBlock from "./components/UzumStatusBlock";
 import GettingStartedBlock from "./components/GettingStartedBlock";
+import ContextualTooltip from "./components/ContextualTooltip";
 // @ts-ignore - EmptyState used in child components
 import EmptyState from "./components/EmptyState";
 
@@ -3549,9 +3550,16 @@ export default function App() {
                     <>
                       {/* Тип комиссии */}
                       <div style={{ marginBottom: "16px" }}>
-                        <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)", marginBottom: "8px", display: "block" }}>
-                          {lang === "ru" ? "Тип комиссии" : "Komissiya turi"}
-                        </label>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                          <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)" }}>
+                            {lang === "ru" ? "Тип комиссии" : "Komissiya turi"}
+                          </label>
+                          <ContextualTooltip
+                            content={lang === "ru" ? "Комиссия зависит от категории товара и формата доставки." : "Komissiya tovar turkumi va yetkazib berish formati bo'yicha farqlanadi."}
+                            position="right"
+                            trigger="click"
+                          />
+                        </div>
                         <div style={{ display: "flex", gap: "8px" }}>
                           {(["fbo", "fbs", "dbs"] as const).map((type) => (
                             <button
@@ -3578,9 +3586,16 @@ export default function App() {
 
                       {/* Габариты товара */}
                       <div style={{ marginBottom: "16px" }}>
-                        <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)", marginBottom: "8px", display: "block" }}>
-                          {lang === "ru" ? "Габариты товара" : "Tovar oʻlchamlari"}
-                        </label>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                          <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)" }}>
+                            {lang === "ru" ? "Габариты товара" : "Tovar oʻlchamlari"}
+                          </label>
+                          <ContextualTooltip
+                            content={lang === "ru" ? "Какие размеры товара и как это влияет на логистику" : "Tovar o'lchamlari logistikaga qanday ta'sir qiladi"}
+                            position="right"
+                            trigger="click"
+                          />
+                        </div>
                         <div style={{ display: "flex", gap: "8px" }}>
                           {(["МГТ", "СГТ", "КГТ"] as const).map((gab) => (
                             <button
@@ -3613,9 +3628,16 @@ export default function App() {
 
                       {/* Сумма продажи */}
                       <div style={{ marginBottom: "16px" }}>
-                        <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)", marginBottom: "6px", display: "block" }}>
-                          {lang === "ru" ? "Сумма продажи (сум)" : "Sotish summasi (som)"}
-                        </label>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                          <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)" }}>
+                            {lang === "ru" ? "Сумма продажи (сум)" : "Sotish summasi (som)"}
+                          </label>
+                          <ContextualTooltip
+                            content={lang === "ru" ? "От неё зависит ваша прибыль и позиция в выдаче" : "Bunga ko'ra sizning foydangiz va qidiruvda joyingiz belgilanadi"}
+                            position="right"
+                            trigger="click"
+                          />
+                        </div>
                         <input
                           type="number"
                           value={calcSaleAmount}
@@ -3652,8 +3674,15 @@ export default function App() {
 
                             return (
                               <>
-                                <div style={{ fontSize: "13px", marginBottom: "8px", opacity: 0.9 }}>
-                                  {lang === "ru" ? "💰 Расчёт" : "💰 Hisoblash"}
+                                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                                  <div style={{ fontSize: "13px", opacity: 0.9 }}>
+                                    {lang === "ru" ? "💰 Расчёт" : "💰 Hisoblash"}
+                                  </div>
+                                  <ContextualTooltip
+                                    content={lang === "ru" ? "Это предварительный расчёт. Точная прибыль будет известна после продажи товара." : "Bu tahlili hisoblash. Aniq foyda tovar sotilgandan keyin ma'lum bo'ladi."}
+                                    position="bottom"
+                                    trigger="click"
+                                  />
                                 </div>
                                 <div style={{ fontSize: "12px", marginBottom: "4px", opacity: 0.8 }}>
                                   {lang === "ru" ? "Комиссия" : "Komissiya"}: {commAmount.toFixed(0)} {lang === "ru" ? "сум" : "som"} ({commPercent}%)
@@ -3667,6 +3696,13 @@ export default function App() {
                                 <div style={{ fontSize: "18px", fontWeight: 900, marginTop: "8px" }}>
                                   {lang === "ru" ? "✅ К выводу: " : "✅ Yechib olish uchun: "}
                                   {netProfit.toFixed(0)} {lang === "ru" ? "сум" : "som"}
+                                </div>
+
+                                {/* Микрообучение */}
+                                <div style={{ fontSize: "12px", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,.3)", opacity: 0.85 }}>
+                                  💡 {lang === "ru" ? "Хотите точнее?" : "Aniqroq bo'lishni xohlaysizmi?"} <span style={{ cursor: "pointer", fontWeight: 600, textDecoration: "underline" }} onClick={() => setRoute({ name: "uzum" })}>
+                                    {lang === "ru" ? "Подключите Uzum →" : "Uzumni ulang →"}
+                                  </span>
                                 </div>
                               </>
                             );

@@ -212,9 +212,9 @@ export default function UzumOrders({ lang, token, onNavigateBack, onNavigateHome
       <EmptyState
         icon="📋"
         title={t.noOrders}
-        subtitle={lang === 'ru' ? 'Заказов нет. Когда они появятся, они будут показаны здесь.' : 'Buyurtmalar yo\'q. Ular paydo bo\'lganda, ular bu yerda ko\'rsatiladi.'}
-        actionText={lang === 'ru' ? 'К панели' : 'Panelga'}
-        onAction={onNavigateBack}
+        subtitle={lang === 'ru' ? 'Новые заказы появятся здесь. Рекомендуем проверить цену' : 'Yangi buyurtmalar bu yerda paydo boladi. Narxni tekshirishni tavsiya etamiz'}
+        actionText={lang === 'ru' ? 'Посчитать прибыль' : 'Foyda hisoblash'}
+        onAction={() => { /* navigate to calculator */ }}
       />
     );
   }

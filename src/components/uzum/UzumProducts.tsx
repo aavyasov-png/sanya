@@ -187,8 +187,8 @@ export default function UzumProducts({ lang, token, onNavigateBack, onNavigateHo
       <EmptyState
         icon="📦"
         title={t.noProducts}
-        subtitle={lang === 'ru' ? 'У вас ещё нет товаров. Добавьте товары в Seller Cabinet и они появятся здесь.' : 'Sizda hali mahsulotlar yo\'q. Seller Cabinet\'da mahsulot qo\'shing va ular bu yerda paydo bo\'ladi.'}
-        actionText={lang === 'ru' ? 'К панели' : 'Panelga'}
+        subtitle={lang === 'ru' ? 'Это нормально. Товары появятся после добавления' : 'Bu normaldir. Mahsulotlar qoshilgandan keyin paydo boladi'}
+        actionText={lang === 'ru' ? 'Назад' : 'Orqaga'}
         onAction={onNavigateBack}
       />
     );
@@ -199,8 +199,8 @@ export default function UzumProducts({ lang, token, onNavigateBack, onNavigateHo
       <EmptyState
         icon="🔍"
         title={lang === 'ru' ? 'Товары не найдены' : 'Mahsulotlar topilmadi'}
-        subtitle={lang === 'ru' ? `По запросу "${searchQuery}" ничего не найдено` : `"${searchQuery}" bo'yicha hech nima topilmadi`}
-        actionText={lang === 'ru' ? 'Очистить поиск' : 'Qidiruvni tozalash'}
+        subtitle={lang === 'ru' ? 'Попробуйте изменить поиск' : 'Qidiruvni ozgartiring'}
+        actionText={lang === 'ru' ? 'Очистить' : 'Tozalash'}
         onAction={() => setSearchQuery('')}
       />
     );
