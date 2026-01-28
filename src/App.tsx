@@ -2201,7 +2201,8 @@ export default function App() {
               background: "linear-gradient(135deg, #7000FF 0%, #9D4EFF 100%)",
               borderBottom: "2px solid rgba(157,78,255,.4)",
               position: "relative",
-              overflow: "hidden"
+              overflow: "hidden",
+              flexShrink: 0
             }}>
               {/* Декоративные элементы */}
               <div style={{
@@ -2258,14 +2259,14 @@ export default function App() {
             </div>
 
             {/* Дружелюбное приветствие */}
-            <div style={{ padding: "0 16px 12px", fontSize: "13px", color: "rgba(0,0,0,.7)" }}>
+            <div style={{ padding: "0 16px 12px", fontSize: "13px", color: "rgba(0,0,0,.7)", flexShrink: 0 }}>
               {lang === "ru" 
                 ? "👋 Мы поможем разобраться и начать продажи" 
                 : "👋 Biz sizga yangiliklari boshlashga yordam beramiz"}
             </div>
 
             {/* Блок статуса Uzum */}
-            <div style={{ padding: "16px" }}>
+            <div style={{ padding: "16px", flexShrink: 0 }}>
               <UzumStatusBlock
                 lang={lang}
                 isConnected={uzumConnected}
@@ -2277,16 +2278,18 @@ export default function App() {
             </div>
 
             {/* Блок "С чего начать" */}
-            <GettingStartedBlock
-              lang={lang}
-              onNavigateCalculator={() => setRoute({ name: "calculator" })}
-              onNavigateCommissions={() => setRoute({ name: "commissions" })}
-              onNavigateSizes={() => setRoute({ name: "sections_all" })}
-              onNavigateFaq={() => setRoute({ name: "faq" })}
-            />
+            <div style={{ flexShrink: 0 }}>
+              <GettingStartedBlock
+                lang={lang}
+                onNavigateCalculator={() => setRoute({ name: "calculator" })}
+                onNavigateCommissions={() => setRoute({ name: "commissions" })}
+                onNavigateSizes={() => setRoute({ name: "sections_all" })}
+                onNavigateFaq={() => setRoute({ name: "faq" })}
+              />
+            </div>
 
             {/* Карусель разделов */}
-            <div style={{ padding: "12px 0" }}>
+            <div style={{ padding: "12px 0", flexShrink: 0 }}>
               <div style={{ 
                 fontSize: "12px", 
                 fontWeight: 800, 
