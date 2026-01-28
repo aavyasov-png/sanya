@@ -404,7 +404,6 @@ export default function App() {
     if (!done) {
       setShowOnboarding(true);
       setOnboardingStep(0);
-      setRoute({ name: "home" });
     } else {
       setRoute({ name: "home" });
     }
@@ -1802,10 +1801,17 @@ export default function App() {
 
         {/* ОНБОРДИНГ */}
         {showOnboarding && (
-          <div className="page" style={{
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             background: "linear-gradient(135deg, #0F0F2E 0%, #1a0a3e 50%, #2d1b4e 100%)",
             display: "flex",
-            flexDirection: "column"
+            flexDirection: "column",
+            zIndex: 10000,
+            overflow: "auto"
           }}>
             {/* Top bar с прогрессом */}
             <div style={{

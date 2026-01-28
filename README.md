@@ -1,8 +1,71 @@
-# React + TypeScript + Vite
+# Uzum Seller Bot - Telegram Mini App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Telegram Mini App** для продавцов на маркетплейсе Uzum Market. 
 
-While this project uses React, Vite supports many popular JS frameworks. [See all the supported frameworks](https://vitejs.dev/guide/#scaffolding-your-first-vite-project).
+Приложение помогает:
+- 📊 Рассчитывать прибыль с учётом комиссий
+- 💰 Проверять актуальные комиссии по категориям
+- 📦 Управлять заказами через Uzum API
+- 📚 Получать доступ к базе знаний
+- 💬 Общаться в чате поддержки
+
+## 🚀 Структура проекта
+
+- `/src` - React приложение (MiniApp)
+- `/telegram-bot` - Telegram бот с командой `/start`
+- `/functions` - Cloudflare Functions (proxy для Uzum API)
+- `/admin` - Документация по админ панели
+
+## 📋 Быстрый старт
+
+### 1. MiniApp (React приложение)
+
+```bash
+# Установка зависимостей
+npm install
+
+# Разработка
+npm run dev
+
+# Сборка
+npm run build
+
+# Деплой на Cloudflare Pages
+npm run deploy
+```
+
+### 2. Telegram бот
+
+```bash
+# Переход в папку бота
+cd telegram-bot
+
+# Установка зависимостей
+npm install
+
+# Настройка .env
+cp .env.example .env
+# Заполните TELEGRAM_BOT_TOKEN и MINI_APP_URL
+
+# Запуск
+npm start
+```
+
+Подробнее: [telegram-bot/README.md](./telegram-bot/README.md)
+
+## 🤖 Команды Telegram бота
+
+- `/start` - Приветствие + описание функций + кнопка запуска MiniApp
+- `/help` - Помощь и FAQ
+- `/app` - Быстрое открытие приложения
+
+## 🛠 Технологии
+
+- **Frontend:** React 18 + TypeScript + Vite
+- **Backend:** Supabase (PostgreSQL + Auth + Storage)
+- **Bot:** node-telegram-bot-api
+- **Proxy:** Cloudflare Functions
+- **Deploy:** Cloudflare Pages / Vercel
 
 ## Deploy Your Own
 

@@ -1,0 +1,19 @@
+{
+  "name": "uzum-seller-telegram-bot",
+  "version": "1.0.0",
+  "description": "Telegram бот для Uzum Seller Bot MiniApp",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "nodemon bot.js"
+  },
+  "keywords": ["telegram", "bot", "uzum", "miniapp"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "node-telegram-bot-api": "^0.66.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
