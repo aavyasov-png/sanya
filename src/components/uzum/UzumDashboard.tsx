@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getShops, getProducts, getFbsOrdersCount } from '../../lib/uzum-api';
+import EmptyState from '../EmptyState';
 
 interface UzumDashboardProps {
   lang: 'ru' | 'uz';
@@ -109,16 +110,24 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
 
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '400px',
-        fontSize: '16px',
-        color: '#6b7280',
-      }}>
-        🔄 {t.loading}
-      </div>
+      <EmptyState
+        icon="🔄"
+        title={t.loading}
+        subtitle={lang === 'ru' ? 'Загружаем данные из вашего аккаунта...' : 'Hisobingizdan malumotlar yuklanmoqda...'}
+        type="loading"
+      />
+    );
+  }
+
+  if (shops.length === 0) {
+    return (
+      <EmptyState
+        icon="🏪"
+        title={lang === 'ru' ? 'Магазины не найдены' : 'Do\'konlar topilmadi'}
+        subtitle={lang === 'ru' ? 'Похоже, у вас ещё нет магазинов на Uzum. Создайте магазин в Seller Cabinet и попробуйте снова.' : 'Sizda hali Uzumda do\'konlar yo\'q. Seller Cabinet\'da do\'kon yarating va qayta urinib ko\'ring.'}
+        actionText={lang === 'ru' ? 'К настройкам' : 'Sozlamalarga'}
+        onAction={onNavigateBack}
+      />
     );
   }
 

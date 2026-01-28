@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getShops, getProducts } from '../../lib/uzum-api';
+import EmptyState from '../EmptyState';
 
 interface UzumProductsProps {
   lang: 'ru' | 'uz';
@@ -172,31 +173,36 @@ export default function UzumProducts({ lang, token, onNavigateBack, onNavigateHo
 
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '400px',
-        gap: '16px',
-      }}>
-        <div style={{
-          width: '48px',
-          height: '48px',
-          border: '4px solid #f3f4f6',
-          borderTopColor: '#7c3aed',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite',
-        }} />
-        <div style={{ fontSize: '16px', color: '#6b7280' }}>
-          {t.loading}
-        </div>
-        <style>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
+      <EmptyState
+        icon="📦"
+        title={t.loading}
+        subtitle={lang === 'ru' ? 'Получаем список ваших товаров...' : 'Sizning mahsulotlar ro\'yxatini olamiz...'}
+        type="loading"
+      />
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <EmptyState
+        icon="📦"
+        title={t.noProducts}
+        subtitle={lang === 'ru' ? 'У вас ещё нет товаров. Добавьте товары в Seller Cabinet и они появятся здесь.' : 'Sizda hali mahsulotlar yo\'q. Seller Cabinet\'da mahsulot qo\'shing va ular bu yerda paydo bo\'ladi.'}
+        actionText={lang === 'ru' ? 'К панели' : 'Panelga'}
+        onAction={onNavigateBack}
+      />
+    );
+  }
+
+  if (filteredProducts.length === 0 && searchQuery.trim() !== '') {
+    return (
+      <EmptyState
+        icon="🔍"
+        title={lang === 'ru' ? 'Товары не найдены' : 'Mahsulotlar topilmadi'}
+        subtitle={lang === 'ru' ? `По запросу "${searchQuery}" ничего не найдено` : `"${searchQuery}" bo'yicha hech nima topilmadi`}
+        actionText={lang === 'ru' ? 'Очистить поиск' : 'Qidiruvni tozalash'}
+        onAction={() => setSearchQuery('')}
+      />
     );
   }
 

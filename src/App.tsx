@@ -9,6 +9,10 @@ import UzumDashboard from "./components/uzum/UzumDashboard";
 import UzumProducts from "./components/uzum/UzumProducts";
 import UzumOrders from "./components/uzum/UzumOrders";
 import UzumFinance from "./components/uzum/UzumFinance";
+import UzumStatusBlock from "./components/UzumStatusBlock";
+import GettingStartedBlock from "./components/GettingStartedBlock";
+// @ts-ignore - EmptyState used in child components
+import EmptyState from "./components/EmptyState";
 
 type Lang = "ru" | "uz";
 
@@ -2174,6 +2178,30 @@ export default function App() {
                 </div>
               </div>
             </div>
+
+            {/* Блок статуса Uzum */}
+            <div style={{ padding: "16px" }}>
+              <UzumStatusBlock
+                lang={lang}
+                isConnected={uzumConnected}
+                hasData={uzumShops.length > 0}
+                onConnect={() => setRoute({ name: "uzum" })}
+                onOpen={() => setRoute({ name: "uzum" })}
+                userName={userName}
+              />
+            </div>
+
+            {/* Блок "С чего начать" */}
+            <GettingStartedBlock
+              lang={lang}
+              onNavigateCalculator={() => {
+                setRoute({ name: "commissions" });
+                setShowCalculator(true);
+              }}
+              onNavigateCommissions={() => setRoute({ name: "commissions" })}
+              onNavigateSizes={() => setRoute({ name: "sections_all" })}
+              onNavigateFaq={() => setRoute({ name: "faq" })}
+            />
 
             {/* Карусель разделов */}
             <div style={{ padding: "12px 0" }}>

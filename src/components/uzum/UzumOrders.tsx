@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getShops, getFbsOrders, confirmFbsOrder, cancelFbsOrder } from '../../lib/uzum-api';
+import EmptyState from '../EmptyState';
 
 interface UzumOrdersProps {
   lang: 'ru' | 'uz';
@@ -197,31 +198,24 @@ export default function UzumOrders({ lang, token, onNavigateBack, onNavigateHome
 
   if (loading) {
     return (
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '400px',
-        gap: '16px',
-      }}>
-        <div style={{
-          width: '48px',
-          height: '48px',
-          border: '4px solid #f3f4f6',
-          borderTopColor: '#22c55e',
-          borderRadius: '50%',
-          animation: 'spin 1s linear infinite',
-        }} />
-        <div style={{ fontSize: '16px', color: '#6b7280' }}>
-          {t.loading}
-        </div>
-        <style>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
-      </div>
+      <EmptyState
+        icon="📋"
+        title={t.loading}
+        subtitle={lang === 'ru' ? 'Получаем список ваших заказов...' : 'Sizning buyurtmalar ro\'yxatini olamiz...'}
+        type="loading"
+      />
+    );
+  }
+
+  if (filteredOrders.length === 0) {
+    return (
+      <EmptyState
+        icon="📋"
+        title={t.noOrders}
+        subtitle={lang === 'ru' ? 'Заказов нет. Когда они появятся, они будут показаны здесь.' : 'Buyurtmalar yo\'q. Ular paydo bo\'lganda, ular bu yerda ko\'rsatiladi.'}
+        actionText={lang === 'ru' ? 'К панели' : 'Panelga'}
+        onAction={onNavigateBack}
+      />
     );
   }
 

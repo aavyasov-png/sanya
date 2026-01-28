@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getShops, getFinanceOrders, getFinanceExpenses } from '../../lib/uzum-api';
+import EmptyState from '../EmptyState';
 
 interface UzumFinanceProps {
   lang: 'ru' | 'uz';
@@ -306,31 +307,12 @@ export default function UzumFinance({ lang, token, onNavigateBack, onNavigateHom
 
       {/* Content */}
       {loading ? (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '300px',
-          gap: '16px',
-        }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            border: '4px solid #f3f4f6',
-            borderTopColor: '#f59e0b',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-          }} />
-          <div style={{ fontSize: '16px', color: '#6b7280' }}>
-            {t.loading}
-          </div>
-          <style>{`
-            @keyframes spin {
-              to { transform: rotate(360deg); }
-            }
-          `}</style>
-        </div>
+        <EmptyState
+          icon="💰"
+          title={t.loading}
+          subtitle={lang === 'ru' ? 'Получаем финансовые данные...' : 'Moliya ma\'lumotlarini olamiz...'}
+          type="loading"
+        />
       ) : (
         <>
           {activeTab === 'orders' && (
@@ -341,14 +323,11 @@ export default function UzumFinance({ lang, token, onNavigateBack, onNavigateHom
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             }}>
               {orders.length === 0 ? (
-                <div style={{
-                  padding: '60px 20px',
-                  textAlign: 'center',
-                  color: '#9ca3af',
-                  fontSize: '16px',
-                }}>
-                  📭 {t.noData}
-                </div>
+                <EmptyState
+                  icon="📋"
+                  title={lang === 'ru' ? 'Финансовые заказы не найдены' : 'Moliya buyurtmalari topilmadi'}
+                  subtitle={lang === 'ru' ? 'У вас ещё нет финансовых данных за выбранный период' : 'Tanlangan davr uchun moliya ma\'lumotlari yo\'q'}
+                />
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{
@@ -455,14 +434,11 @@ export default function UzumFinance({ lang, token, onNavigateBack, onNavigateHom
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             }}>
               {expenses.length === 0 ? (
-                <div style={{
-                  padding: '60px 20px',
-                  textAlign: 'center',
-                  color: '#9ca3af',
-                  fontSize: '16px',
-                }}>
-                  📭 {t.noData}
-                </div>
+                <EmptyState
+                  icon="💸"
+                  title={lang === 'ru' ? 'Расходы не найдены' : 'Xarajatlar topilmadi'}
+                  subtitle={lang === 'ru' ? 'У вас нет расходов за выбранный период' : 'Tanlangan davr uchun xarajatlar yo\'q'}
+                />
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{
