@@ -1802,27 +1802,72 @@ export default function App() {
 
         {/* ОНБОРДИНГ */}
         {showOnboarding && (
-          <div className="page" style={{ background: "#fff" }}>
-            {/* Индикатор прогресса */}
+          <div className="page" style={{
+            background: "linear-gradient(135deg, #0F0F2E 0%, #1a0a3e 50%, #2d1b4e 100%)",
+            display: "flex",
+            flexDirection: "column"
+          }}>
+            {/* Top bar с прогрессом */}
             <div style={{
-              padding: "16px",
+              padding: "20px 24px 12px",
               display: "flex",
-              justifyContent: "center",
-              gap: "8px",
-              background: "linear-gradient(135deg, #7000FF 0%, #9D4EFF 100%)"
+              flexDirection: "column",
+              gap: "12px"
             }}>
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: "8px",
-                    height: "8px",
-                    borderRadius: "50%",
-                    background: i === onboardingStep ? "#fff" : "rgba(255,255,255,.3)",
-                    transition: "all 0.3s"
+              <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center"
+              }}>
+                <span style={{
+                  fontSize: "13px",
+                  fontWeight: 600,
+                  color: "rgba(255,255,255,.5)"
+                }}>
+                  Шаг {onboardingStep + 1} из 3
+                </span>
+                <button
+                  onClick={() => {
+                    localStorage.setItem("onboarding_done", "1");
+                    setShowOnboarding(false);
+                    setRoute({ name: "home" });
                   }}
-                />
-              ))}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "rgba(255,255,255,.6)",
+                    fontSize: "20px",
+                    cursor: "pointer",
+                    padding: "0",
+                    width: "24px",
+                    height: "24px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,.9)"}
+                  onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,.6)"}
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {/* Прогресс бар */}
+              <div style={{
+                height: "3px",
+                background: "rgba(255,255,255,.1)",
+                borderRadius: "2px",
+                overflow: "hidden"
+              }}>
+                <div style={{
+                  height: "100%",
+                  background: "linear-gradient(90deg, #00D4FF, #7000FF)",
+                  width: `${((onboardingStep + 1) / 3) * 100}%`,
+                  transition: "width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                  borderRadius: "2px"
+                }} />
+              </div>
             </div>
 
             {/* Контент слайда */}
@@ -1831,111 +1876,248 @@ export default function App() {
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
-              padding: "40px 24px",
-              textAlign: "center"
+              padding: "40px 24px 32px",
+              textAlign: "center",
+              overflow: "hidden",
+              position: "relative"
             }}>
-              {/* Заголовок и текст */}
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "16px" }}>
-                <div style={{ fontSize: "28px", fontWeight: 900, color: "#111" }}>
-                  {onboardingStep === 0 && "Посчитайте прибыль"}
-                  {onboardingStep === 1 && "Проверьте комиссии"}
-                  {onboardingStep === 2 && "Можно без интеграции"}
-                </div>
-                <div style={{ fontSize: "16px", color: "rgba(0,0,0,.7)", lineHeight: "1.5" }}>
-                  {onboardingStep === 0 && "Введите закупочную и цену продажи — получите примерную чистую прибыль."}
-                  {onboardingStep === 1 && "Комиссия зависит от категории. Сверьте её перед выставлением цены."}
-                  {onboardingStep === 2 && "Если данных по продажам пока нет — это нормально. Начните с калькулятора и комиссий, а интеграцию подключите позже."}
-                </div>
-
-                {/* Иконка слайда */}
-                <div style={{ fontSize: "64px", marginTop: "16px" }}>
+              {/* Декоративные элементы */}
+              <div style={{
+                position: "absolute",
+                top: "-100px",
+                right: "-100px",
+                width: "200px",
+                height: "200px",
+                background: "radial-gradient(circle, rgba(0,212,255,.1) 0%, transparent 70%)",
+                borderRadius: "50%",
+                pointerEvents: "none"
+              }} />
+              
+              {/* Содержание */}
+              <div style={{
+                position: "relative",
+                zIndex: 1,
+                animation: onboardingStep >= 0 ? "fadeInUp 0.5s ease-out" : "none"
+              }}>
+                {/* Иконка слайда - большая и красивая */}
+                <div style={{
+                  fontSize: "100px",
+                  lineHeight: "1",
+                  marginBottom: "28px",
+                  display: "inline-block",
+                  animation: "bounce 2s ease-in-out infinite",
+                  filter: "drop-shadow(0 8px 20px rgba(0,212,255,.2))"
+                }}>
                   {onboardingStep === 0 && "🧮"}
                   {onboardingStep === 1 && "💰"}
-                  {onboardingStep === 2 && "🔗"}
+                  {onboardingStep === 2 && "🎯"}
+                </div>
+
+                {/* Заголовок */}
+                <h1 style={{
+                  fontSize: "32px",
+                  fontWeight: 900,
+                  color: "#fff",
+                  margin: "0 0 12px 0",
+                  letterSpacing: "-0.5px"
+                }}>
+                  {onboardingStep === 0 && "Посчитайте прибыль"}
+                  {onboardingStep === 1 && "Проверьте комиссии"}
+                  {onboardingStep === 2 && "Вы готовы!"}
+                </h1>
+
+                {/* Текст описания */}
+                <p style={{
+                  fontSize: "16px",
+                  color: "rgba(255,255,255,.75)",
+                  lineHeight: "1.6",
+                  margin: "0",
+                  maxWidth: "280px",
+                  marginLeft: "auto",
+                  marginRight: "auto"
+                }}>
+                  {onboardingStep === 0 && "Введите закупочную цену и цену продажи, чтобы узнать примерную чистую прибыль"}
+                  {onboardingStep === 1 && "Комиссия отличается по категориям. Проверьте её перед выставлением цены на маркетплейсе"}
+                  {onboardingStep === 2 && "Начните с калькулятора и комиссий. Интеграцию Uzum можно подключить позже"}
+                </p>
+
+                {/* Визуальный элемент */}
+                <div style={{
+                  marginTop: "32px",
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: "8px"
+                }}>
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} style={{
+                      width: i === onboardingStep ? "32px" : "8px",
+                      height: "8px",
+                      borderRadius: "4px",
+                      background: i === onboardingStep 
+                        ? "linear-gradient(90deg, #00D4FF, #7000FF)"
+                        : "rgba(255,255,255,.2)",
+                      transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                      boxShadow: i === onboardingStep ? "0 0 12px rgba(0,212,255,.4)" : "none"
+                    }} />
+                  ))}
                 </div>
               </div>
 
-              {/* Кнопки внизу */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px", paddingTop: "24px" }}>
+              {/* Кнопки */}
+              <div style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "12px",
+                position: "relative",
+                zIndex: 1
+              }}>
+                {/* Основная кнопка */}
+                <button
+                  onClick={() => {
+                    if (onboardingStep === 2) {
+                      localStorage.setItem("onboarding_done", "1");
+                      setShowOnboarding(false);
+                      setRoute({ name: "home" });
+                    } else {
+                      setOnboardingStep(onboardingStep + 1);
+                    }
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "16px",
+                    background: "linear-gradient(135deg, #00D4FF 0%, #7000FF 100%)",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "14px",
+                    fontSize: "16px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    boxShadow: "0 8px 24px rgba(0,212,255,.3)",
+                    transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                    letterSpacing: "0.5px"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-4px)";
+                    e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,212,255,.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,212,255,.3)";
+                  }}
+                >
+                  {onboardingStep === 2 ? "✨ Начать работу →" : "Далее →"}
+                </button>
+
                 {/* Кнопки навигации */}
-                <div style={{ display: "flex", gap: "12px" }}>
+                <div style={{
+                  display: "flex",
+                  gap: "12px"
+                }}>
                   <button
                     onClick={() => setOnboardingStep(Math.max(0, onboardingStep - 1))}
                     disabled={onboardingStep === 0}
                     style={{
                       flex: 1,
-                      padding: "14px",
-                      background: onboardingStep === 0 ? "rgba(111,0,255,.1)" : "#fff",
-                      color: onboardingStep === 0 ? "rgba(111,0,255,.4)" : "#6F00FF",
-                      border: `2px solid ${onboardingStep === 0 ? "rgba(111,0,255,.2)" : "#6F00FF"}`,
-                      borderRadius: "12px",
-                      fontSize: "15px",
-                      fontWeight: 700,
+                      padding: "12px",
+                      background: "rgba(255,255,255,.08)",
+                      color: onboardingStep === 0 ? "rgba(255,255,255,.3)" : "rgba(255,255,255,.7)",
+                      border: `1.5px solid ${onboardingStep === 0 ? "rgba(255,255,255,.1)" : "rgba(255,255,255,.15)"}`,
+                      borderRadius: "10px",
+                      fontSize: "14px",
+                      fontWeight: 600,
                       cursor: onboardingStep === 0 ? "not-allowed" : "pointer",
-                      transition: "all 0.2s"
+                      transition: "all 0.2s",
+                      opacity: onboardingStep === 0 ? 0.5 : 1
+                    }}
+                    onMouseEnter={(e) => {
+                      if (onboardingStep > 0) {
+                        e.currentTarget.style.background = "rgba(255,255,255,.12)";
+                        e.currentTarget.style.borderColor = "rgba(255,255,255,.25)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(255,255,255,.08)";
+                      e.currentTarget.style.borderColor = "rgba(255,255,255,.15)";
                     }}
                   >
                     ← Назад
                   </button>
+
                   <button
                     onClick={() => {
-                      if (onboardingStep === 2) {
-                        localStorage.setItem("onboarding_done", "1");
-                        setShowOnboarding(false);
-                        setRoute({ name: "home" });
-                      } else {
-                        setOnboardingStep(onboardingStep + 1);
-                      }
+                      localStorage.setItem("onboarding_done", "1");
+                      setShowOnboarding(false);
+                      setRoute({ name: "home" });
                     }}
                     style={{
                       flex: 1,
-                      padding: "14px",
-                      background: "linear-gradient(135deg, #6F00FF, #9D4EFF)",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "12px",
-                      fontSize: "15px",
-                      fontWeight: 700,
+                      padding: "12px",
+                      background: "rgba(255,255,255,.05)",
+                      color: "rgba(255,255,255,.6)",
+                      border: "1.5px solid rgba(255,255,255,.1)",
+                      borderRadius: "10px",
+                      fontSize: "14px",
+                      fontWeight: 600,
                       cursor: "pointer",
-                      boxShadow: "0 4px 12px rgba(111,0,255,.3)",
                       transition: "all 0.2s"
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "rgba(255,255,255,.08)";
+                      e.currentTarget.style.color = "rgba(255,255,255,.8)";
+                      e.currentTarget.style.borderColor = "rgba(255,255,255,.15)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(255,255,255,.05)";
+                      e.currentTarget.style.color = "rgba(255,255,255,.6)";
+                      e.currentTarget.style.borderColor = "rgba(255,255,255,.1)";
+                    }}
                   >
-                    {onboardingStep === 2 ? "Готово →" : "Далее →"}
+                    Пропустить
                   </button>
                 </div>
-
-                {/* Кнопка пропустить */}
-                <button
-                  onClick={() => {
-                    localStorage.setItem("onboarding_done", "1");
-                    setShowOnboarding(false);
-                    setRoute({ name: "home" });
-                  }}
-                  style={{
-                    padding: "12px",
-                    background: "none",
-                    color: "rgba(111,0,255,.6)",
-                    border: "none",
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                    textDecoration: "underline",
-                    transition: "all 0.2s"
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = "rgba(111,0,255,.9)"}
-                  onMouseLeave={(e) => e.currentTarget.style.color = "rgba(111,0,255,.6)"}
-                >
-                  Пропустить
-                </button>
               </div>
             </div>
+
+            {/* CSS для анимации */}
+            <style>{`
+              @keyframes fadeInUp {
+                from {
+                  opacity: 0;
+                  transform: translateY(20px);
+                }
+                to {
+                  opacity: 1;
+                  transform: translateY(0);
+                }
+              }
+              
+              @keyframes bounce {
+                0%, 100% {
+                  transform: translateY(0);
+                }
+                50% {
+                  transform: translateY(-12px);
+                }
+              }
+            `}</style>
           </div>
         )}
 
-        {route.name === "welcome" && (
+        {showOnboarding && (
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,.4)",
+            backdropFilter: "blur(4px)",
+            zIndex: 999,
+            pointerEvents: "none"
+          }} />
+        )}
+
+        {!showOnboarding && route.name === "welcome" && (
           <div className="page" style={{ 
             display: "flex", 
             flexDirection: "column",
