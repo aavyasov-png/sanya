@@ -122,6 +122,13 @@ body{
   flex:1;
   min-height:0;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Скрыть scrollbar */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.page::-webkit-scrollbar {
+  display: none;
 }
 
 /* Кнопки бокового меню */

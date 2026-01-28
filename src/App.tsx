@@ -180,6 +180,7 @@ type Route =
   | { name: "admin" }
   | { name: "sections_all" }
   | { name: "commissions" }
+  | { name: "calculator" }
   | { name: "uzum" }
   | { name: "chat" };
 
@@ -341,7 +342,6 @@ export default function App() {
   const [selectedCommission, setSelectedCommission] = useState<any>(null);
   
   // Калькулятор прибыли
-  const [showCalculator, setShowCalculator] = useState(false);
   const [showCalcInstruction, setShowCalcInstruction] = useState(false);
   const [commissionHistory, setCommissionHistory] = useState<any[]>([]);
   const [calcSelectedCommission, setCalcSelectedCommission] = useState<any>(null);
@@ -1189,7 +1189,7 @@ export default function App() {
       const secId = cards.find((x) => x.id === route.cardId)?.section_id || "";
       return setRoute({ name: "section", sectionId: secId });
     }
-    if (route.name === "section" || route.name === "news" || route.name === "news_item" || route.name === "news_card" || route.name === "faq" || route.name === "commissions" || route.name === "admin" || route.name === "sections_all" || route.name === "uzum") {
+    if (route.name === "section" || route.name === "news" || route.name === "news_item" || route.name === "news_card" || route.name === "faq" || route.name === "commissions" || route.name === "calculator" || route.name === "admin" || route.name === "sections_all" || route.name === "uzum") {
       return setRoute({ name: "home" });
     }
   };
@@ -2057,7 +2057,7 @@ export default function App() {
         )}
 
         {route.name === "home" && (
-          <div className="page" style={{ overflow: "hidden" }}>
+          <div className="page">
             {/* Боковое меню */}
             {menuOpen && (
               <>
@@ -2279,10 +2279,7 @@ export default function App() {
             {/* Блок "С чего начать" */}
             <GettingStartedBlock
               lang={lang}
-              onNavigateCalculator={() => {
-                setRoute({ name: "commissions" });
-                setShowCalculator(true);
-              }}
+              onNavigateCalculator={() => setRoute({ name: "calculator" })}
               onNavigateCommissions={() => setRoute({ name: "commissions" })}
               onNavigateSizes={() => setRoute({ name: "sections_all" })}
               onNavigateFaq={() => setRoute({ name: "faq" })}
@@ -2368,11 +2365,11 @@ export default function App() {
                     cursor: "pointer"
                   }}
                 >
-                  Все →
+                  {lang === "ru" ? "Показать все" : "Barchasini ko'rsatish"}
                 </button>
               </div>
               <div className="list" style={{ paddingTop: 0, paddingBottom: "80px" }}>
-                {news.slice(0, 6).map((n) => (
+                {news.slice(0, 2).map((n) => (
                   <div key={n.id} className="cardCream newsPreview" onClick={() => setRoute({ name: "news_card", newsId: n.id })}>
                     <div className="row" style={{ justifyContent: "space-between", marginBottom: "8px" }}>
                       <div className="newsTitle">
@@ -2389,7 +2386,7 @@ export default function App() {
 
             {/* Bottom Bar */}
             <div className="bottomBar" style={{
-              position: "absolute",
+              position: "fixed",
               bottom: 0,
               left: 0,
               right: 0,
@@ -3465,387 +3462,6 @@ export default function App() {
             </div>
 
             <div className="list" style={{ paddingTop: "20px" }}>
-              {/* Кнопка калькулятора */}
-              <button
-                onClick={() => setShowCalculator(!showCalculator)}
-                style={{
-                  width: "100%",
-                  padding: "14px",
-                  background: showCalculator ? "#6F00FF" : "linear-gradient(135deg, #6F00FF, #9D4EFF)",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "12px",
-                  fontSize: "15px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  boxShadow: "0 4px 12px rgba(111,0,255,.3)",
-                  transition: "all .2s"
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
-                onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
-              >
-                🧮 {lang === "ru" ? (showCalculator ? "Скрыть калькулятор" : "Калькулятор прибыли") : (showCalculator ? "Kalkulyatorni yashirish" : "Foyda kalkulyatori")}
-              </button>
-
-              {/* Калькулятор прибыли */}
-              {showCalculator && (
-                <div className="cardCream" style={{
-                  background: "linear-gradient(145deg, rgba(111,0,255,.08), rgba(111,0,255,.03))",
-                  border: "3px solid #6F00FF",
-                  position: "relative"
-                }}>
-                  {/* Заголовок с иконкой информации */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-                    <div style={{ fontSize: "16px", fontWeight: 900, color: "#6F00FF" }}>
-                      💰 {lang === "ru" ? "Калькулятор прибыли" : "Foyda kalkulyatori"}
-                    </div>
-                    <button
-                      onClick={() => setShowCalcInstruction(!showCalcInstruction)}
-                      style={{
-                        width: "28px",
-                        height: "28px",
-                        borderRadius: "50%",
-                        background: showCalcInstruction ? "#6F00FF" : "rgba(111,0,255,.15)",
-                        color: showCalcInstruction ? "#fff" : "#6F00FF",
-                        border: "2px solid #6F00FF",
-                        fontSize: "14px",
-                        fontWeight: 900,
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        transition: "all .2s"
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!showCalcInstruction) {
-                          e.currentTarget.style.background = "rgba(111,0,255,.25)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!showCalcInstruction) {
-                          e.currentTarget.style.background = "rgba(111,0,255,.15)";
-                        }
-                      }}
-                    >
-                      i
-                    </button>
-                  </div>
-
-                  {/* Всплывающая инструкция */}
-                  {showCalcInstruction && (
-                    <div style={{
-                      padding: "14px",
-                      background: "linear-gradient(135deg, rgba(111,0,255,.95), rgba(157,78,255,.95))",
-                      borderRadius: "10px",
-                      marginBottom: "16px",
-                      color: "#fff",
-                      fontSize: "12px",
-                      lineHeight: "1.6",
-                      boxShadow: "0 4px 12px rgba(111,0,255,.3)"
-                    }}>
-                      <div style={{ fontWeight: 900, marginBottom: "8px", fontSize: "13px" }}>
-                        ℹ️ {lang === "ru" ? "Как пользоваться калькулятором:" : "Kalkulyatordan qanday foydalanish:"}
-                      </div>
-                      {lang === "ru" ? (
-                        <>
-                          <div style={{ marginBottom: "4px" }}>1️⃣ Найдите нужную категорию через поиск выше</div>
-                          <div style={{ marginBottom: "4px" }}>2️⃣ Выберите её из истории поиска</div>
-                          <div style={{ marginBottom: "4px" }}>3️⃣ Выберите тип комиссии (FBO/FBS/DBS)</div>
-                          <div style={{ marginBottom: "4px" }}>4️⃣ Укажите габарит товара:</div>
-                          <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
-                            • МГТ (малогабаритный) — логистика 3000 сум
-                          </div>
-                          <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
-                            • СГТ (среднегабаритный) — логистика 5000 сум
-                          </div>
-                          <div style={{ marginLeft: "12px", marginBottom: "8px", opacity: 0.9 }}>
-                            • КГТ (крупногабаритный) — логистика 9000 сум
-                          </div>
-                          <div style={{ marginBottom: "4px" }}>5️⃣ Введите сумму продажи</div>
-                          <div>6️⃣ Получите чистую прибыль к выводу! 💰</div>
-                        </>
-                      ) : (
-                        <>
-                          <div style={{ marginBottom: "4px" }}>1️⃣ Yuqorida qidiruv orqali kerakli turkumni toping</div>
-                          <div style={{ marginBottom: "4px" }}>2️⃣ Uni qidiruv tarixidan tanlang</div>
-                          <div style={{ marginBottom: "4px" }}>3️⃣ Komissiya turini tanlang (FBO/FBS/DBS)</div>
-                          <div style={{ marginBottom: "4px" }}>4️⃣ Tovar oʻlchamini koʻrsating:</div>
-                          <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
-                            • МГТ (kichik) — logistika 3000 som
-                          </div>
-                          <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
-                            • СГТ (oʻrta) — logistika 5000 som
-                          </div>
-                          <div style={{ marginLeft: "12px", marginBottom: "8px", opacity: 0.9 }}>
-                            • КГТ (katta) — logistika 9000 som
-                          </div>
-                          <div style={{ marginBottom: "4px" }}>5️⃣ Sotish summasini kiriting</div>
-                          <div>6️⃣ Toza foydani oling! 💰</div>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Выбор комиссии из истории */}
-                  <div style={{ marginBottom: "16px" }}>
-                    <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)", marginBottom: "6px", display: "block" }}>
-                      {lang === "ru" ? "Выберите категорию из истории поиска" : "Qidiruv tarixidan turkumni tanlang"}
-                    </label>
-                    {commissionHistory.length === 0 ? (
-                      <div style={{ fontSize: "13px", color: "#999", fontStyle: "italic" }}>
-                        {lang === "ru" ? "Сначала найдите комиссию через поиск выше" : "Avval yuqorida qidiruv orqali komissiyani toping"}
-                      </div>
-                    ) : (
-                      <select
-                        value={calcSelectedCommission?.id || ""}
-                        onChange={(e) => {
-                          const item = commissionHistory.find(h => h.id === e.target.value);
-                          setCalcSelectedCommission(item || null);
-                        }}
-                        style={{
-                          width: "100%",
-                          padding: "10px",
-                          borderRadius: "10px",
-                          border: "2px solid rgba(111,0,255,.2)",
-                          background: "#fff",
-                          fontSize: "13px",
-                          fontWeight: 600,
-                          color: "#111"
-                        }}
-                      >
-                        <option value="">{lang === "ru" ? "Выберите категорию..." : "Turkumni tanlang..."}</option>
-                        {commissionHistory.map((item) => {
-                          const categoryPath: string[] = [];
-                          for (let i = 1; i <= 6; i++) {
-                            const cat = item[`category${i}_${lang}`];
-                            if (cat) categoryPath.push(cat);
-                          }
-                          return (
-                            <option key={item.id} value={item.id}>
-                              {categoryPath.join(" → ")}
-                            </option>
-                          );
-                        })}
-                      </select>
-                    )}
-                  </div>
-
-                  {calcSelectedCommission && (
-                    <>
-                      {/* Тип комиссии */}
-                      <div style={{ marginBottom: "16px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                          <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)" }}>
-                            {lang === "ru" ? "Тип комиссии" : "Komissiya turi"}
-                          </label>
-                          <ContextualTooltip
-                            content={lang === "ru" ? "Комиссия зависит от категории товара и формата доставки." : "Komissiya tovar turkumi va yetkazib berish formati bo'yicha farqlanadi."}
-                            position="right"
-                            trigger="click"
-                          />
-                        </div>
-                        <div style={{ display: "flex", gap: "8px" }}>
-                          {(["fbo", "fbs", "dbs"] as const).map((type) => (
-                            <button
-                              key={type}
-                              onClick={() => setCalcCommType(type)}
-                              style={{
-                                flex: 1,
-                                padding: "10px",
-                                background: calcCommType === type ? "#6F00FF" : "#fff",
-                                color: calcCommType === type ? "#fff" : "#111",
-                                border: `2px solid ${calcCommType === type ? "#6F00FF" : "rgba(111,0,255,.2)"}`,
-                                borderRadius: "10px",
-                                fontSize: "13px",
-                                fontWeight: 700,
-                                cursor: "pointer",
-                                transition: "all .2s"
-                              }}
-                            >
-                              {type.toUpperCase()} ({calcSelectedCommission[`comm_${type}`]}%)
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Габариты товара */}
-                      <div style={{ marginBottom: "16px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                          <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)" }}>
-                            {lang === "ru" ? "Габариты товара" : "Tovar oʻlchamlari"}
-                          </label>
-                          <ContextualTooltip
-                            content={lang === "ru" ? "Какие размеры товара и как это влияет на логистику" : "Tovar o'lchamlari logistikaga qanday ta'sir qiladi"}
-                            position="right"
-                            trigger="click"
-                          />
-                        </div>
-                        <div style={{ display: "flex", gap: "8px" }}>
-                          {(["МГТ", "СГТ", "КГТ"] as const).map((gab) => (
-                            <button
-                              key={gab}
-                              onClick={() => setCalcGabarit(gab)}
-                              style={{
-                                flex: 1,
-                                padding: "10px",
-                                background: calcGabarit === gab ? "#6F00FF" : "#fff",
-                                color: calcGabarit === gab ? "#fff" : "#111",
-                                border: `2px solid ${calcGabarit === gab ? "#6F00FF" : "rgba(111,0,255,.2)"}`,
-                                borderRadius: "10px",
-                                fontSize: "13px",
-                                fontWeight: 700,
-                                cursor: "pointer",
-                                transition: "all .2s"
-                              }}
-                            >
-                              {gab}
-                              <div style={{ fontSize: "10px", fontWeight: 500, marginTop: "2px" }}>
-                                {gab === "МГТ" ? "3000" : gab === "СГТ" ? "5000" : "9000"}
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                        <div style={{ fontSize: "11px", color: "#666", marginTop: "4px" }}>
-                          {lang === "ru" ? "Логистический сбор указан под каждым типом" : "Logistika yigʻimi har bir tur ostida koʻrsatilgan"}
-                        </div>
-                      </div>
-
-                      {/* Сумма продажи */}
-                      <div style={{ marginBottom: "16px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-                          <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)" }}>
-                            {lang === "ru" ? "Сумма продажи (сум)" : "Sotish summasi (som)"}
-                          </label>
-                          <ContextualTooltip
-                            content={lang === "ru" ? "От неё зависит ваша прибыль и позиция в выдаче" : "Bunga ko'ra sizning foydangiz va qidiruvda joyingiz belgilanadi"}
-                            position="right"
-                            trigger="click"
-                          />
-                        </div>
-                        <input
-                          type="number"
-                          value={calcSaleAmount}
-                          onChange={(e) => setCalcSaleAmount(e.target.value)}
-                          placeholder={lang === "ru" ? "Введите сумму..." : "Summani kiriting..."}
-                          style={{
-                            width: "100%",
-                            padding: "12px",
-                            borderRadius: "10px",
-                            border: "2px solid rgba(111,0,255,.2)",
-                            background: "#fff",
-                            fontSize: "14px",
-                            fontWeight: 600,
-                            color: "#111"
-                          }}
-                        />
-                      </div>
-
-                      {/* Результат */}
-                      {calcSaleAmount && parseFloat(calcSaleAmount) > 0 && (
-                        <div style={{
-                          padding: "16px",
-                          background: "linear-gradient(135deg, #6F00FF, #9D4EFF)",
-                          borderRadius: "12px",
-                          color: "#fff"
-                        }}>
-                          {(() => {
-                            const saleAmount = parseFloat(calcSaleAmount);
-                            const commPercent = calcSelectedCommission[`comm_${calcCommType}`];
-                            const commAmount = saleAmount * (commPercent / 100);
-                            const logisticFee = calcGabarit === "МГТ" ? 3000 : calcGabarit === "СГТ" ? 5000 : 9000;
-                            const totalDeduction = commAmount + logisticFee;
-                            const netProfit = saleAmount - totalDeduction;
-
-                            return (
-                              <>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                                  <div style={{ fontSize: "13px", opacity: 0.9 }}>
-                                    {lang === "ru" ? "💰 Расчёт" : "💰 Hisoblash"}
-                                  </div>
-                                  <ContextualTooltip
-                                    content={lang === "ru" ? "Это предварительный расчёт. Точная прибыль будет известна после продажи товара." : "Bu tahlili hisoblash. Aniq foyda tovar sotilgandan keyin ma'lum bo'ladi."}
-                                    position="bottom"
-                                    trigger="click"
-                                  />
-                                </div>
-                                <div style={{ fontSize: "12px", marginBottom: "4px", opacity: 0.8 }}>
-                                  {lang === "ru" ? "Комиссия" : "Komissiya"}: {commAmount.toFixed(0)} {lang === "ru" ? "сум" : "som"} ({commPercent}%)
-                                </div>
-                                <div style={{ fontSize: "12px", marginBottom: "8px", opacity: 0.8 }}>
-                                  {lang === "ru" ? "Логистика" : "Logistika"}: {logisticFee} {lang === "ru" ? "сум" : "som"}
-                                </div>
-                                <div style={{ fontSize: "12px", marginBottom: "8px", opacity: 0.8, paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,.3)" }}>
-                                  {lang === "ru" ? "Всего вычетов" : "Jami chegirmalar"}: {totalDeduction.toFixed(0)} {lang === "ru" ? "сум" : "som"}
-                                </div>
-                                <div style={{ fontSize: "18px", fontWeight: 900, marginTop: "8px" }}>
-                                  {lang === "ru" ? "✅ К выводу: " : "✅ Yechib olish uchun: "}
-                                  {netProfit.toFixed(0)} {lang === "ru" ? "сум" : "som"}
-                                </div>
-
-                                {/* Микрообучение */}
-                                <div style={{ fontSize: "12px", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,.3)", opacity: 0.85 }}>
-                                  💡 {lang === "ru" ? "Хотите точнее?" : "Aniqroq bo'lishni xohlaysizmi?"} <span style={{ cursor: "pointer", fontWeight: 600, textDecoration: "underline" }} onClick={() => setRoute({ name: "uzum" })}>
-                                    {lang === "ru" ? "Подключите Uzum →" : "Uzumni ulang →"}
-                                  </span>
-                                </div>
-
-                                {/* Контекстный FAQ */}
-                                <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "8px" }}>
-                                  <ContextualFaqLink
-                                    text={lang === "ru" ? "Почему это примерный расчёт?" : "Nima uchun bu tahlili hisoblash?"}
-                                    onClick={() => {
-                                      // Найди FAQ с вопросом о расчёте и открой его
-                                      const faqItem = faq.find(f => 
-                                        lang === "ru" 
-                                          ? f.question_ru?.includes("расчёт") || f.question_ru?.includes("примерн")
-                                          : f.question_uz?.includes("hisoblash")
-                                      );
-                                      if (faqItem) {
-                                        setRoute({ name: "faq" });
-                                        // Будет открыт FAQ с фокусом на вопрос
-                                        setTimeout(() => {
-                                          const elem = document.querySelector(`[data-faq-id="${faqItem.id}"]`) as HTMLElement;
-                                          if (elem) {
-                                            elem.click();
-                                            elem.scrollIntoView({ behavior: "smooth", block: "center" });
-                                          }
-                                        }, 100);
-                                      }
-                                    }}
-                                  />
-                                  <ContextualFaqLink
-                                    text={lang === "ru" ? "Что влияет на прибыль?" : "Foydaga nima ta'sir qiladi?"}
-                                    onClick={() => {
-                                      const faqItem = faq.find(f => 
-                                        lang === "ru" 
-                                          ? f.question_ru?.includes("прибыль") || f.question_ru?.includes("влияет")
-                                          : f.question_uz?.includes("foyda")
-                                      );
-                                      if (faqItem) {
-                                        setRoute({ name: "faq" });
-                                        setTimeout(() => {
-                                          const elem = document.querySelector(`[data-faq-id="${faqItem.id}"]`) as HTMLElement;
-                                          if (elem) {
-                                            elem.click();
-                                            elem.scrollIntoView({ behavior: "smooth", block: "center" });
-                                          }
-                                        }, 100);
-                                      } else {
-                                        setRoute({ name: "faq" });
-                                      }
-                                    }}
-                                  />
-                                </div>
-                              </>
-                            );
-                          })()}
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-
               {/* Поле поиска */}
               <div className="cardCream">
                 <label style={{ 
@@ -4070,6 +3686,454 @@ export default function App() {
                     ? "Введите название категории товара для поиска комиссии"
                     : "Komissiyani qidirish uchun tovar turkumini kiriting"
                   }
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {route.name === "calculator" && (
+          <div className="page">
+            <TopBar
+              t={t}
+              lang={lang}
+              setLang={setLang}
+              showSearch={false}
+              search={search}
+              setSearch={setSearch}
+              onBack={goBack}
+              onHome={goHome}
+            />
+
+            <div className="headerBlock">
+              <div className="h2">{lang === "ru" ? "Калькулятор прибыли" : "Foyda kalkulyatori"}</div>
+              <div className="sub">{lang === "ru" ? "Рассчитайте чистую прибыль с учётом комиссий" : "Komissiyalarni hisobga olgan holda toza foydani hisoblang"}</div>
+            </div>
+
+            <div className="list" style={{ paddingTop: "20px" }}>
+              {/* История поиска категорий */}
+              {commissionHistory.length > 0 && (
+                <div className="cardCream" style={{ background: "rgba(111,0,255,.05)" }}>
+                  <div style={{ fontSize: "14px", fontWeight: 900, marginBottom: "12px", color: "#6F00FF" }}>
+                    📋 {lang === "ru" ? "История поиска категорий" : "Qidiruv tarixi"}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {commissionHistory.map((item) => {
+                      const categoryPath: string[] = [];
+                      for (let i = 1; i <= 6; i++) {
+                        const cat = item[`category${i}_${lang}`];
+                        if (cat) categoryPath.push(cat);
+                      }
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setCalcSelectedCommission(item);
+                          }}
+                          style={{
+                            padding: "10px 12px",
+                            background: calcSelectedCommission?.id === item.id ? "linear-gradient(135deg, #6F00FF, #9D4EFF)" : "#fff",
+                            color: calcSelectedCommission?.id === item.id ? "#fff" : "#111",
+                            border: `2px solid ${calcSelectedCommission?.id === item.id ? "#6F00FF" : "rgba(111,0,255,.2)"}`,
+                            borderRadius: "10px",
+                            fontSize: "13px",
+                            fontWeight: 600,
+                            textAlign: "left",
+                            cursor: "pointer",
+                            transition: "all .2s"
+                          }}
+                        >
+                          {categoryPath.join(" → ")}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Калькулятор прибыли */}
+              <div className="cardCream" style={{
+                background: "linear-gradient(145deg, rgba(111,0,255,.08), rgba(111,0,255,.03))",
+                border: "3px solid #6F00FF",
+                position: "relative"
+              }}>
+                {/* Заголовок с иконкой информации */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                  <div style={{ fontSize: "16px", fontWeight: 900, color: "#6F00FF" }}>
+                    💰 {lang === "ru" ? "Калькулятор прибыли" : "Foyda kalkulyatori"}
+                  </div>
+                  <button
+                    onClick={() => setShowCalcInstruction(!showCalcInstruction)}
+                    style={{
+                      width: "28px",
+                      height: "28px",
+                      borderRadius: "50%",
+                      background: showCalcInstruction ? "#6F00FF" : "rgba(111,0,255,.15)",
+                      color: showCalcInstruction ? "#fff" : "#6F00FF",
+                      border: "2px solid #6F00FF",
+                      fontSize: "14px",
+                      fontWeight: 900,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "all .2s"
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!showCalcInstruction) {
+                        e.currentTarget.style.background = "rgba(111,0,255,.25)";
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!showCalcInstruction) {
+                        e.currentTarget.style.background = "rgba(111,0,255,.15)";
+                      }
+                    }}
+                  >
+                    i
+                  </button>
+                </div>
+
+                {/* Всплывающая инструкция */}
+                {showCalcInstruction && (
+                  <div style={{
+                    padding: "14px",
+                    background: "linear-gradient(135deg, rgba(111,0,255,.95), rgba(157,78,255,.95))",
+                    borderRadius: "10px",
+                    marginBottom: "16px",
+                    color: "#fff",
+                    fontSize: "12px",
+                    lineHeight: "1.6",
+                    boxShadow: "0 4px 12px rgba(111,0,255,.3)"
+                  }}>
+                    <div style={{ fontWeight: 900, marginBottom: "8px", fontSize: "13px" }}>
+                      ℹ️ {lang === "ru" ? "Как пользоваться калькулятором:" : "Kalkulyatordan qanday foydalanish:"}
+                    </div>
+                    {lang === "ru" ? (
+                      <>
+                        <div style={{ marginBottom: "4px" }}>1️⃣ Найдите категорию через поиск комиссий</div>
+                        <div style={{ marginBottom: "4px" }}>2️⃣ Выберите её из истории выше</div>
+                        <div style={{ marginBottom: "4px" }}>3️⃣ Выберите тип комиссии (FBO/FBS/DBS)</div>
+                        <div style={{ marginBottom: "4px" }}>4️⃣ Укажите габарит товара:</div>
+                        <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
+                          • МГТ (малогабаритный) — логистика 3000 сум
+                        </div>
+                        <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
+                          • СГТ (среднегабаритный) — логистика 5000 сум
+                        </div>
+                        <div style={{ marginLeft: "12px", marginBottom: "8px", opacity: 0.9 }}>
+                          • КГТ (крупногабаритный) — логистика 9000 сум
+                        </div>
+                        <div style={{ marginBottom: "4px" }}>5️⃣ Введите сумму продажи</div>
+                        <div>6️⃣ Получите чистую прибыль к выводу! 💰</div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ marginBottom: "4px" }}>1️⃣ Komissiyalar qidiruvidan turkumni toping</div>
+                        <div style={{ marginBottom: "4px" }}>2️⃣ Yuqoridagi tarixdan tanlang</div>
+                        <div style={{ marginBottom: "4px" }}>3️⃣ Komissiya turini tanlang (FBO/FBS/DBS)</div>
+                        <div style={{ marginBottom: "4px" }}>4️⃣ Tovar oʻlchamini koʻrsating:</div>
+                        <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
+                          • МГТ (kichik) — logistika 3000 som
+                        </div>
+                        <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
+                          • СГТ (oʻrta) — logistika 5000 som
+                        </div>
+                        <div style={{ marginLeft: "12px", marginBottom: "8px", opacity: 0.9 }}>
+                          • КГТ (katta) — logistika 9000 som
+                        </div>
+                        <div style={{ marginBottom: "4px" }}>5️⃣ Sotish summasini kiriting</div>
+                        <div>6️⃣ Toza foydani oling! 💰</div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Выбор комиссии из истории */}
+                <div style={{ marginBottom: "16px" }}>
+                  <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)", marginBottom: "6px", display: "block" }}>
+                    {lang === "ru" ? "Выберите категорию из истории поиска" : "Qidiruv tarixidan turkumni tanlang"}
+                  </label>
+                  {commissionHistory.length === 0 ? (
+                    <div style={{ fontSize: "13px", color: "#999", fontStyle: "italic" }}>
+                      {lang === "ru" ? "Сначала найдите комиссию через поиск в разделе Комиссии" : "Avval Komissiyalar bo'limidan qidiruv orqali komissiyani toping"}
+                    </div>
+                  ) : (
+                    <select
+                      value={calcSelectedCommission?.id || ""}
+                      onChange={(e) => {
+                        const item = commissionHistory.find(h => h.id === e.target.value);
+                        setCalcSelectedCommission(item || null);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "10px",
+                        borderRadius: "10px",
+                        border: "2px solid rgba(111,0,255,.2)",
+                        background: "#fff",
+                        fontSize: "13px",
+                        fontWeight: 600,
+                        color: "#111"
+                      }}
+                    >
+                      <option value="">{lang === "ru" ? "Выберите категорию..." : "Turkumni tanlang..."}</option>
+                      {commissionHistory.map((item) => {
+                        const categoryPath: string[] = [];
+                        for (let i = 1; i <= 6; i++) {
+                          const cat = item[`category${i}_${lang}`];
+                          if (cat) categoryPath.push(cat);
+                        }
+                        return (
+                          <option key={item.id} value={item.id}>
+                            {categoryPath.join(" → ")}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  )}
+                </div>
+
+                {calcSelectedCommission && (
+                  <>
+                    {/* Тип комиссии */}
+                    <div style={{ marginBottom: "16px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                        <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)" }}>
+                          {lang === "ru" ? "Тип комиссии" : "Komissiya turi"}
+                        </label>
+                        <ContextualTooltip
+                          content={lang === "ru" ? "Комиссия зависит от категории товара и формата доставки." : "Komissiya tovar turkumi va yetkazib berish formati bo'yicha farqlanadi."}
+                          position="right"
+                          trigger="click"
+                        />
+                      </div>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        {(["fbo", "fbs", "dbs"] as const).map((type) => (
+                          <button
+                            key={type}
+                            onClick={() => setCalcCommType(type)}
+                            style={{
+                              flex: 1,
+                              padding: "10px",
+                              background: calcCommType === type ? "#6F00FF" : "#fff",
+                              color: calcCommType === type ? "#fff" : "#111",
+                              border: `2px solid ${calcCommType === type ? "#6F00FF" : "rgba(111,0,255,.2)"}`,
+                              borderRadius: "10px",
+                              fontSize: "13px",
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              transition: "all .2s"
+                            }}
+                          >
+                            {type.toUpperCase()} ({calcSelectedCommission[`comm_${type}`]}%)
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Габариты товара */}
+                    <div style={{ marginBottom: "16px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                        <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)" }}>
+                          {lang === "ru" ? "Габариты товара" : "Tovar oʻlchamlari"}
+                        </label>
+                        <ContextualTooltip
+                          content={lang === "ru" ? "Какие размеры товара и как это влияет на логистику" : "Tovar o'lchamlari logistikaga qanday ta'sir qiladi"}
+                          position="right"
+                          trigger="click"
+                        />
+                      </div>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        {(["МГТ", "СГТ", "КГТ"] as const).map((gab) => (
+                          <button
+                            key={gab}
+                            onClick={() => setCalcGabarit(gab)}
+                            style={{
+                              flex: 1,
+                              padding: "10px",
+                              background: calcGabarit === gab ? "#6F00FF" : "#fff",
+                              color: calcGabarit === gab ? "#fff" : "#111",
+                              border: `2px solid ${calcGabarit === gab ? "#6F00FF" : "rgba(111,0,255,.2)"}`,
+                              borderRadius: "10px",
+                              fontSize: "13px",
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              transition: "all .2s"
+                            }}
+                          >
+                            {gab}
+                            <div style={{ fontSize: "10px", fontWeight: 500, marginTop: "2px" }}>
+                              {gab === "МГТ" ? "3000" : gab === "СГТ" ? "5000" : "9000"}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#666", marginTop: "4px" }}>
+                        {lang === "ru" ? "Логистический сбор указан под каждым типом" : "Logistika yigʻimi har bir tur ostida koʻrsatilgan"}
+                      </div>
+                    </div>
+
+                    {/* Сумма продажи */}
+                    <div style={{ marginBottom: "16px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                        <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)" }}>
+                          {lang === "ru" ? "Сумма продажи (сум)" : "Sotish summasi (som)"}
+                        </label>
+                        <ContextualTooltip
+                          content={lang === "ru" ? "От неё зависит ваша прибыль и позиция в выдаче" : "Bunga ko'ra sizning foydangiz va qidiruvda joyingiz belgilanadi"}
+                          position="right"
+                          trigger="click"
+                        />
+                      </div>
+                      <input
+                        type="number"
+                        value={calcSaleAmount}
+                        onChange={(e) => setCalcSaleAmount(e.target.value)}
+                        placeholder={lang === "ru" ? "Введите сумму..." : "Summani kiriting..."}
+                        style={{
+                          width: "100%",
+                          padding: "12px",
+                          borderRadius: "10px",
+                          border: "2px solid rgba(111,0,255,.2)",
+                          background: "#fff",
+                          fontSize: "14px",
+                          fontWeight: 600,
+                          color: "#111"
+                        }}
+                      />
+                    </div>
+
+                    {/* Результат */}
+                    {calcSaleAmount && parseFloat(calcSaleAmount) > 0 && (
+                      <div style={{
+                        padding: "16px",
+                        background: "linear-gradient(135deg, #6F00FF, #9D4EFF)",
+                        borderRadius: "12px",
+                        color: "#fff"
+                      }}>
+                        {(() => {
+                          const saleAmount = parseFloat(calcSaleAmount);
+                          const commPercent = calcSelectedCommission[`comm_${calcCommType}`];
+                          const commAmount = saleAmount * (commPercent / 100);
+                          const logisticFee = calcGabarit === "МГТ" ? 3000 : calcGabarit === "СГТ" ? 5000 : 9000;
+                          const totalDeduction = commAmount + logisticFee;
+                          const netProfit = saleAmount - totalDeduction;
+
+                          return (
+                            <>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                                <div style={{ fontSize: "13px", opacity: 0.9 }}>
+                                  {lang === "ru" ? "💰 Расчёт" : "💰 Hisoblash"}
+                                </div>
+                                <ContextualTooltip
+                                  content={lang === "ru" ? "Это предварительный расчёт. Точная прибыль будет известна после продажи товара." : "Bu tahlili hisoblash. Aniq foyda tovar sotilgandan keyin ma'lum bo'ladi."}
+                                  position="bottom"
+                                  trigger="click"
+                                />
+                              </div>
+                              <div style={{ fontSize: "12px", marginBottom: "4px", opacity: 0.8 }}>
+                                {lang === "ru" ? "Комиссия" : "Komissiya"}: {commAmount.toFixed(0)} {lang === "ru" ? "сум" : "som"} ({commPercent}%)
+                              </div>
+                              <div style={{ fontSize: "12px", marginBottom: "8px", opacity: 0.8 }}>
+                                {lang === "ru" ? "Логистика" : "Logistika"}: {logisticFee} {lang === "ru" ? "сум" : "som"}
+                              </div>
+                              <div style={{ fontSize: "12px", marginBottom: "8px", opacity: 0.8, paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,.3)" }}>
+                                {lang === "ru" ? "Всего вычетов" : "Jami chegirmalar"}: {totalDeduction.toFixed(0)} {lang === "ru" ? "сум" : "som"}
+                              </div>
+                              <div style={{ fontSize: "18px", fontWeight: 900, marginTop: "8px" }}>
+                                {lang === "ru" ? "✅ К выводу: " : "✅ Yechib olish uchun: "}
+                                {netProfit.toFixed(0)} {lang === "ru" ? "сум" : "som"}
+                              </div>
+
+                              {/* Микрообучение */}
+                              <div style={{ fontSize: "12px", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,.3)", opacity: 0.85 }}>
+                                💡 {lang === "ru" ? "Хотите точнее?" : "Aniqroq bo'lishni xohlaysizmi?"} <span style={{ cursor: "pointer", fontWeight: 600, textDecoration: "underline" }} onClick={() => setRoute({ name: "uzum" })}>
+                                  {lang === "ru" ? "Подключите Uzum →" : "Uzumni ulang →"}
+                                </span>
+                              </div>
+
+                              {/* Контекстный FAQ */}
+                              <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "8px" }}>
+                                <ContextualFaqLink
+                                  text={lang === "ru" ? "Почему это примерный расчёт?" : "Nima uchun bu tahlili hisoblash?"}
+                                  onClick={() => {
+                                    const faqItem = faq.find(f => 
+                                      lang === "ru" 
+                                        ? f.question_ru?.includes("расчёт") || f.question_ru?.includes("примерн")
+                                        : f.question_uz?.includes("hisoblash")
+                                    );
+                                    if (faqItem) {
+                                      setRoute({ name: "faq" });
+                                      setTimeout(() => {
+                                        const elem = document.querySelector(`[data-faq-id="${faqItem.id}"]`) as HTMLElement;
+                                        if (elem) {
+                                          elem.click();
+                                          elem.scrollIntoView({ behavior: "smooth", block: "center" });
+                                        }
+                                      }, 100);
+                                    }
+                                  }}
+                                />
+                                <ContextualFaqLink
+                                  text={lang === "ru" ? "Что влияет на прибыль?" : "Foydaga nima ta'sir qiladi?"}
+                                  onClick={() => {
+                                    const faqItem = faq.find(f => 
+                                      lang === "ru" 
+                                        ? f.question_ru?.includes("прибыль") || f.question_ru?.includes("влияет")
+                                        : f.question_uz?.includes("foyda")
+                                    );
+                                    if (faqItem) {
+                                      setRoute({ name: "faq" });
+                                      setTimeout(() => {
+                                        const elem = document.querySelector(`[data-faq-id="${faqItem.id}"]`) as HTMLElement;
+                                        if (elem) {
+                                          elem.click();
+                                          elem.scrollIntoView({ behavior: "smooth", block: "center" });
+                                        }
+                                      }, 100);
+                                    } else {
+                                      setRoute({ name: "faq" });
+                                    }
+                                  }}
+                                />
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Переход к поиску комиссий */}
+              {commissionHistory.length === 0 && (
+                <div className="cardCream" style={{ background: "rgba(255,200,0,.1)", border: "2px dashed rgba(255,200,0,.4)" }}>
+                  <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "8px" }}>
+                    💡 {lang === "ru" ? "Сначала найдите комиссию" : "Avval komissiyani toping"}
+                  </div>
+                  <div style={{ fontSize: "13px", marginBottom: "12px", color: "rgba(0,0,0,.7)" }}>
+                    {lang === "ru" 
+                      ? "Для расчёта прибыли вам нужно сначала найти комиссию для вашего товара в разделе Комиссии"
+                      : "Foydani hisoblash uchun avval Komissiyalar bo'limidan tovaringiz uchun komissiyani topishingiz kerak"
+                    }
+                  </div>
+                  <button
+                    onClick={() => setRoute({ name: "commissions" })}
+                    style={{
+                      width: "100%",
+                      padding: "12px",
+                      background: "linear-gradient(135deg, #FFC800, #FFD700)",
+                      color: "#111",
+                      border: "none",
+                      borderRadius: "10px",
+                      fontSize: "14px",
+                      fontWeight: 700,
+                      cursor: "pointer"
+                    }}
+                  >
+                    🔍 {lang === "ru" ? "Найти комиссию" : "Komissiyani topish"}
+                  </button>
                 </div>
               )}
             </div>
