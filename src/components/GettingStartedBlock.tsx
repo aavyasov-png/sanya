@@ -16,7 +16,7 @@ export default function GettingStartedBlock({
   const T = {
     ru: {
       title: 'С чего начать',
-      subtitle: 'Полезные инструменты для новичков',
+      subtitle: '👋 Если вы только начинаете — начните с этих шагов',
       profitCalc: 'Посчитать прибыль',
       profitCalcSub: 'Узнайте, сколько вы получите после комиссий',
       commissions: 'Проверить комиссии',
@@ -28,7 +28,7 @@ export default function GettingStartedBlock({
     },
     uz: {
       title: 'Boshlang\'ich',
-      subtitle: 'Yangilar uchun foydali vositalar',
+      subtitle: '👋 Agar siz yangi boshlayotgan bo\'lsangiz — bu bosqichlardan boshlaymiz',
       profitCalc: 'Foyda hisoblash',
       profitCalcSub: 'Komissiyalardan keyin qanchani olishingizni bilib oling',
       commissions: 'Komissiyalarni tekshirish',
