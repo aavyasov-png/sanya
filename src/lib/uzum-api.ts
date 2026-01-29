@@ -41,6 +41,11 @@ async function apiRequest<T>(
           : options.body;
       }
 
+      console.log('🔹 [Uzum API Client] Request:', {
+        url: PROXY_URL,
+        proxyBody: JSON.stringify(proxyBody)
+      });
+
       response = await fetch(PROXY_URL, {
         method: 'POST',
         headers: {
