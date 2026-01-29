@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { getShops, getFinanceOrders, getFinanceExpenses } from '../../lib/uzum-api';
-import EmptyState from '../EmptyState';
-import ContextualTooltip from '../ContextualTooltip';
 
 interface UzumFinanceProps {
   lang: 'ru' | 'uz';
@@ -200,20 +198,11 @@ export default function UzumFinance({ lang, token, onNavigateBack, onNavigateHom
       }}>
         <div className="cardCream" style={{ textAlign: 'center' }}>
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
             fontSize: '12px',
             color: '#666',
             marginBottom: '6px',
           }}>
             💰 {t.revenue}
-            <ContextualTooltip
-              content={lang === 'ru' ? 'Общая сумма всех продаж' : 'Barcha sotishlarning umumiy summasi'}
-              position="top"
-              trigger="click"
-            />
           </div>
           <div style={{
             fontSize: '20px',
@@ -226,20 +215,11 @@ export default function UzumFinance({ lang, token, onNavigateBack, onNavigateHom
 
         <div className="cardCream" style={{ textAlign: 'center' }}>
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
             fontSize: '12px',
             color: '#666',
             marginBottom: '6px',
           }}>
             📉 {t.totalExpenses}
-            <ContextualTooltip
-              content={lang === 'ru' ? 'Сумма всех расходов и комиссий' : 'Barcha xarajatlar va komissiyalarning summasi'}
-              position="top"
-              trigger="click"
-            />
           </div>
           <div style={{
             fontSize: '20px',
@@ -252,20 +232,11 @@ export default function UzumFinance({ lang, token, onNavigateBack, onNavigateHom
 
         <div className="cardCream" style={{ textAlign: 'center' }}>
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
             fontSize: '12px',
             color: '#666',
             marginBottom: '6px',
           }}>
             📈 {t.profit}
-            <ContextualTooltip
-              content={lang === 'ru' ? 'Выручка минус все расходы и комиссии' : 'Daromad minus barcha xarajatlar va komissiyalar'}
-              position="top"
-              trigger="click"
-            />
           </div>
           <div style={{
             fontSize: '20px',
@@ -335,12 +306,31 @@ export default function UzumFinance({ lang, token, onNavigateBack, onNavigateHom
 
       {/* Content */}
       {loading ? (
-        <EmptyState
-          icon="💰"
-          title={t.loading}
-          subtitle={lang === 'ru' ? 'Получаем финансовые данные...' : 'Moliya ma\'lumotlarini olamiz...'}
-          type="loading"
-        />
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '300px',
+          gap: '16px',
+        }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            border: '4px solid #f3f4f6',
+            borderTopColor: '#f59e0b',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+          }} />
+          <div style={{ fontSize: '16px', color: '#6b7280' }}>
+            {t.loading}
+          </div>
+          <style>{`
+            @keyframes spin {
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
       ) : (
         <>
           {activeTab === 'orders' && (
@@ -351,11 +341,14 @@ export default function UzumFinance({ lang, token, onNavigateBack, onNavigateHom
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             }}>
               {orders.length === 0 ? (
-                <EmptyState
-                  icon="�"
-                  title={lang === 'ru' ? 'Аналитика пока недоступна' : 'Tahliliyot hozir mavjud emas'}
-                  subtitle={lang === 'ru' ? 'Появится, когда будут первые продажи' : 'Birinchi sotishdan keyin paydo boladi'}
-                />
+                <div style={{
+                  padding: '60px 20px',
+                  textAlign: 'center',
+                  color: '#9ca3af',
+                  fontSize: '16px',
+                }}>
+                  📭 {t.noData}
+                </div>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{
@@ -462,11 +455,14 @@ export default function UzumFinance({ lang, token, onNavigateBack, onNavigateHom
               boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
             }}>
               {expenses.length === 0 ? (
-                <EmptyState
-                  icon="�"
-                  title={lang === 'ru' ? 'Расходы не найдены' : 'Xarajatlar topilmadi'}
-                  subtitle={lang === 'ru' ? 'Это нормально. Появятся при хозяйственной деятельности' : 'Bu normal. Xarajatlar faoliyat boshlanishi bilan paydo boladi'}
-                />
+                <div style={{
+                  padding: '60px 20px',
+                  textAlign: 'center',
+                  color: '#9ca3af',
+                  fontSize: '16px',
+                }}>
+                  📭 {t.noData}
+                </div>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{

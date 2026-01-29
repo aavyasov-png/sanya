@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { getShops, getProducts, getFbsOrdersCount } from '../../lib/uzum-api';
-import EmptyState from '../EmptyState';
-import ContextualTooltip from '../ContextualTooltip';
 
 interface UzumDashboardProps {
   lang: 'ru' | 'uz';
@@ -111,24 +109,16 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
 
   if (loading) {
     return (
-      <EmptyState
-        icon="🔄"
-        title={t.loading}
-        subtitle={lang === 'ru' ? 'Загружаем данные из вашего аккаунта...' : 'Hisobingizdan malumotlar yuklanmoqda...'}
-        type="loading"
-      />
-    );
-  }
-
-  if (shops.length === 0) {
-    return (
-      <EmptyState
-        icon="🏪"
-        title={lang === 'ru' ? 'Интеграция не подключена' : 'Integratsiya ulanmagan'}
-        subtitle={lang === 'ru' ? 'Подключите Uzum для заказов и аналитики' : 'Buyurtmalar va tahlil uchun Uzumni ulanging'}
-        actionText={lang === 'ru' ? 'Подключить' : 'Ulang'}
-        onAction={onNavigateBack}
-      />
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '400px',
+        fontSize: '16px',
+        color: '#6b7280',
+      }}>
+        🔄 {t.loading}
+      </div>
     );
   }
 
@@ -172,20 +162,12 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
       {shops.length > 0 && (
         <div style={{ marginBottom: '20px' }}>
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
             fontSize: '18px',
             fontWeight: 700,
             marginBottom: '12px',
             color: '#111',
           }}>
             {t.shops}
-            <ContextualTooltip
-              content={lang === 'ru' ? 'Если данных нет — это нормально для нового магазина.' : 'Agar ma\'lumot bo\'lmasa - bu yangi do\'kon uchun normal.'}
-              position="right"
-              trigger="click"
-            />
           </div>
           <div style={{
             display: 'grid',

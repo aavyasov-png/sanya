@@ -1,53 +1,31 @@
 /**
  * Cloudflare Function для проксирования запросов к Uzum API
  * Обходит CORS блокировку браузера
- * Поддерживает оба способа передачи пути:
- * 1. Query параметр: /api/uzum-proxy?path=/v1/shops
- * 2. Заголовок: X-Uzum-Path: /v1/shops
  */
 
-export async function onRequest(context) {
-  const { request } = context;
-  
-  // Получаем путь из query параметра или заголовка
-  const url = new URL(request.url);
-  const uzumPath = url.searchParams.get('path') || request.headers.get('X-Uzum-Path');
-  
-  if (!uzumPath) {
-    return new Response(JSON.stringify({ error: 'Path is required (use ?path= or X-Uzum-Path header)' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-
+export async function onRequestPost(context) {
   try {
-    const uzumApiUrl = `https://api-seller.uzum.uz/api/seller-openapi${uzumPath}`;
-    
-    // Собираем заголовки для проксирования
-    const proxyHeaders = {
-      'Accept': 'application/json',
-    };
-    
-    // Пробрасываем Authorization без изменений
-    const authHeader = request.headers.get('Authorization');
-    if (authHeader) {
-      proxyHeaders['Authorization'] = authHeader;
+    const { path, method = 'GET', headers = {}, body } = await context.request.json();
+
+    if (!path) {
+      return new Response(JSON.stringify({ error: 'Path is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
     }
-    
-    // Пробрасываем Content-Type если есть
-    const contentType = request.headers.get('Content-Type');
-    if (contentType) {
-      proxyHeaders['Content-Type'] = contentType;
-    }
+
+    const uzumApiUrl = `https://api-seller.uzum.uz/api/seller-openapi${path}`;
     
     const requestOptions = {
-      method: request.method,
-      headers: proxyHeaders,
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers
+      }
     };
 
-    // Пробрасываем body для POST/PUT/PATCH
-    if (['POST', 'PUT', 'PATCH'].includes(request.method)) {
-      requestOptions.body = await request.text();
+    if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+      requestOptions.body = JSON.stringify(body);
     }
 
     const response = await fetch(uzumApiUrl, requestOptions);
@@ -66,7 +44,7 @@ export async function onRequest(context) {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Uzum-Path'
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
       }
     });
 
@@ -91,7 +69,7 @@ export async function onRequestOptions() {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Uzum-Path',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Max-Age': '86400'
     }
   });

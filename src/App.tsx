@@ -9,13 +9,6 @@ import UzumDashboard from "./components/uzum/UzumDashboard";
 import UzumProducts from "./components/uzum/UzumProducts";
 import UzumOrders from "./components/uzum/UzumOrders";
 import UzumFinance from "./components/uzum/UzumFinance";
-import UzumStatusBlock from "./components/UzumStatusBlock";
-import GettingStartedBlock from "./components/GettingStartedBlock";
-import ContextualTooltip from "./components/ContextualTooltip";
-import ContextualFaqLink from "./components/ContextualFaqLink";
-import UsersManagement from "./components/UsersManagement";
-// @ts-ignore - EmptyState used in child components
-import EmptyState from "./components/EmptyState";
 
 type Lang = "ru" | "uz";
 
@@ -180,7 +173,6 @@ type Route =
   | { name: "admin" }
   | { name: "sections_all" }
   | { name: "commissions" }
-  | { name: "calculator" }
   | { name: "uzum" }
   | { name: "chat" };
 
@@ -266,11 +258,11 @@ function BottomBar(props: {
   );
 }
 
-function FaqItem({ question, answer, id }: { question: string; answer: string; id?: string }) {
+function FaqItem({ question, answer }: { question: string; answer: string }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="cardCream" style={{ marginBottom: "10px" }} data-faq-id={id}>
+    <div className="cardCream" style={{ marginBottom: "10px" }}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         style={{
@@ -282,14 +274,14 @@ function FaqItem({ question, answer, id }: { question: string; answer: string; i
           cursor: "pointer",
           fontSize: "16px",
           fontWeight: "bold",
-          color: "#8B6F47"
+          color: "#333"
         }}
       >
         {question}
         <span style={{ float: "right", fontSize: "18px" }}>{isOpen ? "−" : "+"}</span>
       </button>
       {isOpen && (
-        <div style={{ padding: "0 15px 15px 15px", color: "#8B6F47", lineHeight: "1.6" }}>
+        <div style={{ padding: "0 15px 15px 15px", color: "#555" }}>
           {answer}
         </div>
       )}
@@ -341,11 +333,8 @@ export default function App() {
   const [commissionResults, setCommissionResults] = useState<any[]>([]);
   const [selectedCommission, setSelectedCommission] = useState<any>(null);
   
-  // Онбординг
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [onboardingStep, setOnboardingStep] = useState(0);
-  
   // Калькулятор прибыли
+  const [showCalculator, setShowCalculator] = useState(false);
   const [showCalcInstruction, setShowCalcInstruction] = useState(false);
   const [commissionHistory, setCommissionHistory] = useState<any[]>([]);
   const [calcSelectedCommission, setCalcSelectedCommission] = useState<any>(null);
@@ -397,17 +386,6 @@ export default function App() {
   const canEdit = () => ["editor", "admin", "owner"].includes(userRole);
   const canManage = () => ["admin", "owner"].includes(userRole);
   const canFullAccess = () => userRole === "owner";
-
-  // Функция для запуска онбординга если нужно
-  const startOnboardingIfNeeded = () => {
-    const done = localStorage.getItem("onboarding_done") === "1";
-    if (!done) {
-      setShowOnboarding(true);
-      setOnboardingStep(0);
-    } else {
-      setRoute({ name: "home" });
-    }
-  };
 
   // Загрузка профиля пользователя из базы
   const loadUserProfile = async (telegramId: string) => {
@@ -546,6 +524,10 @@ export default function App() {
   // UZUM INTEGRATION FUNCTIONS
   // ============================================
 
+  // 🔧 ФЛАГ: Требовать Telegram ID для интеграций
+  // Установите false для работы без привязки к Telegram ID
+  const REQUIRE_TELEGRAM_ID = false;
+
   // Get Telegram user ID
   const getTelegramUserId = (): string | null => {
     try {
@@ -560,16 +542,19 @@ export default function App() {
   // Load existing Uzum integration from DB
   const loadUzumIntegration = async () => {
     const userId = getTelegramUserId();
-    if (!userId) {
+    if (!userId && REQUIRE_TELEGRAM_ID) {
       console.log('[Uzum] No Telegram user ID');
       return;
     }
 
     try {
+      // Используем userId если есть, иначе используем фиксированный ID
+      const actualUserId = userId || 'default_user';
+      
       const { data, error } = await supabase
         .from('integrations')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', actualUserId)
         .eq('provider', 'uzum')
         .single();
 
@@ -658,7 +643,7 @@ export default function App() {
     }
 
     const userId = getTelegramUserId();
-    if (!userId) {
+    if (!userId && REQUIRE_TELEGRAM_ID) {
       setUzumError('Telegram user ID не найден');
       return;
     }
@@ -667,6 +652,9 @@ export default function App() {
     setUzumError('');
 
     try {
+      // Используем userId если есть, иначе используем фиксированный ID
+      const actualUserId = userId || 'default_user';
+      
       // Encrypt token
       const encrypted = await encryptToken(uzumToken, uzumPin);
 
@@ -681,7 +669,7 @@ export default function App() {
       const { data, error } = await supabase
         .from('integrations')
         .upsert({
-          user_id: userId,
+          user_id: actualUserId,
           provider: 'uzum',
           token_cipher: encrypted.cipher,
           token_iv: encrypted.iv,
@@ -722,7 +710,7 @@ export default function App() {
     }
 
     const userId = getTelegramUserId();
-    if (!userId) {
+    if (!userId && REQUIRE_TELEGRAM_ID) {
       setUzumError('Telegram user ID не найден');
       return;
     }
@@ -730,10 +718,13 @@ export default function App() {
     setUzumLoading(true);
 
     try {
+      // Используем userId если есть, иначе используем фиксированный ID
+      const actualUserId = userId || 'default_user';
+      
       const { error } = await supabase
         .from('integrations')
         .delete()
-        .eq('user_id', userId)
+        .eq('user_id', actualUserId)
         .eq('provider', 'uzum');
 
       if (error) {
@@ -893,59 +884,8 @@ export default function App() {
     if (!f.error) setFaq((f.data ?? []) as FaqRow[]);
   };
 
-  // Load microcopy
-  const loadMicrocopy = async () => {
-    const { data, error } = await supabase.from("microcopy").select("*");
-    if (error) {
-      console.error("[MICROCOPY] Error loading:", error);
-      return;
-    }
-    const map: Record<string, { ru: string; uz: string }> = {};
-    data?.forEach((item: any) => {
-      map[item.key] = { ru: item.text_ru, uz: item.text_uz };
-    });
-    setMicrocopy(map);
-    setMicrocopyList(data || []);
-  };
-
-  // Helper to get microcopy with fallback (для будущего использования)
-  /* 
-  const getMicrocopy = (key: string, fallbackRu: string, fallbackUz: string) => {
-    if (microcopy[key]) {
-      return lang === "ru" ? microcopy[key].ru : microcopy[key].uz;
-    }
-    return lang === "ru" ? fallbackRu : fallbackUz;
-  };
-  */
-
-  const adminSaveMicrocopy = async () => {
-    if (!microcopyForm.key || !microcopyForm.text_ru || !microcopyForm.text_uz) {
-      showToast("Заполните обязательные поля");
-      return;
-    }
-    const resp = await supabase.from("microcopy").insert(microcopyForm as any);
-    if (resp.error) {
-      showToast(t.error);
-      return;
-    }
-    showToast(t.ok);
-    setMicrocopyForm({ key: "", text_ru: "", text_uz: "", context: "", description: "" });
-    await loadMicrocopy();
-  };
-
-  const adminDeleteMicrocopy = async (id: string) => {
-    const resp = await supabase.from("microcopy").delete().eq("id", id);
-    if (resp.error) {
-      showToast(t.error);
-      return;
-    }
-    showToast(t.ok);
-    await loadMicrocopy();
-  };
-
   useEffect(() => {
     loadPublic();
-    loadMicrocopy();
   }, []);
 
   // protect admin route
@@ -1098,7 +1038,7 @@ export default function App() {
       localStorage.setItem("access_ok", "1");
       localStorage.setItem("user_role", "viewer");
       setUserRole("viewer");
-      startOnboardingIfNeeded();
+      setRoute({ name: "home" });
       return;
     }
 
@@ -1144,15 +1084,10 @@ export default function App() {
         return;
       }
 
-      // Увеличиваем счётчик и записываем использование
-      const telegramId = (window as any).Telegram?.WebApp?.initDataUnsafe?.user?.id;
+      // Увеличиваем счётчик
       await supabase
         .from('access_codes')
-        .update({ 
-          uses_count: data.uses_count + 1,
-          last_used_at: new Date().toISOString(),
-          last_used_by_telegram_id: telegramId || null
-        })
+        .update({ uses_count: data.uses_count + 1 })
         .eq('id', data.id);
 
       const userRole = data.role || "viewer";
@@ -1174,7 +1109,7 @@ export default function App() {
       } else {
         localStorage.removeItem("admin_ok");
         setAdminOk(false);
-        startOnboardingIfNeeded();
+        setRoute({ name: "home" });
       }
     } catch (err) {
       console.error("[CODE] Exception:", err);
@@ -1204,7 +1139,7 @@ export default function App() {
       const secId = cards.find((x) => x.id === route.cardId)?.section_id || "";
       return setRoute({ name: "section", sectionId: secId });
     }
-    if (route.name === "section" || route.name === "news" || route.name === "news_item" || route.name === "news_card" || route.name === "faq" || route.name === "commissions" || route.name === "calculator" || route.name === "admin" || route.name === "sections_all" || route.name === "uzum") {
+    if (route.name === "section" || route.name === "news" || route.name === "news_item" || route.name === "news_card" || route.name === "faq" || route.name === "commissions" || route.name === "admin" || route.name === "sections_all" || route.name === "uzum") {
       return setRoute({ name: "home" });
     }
   };
@@ -1221,7 +1156,7 @@ export default function App() {
   };
 
   // ---------- Admin UI helpers ----------
-  const [adminTab, setAdminTab] = useState<"" | "sections" | "cards" | "news" | "faq" | "codes" | "users" | "microcopy">("sections");
+  const [adminTab, setAdminTab] = useState<"" | "sections" | "cards" | "news" | "faq" | "codes">("sections");
 
   const [secForm, setSecForm] = useState({ key: "", title_ru: "", title_uz: "", icon: "📄", sort: 100 });
   const [cardForm, setCardForm] = useState({
@@ -1250,21 +1185,10 @@ export default function App() {
     answer_ru: "",
     answer_uz: "",
     sort: 0,
-    slug: "",
-    category: "general",
   });
   const [codeForm, setCodeForm] = useState({ code: "", role: "viewer", max_uses: null as number | null, expires_at: "", note: "" });
   const [accessCodes, setAccessCodes] = useState<any[]>([]);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
-  const [microcopy, setMicrocopy] = useState<Record<string, { ru: string; uz: string }>>({});
-  const [microcopyList, setMicrocopyList] = useState<any[]>([]);
-  const [microcopyForm, setMicrocopyForm] = useState({
-    key: "",
-    text_ru: "",
-    text_uz: "",
-    context: "",
-    description: "",
-  });
 
   const adminSignOut = async () => {
     localStorage.removeItem("admin_ok");
@@ -1477,8 +1401,6 @@ export default function App() {
       answer_ru: "",
       answer_uz: "",
       sort: 0,
-      slug: "",
-      category: "general",
     });
     await loadPublic();
   };
@@ -1799,331 +1721,7 @@ export default function App() {
           <div className="grape grape-8">🍇</div>
         </div>
 
-        {/* ОНБОРДИНГ */}
-        {showOnboarding && (
-          <div style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "linear-gradient(135deg, #0F0F2E 0%, #1a0a3e 50%, #2d1b4e 100%)",
-            display: "flex",
-            flexDirection: "column",
-            zIndex: 10000,
-            overflow: "auto"
-          }}>
-            {/* Top bar с прогрессом */}
-            <div style={{
-              padding: "20px 24px 12px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "12px"
-            }}>
-              <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center"
-              }}>
-                <span style={{
-                  fontSize: "13px",
-                  fontWeight: 600,
-                  color: "rgba(255,255,255,.5)"
-                }}>
-                  Шаг {onboardingStep + 1} из 3
-                </span>
-                <button
-                  onClick={() => {
-                    localStorage.setItem("onboarding_done", "1");
-                    setShowOnboarding(false);
-                    setRoute({ name: "home" });
-                  }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "rgba(255,255,255,.6)",
-                    fontSize: "20px",
-                    cursor: "pointer",
-                    padding: "0",
-                    width: "24px",
-                    height: "24px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.2s"
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = "rgba(255,255,255,.9)"}
-                  onMouseLeave={(e) => e.currentTarget.style.color = "rgba(255,255,255,.6)"}
-                >
-                  ✕
-                </button>
-              </div>
-              
-              {/* Прогресс бар */}
-              <div style={{
-                height: "3px",
-                background: "rgba(255,255,255,.1)",
-                borderRadius: "2px",
-                overflow: "hidden"
-              }}>
-                <div style={{
-                  height: "100%",
-                  background: "linear-gradient(90deg, #00D4FF, #7000FF)",
-                  width: `${((onboardingStep + 1) / 3) * 100}%`,
-                  transition: "width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                  borderRadius: "2px"
-                }} />
-              </div>
-            </div>
-
-            {/* Контент слайда */}
-            <div style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              padding: "40px 24px 32px",
-              textAlign: "center",
-              overflow: "hidden",
-              position: "relative"
-            }}>
-              {/* Декоративные элементы */}
-              <div style={{
-                position: "absolute",
-                top: "-100px",
-                right: "-100px",
-                width: "200px",
-                height: "200px",
-                background: "radial-gradient(circle, rgba(0,212,255,.1) 0%, transparent 70%)",
-                borderRadius: "50%",
-                pointerEvents: "none"
-              }} />
-              
-              {/* Содержание */}
-              <div style={{
-                position: "relative",
-                zIndex: 1,
-                animation: onboardingStep >= 0 ? "fadeInUp 0.5s ease-out" : "none"
-              }}>
-                {/* Иконка слайда - большая и красивая */}
-                <div style={{
-                  fontSize: "100px",
-                  lineHeight: "1",
-                  marginBottom: "28px",
-                  display: "inline-block",
-                  animation: "bounce 2s ease-in-out infinite",
-                  filter: "drop-shadow(0 8px 20px rgba(0,212,255,.2))"
-                }}>
-                  {onboardingStep === 0 && "🧮"}
-                  {onboardingStep === 1 && "💰"}
-                  {onboardingStep === 2 && "🎯"}
-                </div>
-
-                {/* Заголовок */}
-                <h1 style={{
-                  fontSize: "32px",
-                  fontWeight: 900,
-                  color: "#fff",
-                  margin: "0 0 12px 0",
-                  letterSpacing: "-0.5px"
-                }}>
-                  {onboardingStep === 0 && "Посчитайте прибыль"}
-                  {onboardingStep === 1 && "Проверьте комиссии"}
-                  {onboardingStep === 2 && "Вы готовы!"}
-                </h1>
-
-                {/* Текст описания */}
-                <p style={{
-                  fontSize: "16px",
-                  color: "rgba(255,255,255,.75)",
-                  lineHeight: "1.6",
-                  margin: "0",
-                  maxWidth: "280px",
-                  marginLeft: "auto",
-                  marginRight: "auto"
-                }}>
-                  {onboardingStep === 0 && "Введите закупочную цену и цену продажи, чтобы узнать примерную чистую прибыль"}
-                  {onboardingStep === 1 && "Комиссия отличается по категориям. Проверьте её перед выставлением цены на маркетплейсе"}
-                  {onboardingStep === 2 && "Начните с калькулятора и комиссий. Интеграцию Uzum можно подключить позже"}
-                </p>
-
-                {/* Визуальный элемент */}
-                <div style={{
-                  marginTop: "32px",
-                  display: "flex",
-                  justifyContent: "center",
-                  gap: "8px"
-                }}>
-                  {[0, 1, 2].map((i) => (
-                    <div key={i} style={{
-                      width: i === onboardingStep ? "32px" : "8px",
-                      height: "8px",
-                      borderRadius: "4px",
-                      background: i === onboardingStep 
-                        ? "linear-gradient(90deg, #00D4FF, #7000FF)"
-                        : "rgba(255,255,255,.2)",
-                      transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                      boxShadow: i === onboardingStep ? "0 0 12px rgba(0,212,255,.4)" : "none"
-                    }} />
-                  ))}
-                </div>
-              </div>
-
-              {/* Кнопки */}
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "12px",
-                position: "relative",
-                zIndex: 1
-              }}>
-                {/* Основная кнопка */}
-                <button
-                  onClick={() => {
-                    if (onboardingStep === 2) {
-                      localStorage.setItem("onboarding_done", "1");
-                      setShowOnboarding(false);
-                      setRoute({ name: "home" });
-                    } else {
-                      setOnboardingStep(onboardingStep + 1);
-                    }
-                  }}
-                  style={{
-                    width: "100%",
-                    padding: "16px",
-                    background: "linear-gradient(135deg, #00D4FF 0%, #7000FF 100%)",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "14px",
-                    fontSize: "16px",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                    boxShadow: "0 8px 24px rgba(0,212,255,.3)",
-                    transition: "all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                    letterSpacing: "0.5px"
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-4px)";
-                    e.currentTarget.style.boxShadow = "0 12px 32px rgba(0,212,255,.4)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,212,255,.3)";
-                  }}
-                >
-                  {onboardingStep === 2 ? "✨ Начать работу →" : "Далее →"}
-                </button>
-
-                {/* Кнопки навигации */}
-                <div style={{
-                  display: "flex",
-                  gap: "12px"
-                }}>
-                  <button
-                    onClick={() => setOnboardingStep(Math.max(0, onboardingStep - 1))}
-                    disabled={onboardingStep === 0}
-                    style={{
-                      flex: 1,
-                      padding: "12px",
-                      background: "rgba(255,255,255,.08)",
-                      color: onboardingStep === 0 ? "rgba(255,255,255,.3)" : "rgba(255,255,255,.7)",
-                      border: `1.5px solid ${onboardingStep === 0 ? "rgba(255,255,255,.1)" : "rgba(255,255,255,.15)"}`,
-                      borderRadius: "10px",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      cursor: onboardingStep === 0 ? "not-allowed" : "pointer",
-                      transition: "all 0.2s",
-                      opacity: onboardingStep === 0 ? 0.5 : 1
-                    }}
-                    onMouseEnter={(e) => {
-                      if (onboardingStep > 0) {
-                        e.currentTarget.style.background = "rgba(255,255,255,.12)";
-                        e.currentTarget.style.borderColor = "rgba(255,255,255,.25)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "rgba(255,255,255,.08)";
-                      e.currentTarget.style.borderColor = "rgba(255,255,255,.15)";
-                    }}
-                  >
-                    ← Назад
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      localStorage.setItem("onboarding_done", "1");
-                      setShowOnboarding(false);
-                      setRoute({ name: "home" });
-                    }}
-                    style={{
-                      flex: 1,
-                      padding: "12px",
-                      background: "rgba(255,255,255,.05)",
-                      color: "rgba(255,255,255,.6)",
-                      border: "1.5px solid rgba(255,255,255,.1)",
-                      borderRadius: "10px",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      transition: "all 0.2s"
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = "rgba(255,255,255,.08)";
-                      e.currentTarget.style.color = "rgba(255,255,255,.8)";
-                      e.currentTarget.style.borderColor = "rgba(255,255,255,.15)";
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = "rgba(255,255,255,.05)";
-                      e.currentTarget.style.color = "rgba(255,255,255,.6)";
-                      e.currentTarget.style.borderColor = "rgba(255,255,255,.1)";
-                    }}
-                  >
-                    Пропустить
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* CSS для анимации */}
-            <style>{`
-              @keyframes fadeInUp {
-                from {
-                  opacity: 0;
-                  transform: translateY(20px);
-                }
-                to {
-                  opacity: 1;
-                  transform: translateY(0);
-                }
-              }
-              
-              @keyframes bounce {
-                0%, 100% {
-                  transform: translateY(0);
-                }
-                50% {
-                  transform: translateY(-12px);
-                }
-              }
-            `}</style>
-          </div>
-        )}
-
-        {showOnboarding && (
-          <div style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0,0,0,.4)",
-            backdropFilter: "blur(4px)",
-            zIndex: 999,
-            pointerEvents: "none"
-          }} />
-        )}
-
-        {!showOnboarding && route.name === "welcome" && (
+        {route.name === "welcome" && (
           <div className="page" style={{ 
             display: "flex", 
             flexDirection: "column",
@@ -2230,12 +1828,6 @@ export default function App() {
                       height: "50px"
                     }}
                   />
-                  <div style={{ fontSize: "11px", color: "rgba(0,0,0,.5)", marginTop: "6px", textAlign: "center" }}>
-                    {microcopy["login_code_info"] 
-                      ? (lang === "ru" ? microcopy["login_code_info"].ru : microcopy["login_code_info"].uz)
-                      : (lang === "ru" ? "🔐 Код нужен для входа в систему" : "🔐 Tizimga kirish uchun kod kerak")
-                    }
-                  </div>
                 </div>
 
                 {/* Правила - аккордеон */}
@@ -2364,7 +1956,7 @@ export default function App() {
                     marginBottom: "14px"
                   }}
                 >
-                  {lang === "ru" ? "✅ Продолжить" : "✅ Davom etish"}
+                  {t.continue}
                 </button>
 
                 {/* Информация о получении кода */}
@@ -2396,7 +1988,7 @@ export default function App() {
         )}
 
         {route.name === "home" && (
-          <div className="page">
+          <div className="page" style={{ overflow: "hidden" }}>
             {/* Боковое меню */}
             {menuOpen && (
               <>
@@ -2477,17 +2069,6 @@ export default function App() {
                     <button
                       className="menuBtn accent"
                       onClick={() => {
-                        setRoute({ name: "calculator" });
-                        setMenuOpen(false);
-                      }}
-                    >
-                      <span style={{ fontSize: "24px" }}>🧮</span>
-                      <span>{lang === "ru" ? "Калькулятор" : "Kalkulyator"}</span>
-                    </button>
-
-                    <button
-                      className="menuBtn accent"
-                      onClick={() => {
                         setRoute({ name: "commissions" });
                         setMenuOpen(false);
                       }}
@@ -2551,8 +2132,7 @@ export default function App() {
               background: "linear-gradient(135deg, #7000FF 0%, #9D4EFF 100%)",
               borderBottom: "2px solid rgba(157,78,255,.4)",
               position: "relative",
-              overflow: "hidden",
-              flexShrink: 0
+              overflow: "hidden"
             }}>
               {/* Декоративные элементы */}
               <div style={{
@@ -2608,38 +2188,8 @@ export default function App() {
               </div>
             </div>
 
-            {/* Дружелюбное приветствие */}
-            <div style={{ padding: "0 16px 12px", fontSize: "13px", color: "rgba(0,0,0,.7)", flexShrink: 0 }}>
-              {lang === "ru" 
-                ? "👋 Мы поможем разобраться и начать продажи" 
-                : "👋 Biz sizga yangiliklari boshlashga yordam beramiz"}
-            </div>
-
-            {/* Блок статуса Uzum */}
-            <div style={{ padding: "16px", flexShrink: 0 }}>
-              <UzumStatusBlock
-                lang={lang}
-                isConnected={uzumConnected}
-                hasData={uzumShops.length > 0}
-                onConnect={() => setRoute({ name: "uzum" })}
-                onOpen={() => setRoute({ name: "uzum" })}
-                userName={userName}
-              />
-            </div>
-
-            {/* Блок "С чего начать" */}
-            <div style={{ flexShrink: 0 }}>
-              <GettingStartedBlock
-                lang={lang}
-                onNavigateCalculator={() => setRoute({ name: "calculator" })}
-                onNavigateCommissions={() => setRoute({ name: "commissions" })}
-                onNavigateSizes={() => setRoute({ name: "sections_all" })}
-                onNavigateFaq={() => setRoute({ name: "faq" })}
-              />
-            </div>
-
             {/* Карусель разделов */}
-            <div style={{ padding: "12px 0", flexShrink: 0 }}>
+            <div style={{ padding: "12px 0" }}>
               <div style={{ 
                 fontSize: "12px", 
                 fontWeight: 800, 
@@ -2693,8 +2243,8 @@ export default function App() {
               </div>
             </div>
 
-            {/* Блок новостей */}
-            <div style={{ display: "flex", flexDirection: "column", flexShrink: 0 }}>
+            {/* Блок новостей - увеличенный */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
               <div style={{ 
                 fontSize: "18px", 
                 fontWeight: 900, 
@@ -2718,11 +2268,11 @@ export default function App() {
                     cursor: "pointer"
                   }}
                 >
-                  {lang === "ru" ? "Показать все" : "Barchasini ko'rsatish"}
+                  Все →
                 </button>
               </div>
-              <div style={{ padding: "0 16px", display: "flex", flexDirection: "column", gap: "14px" }}>
-                {news.slice(0, 2).map((n) => (
+              <div className="list" style={{ paddingTop: 0, paddingBottom: "80px" }}>
+                {news.slice(0, 6).map((n) => (
                   <div key={n.id} className="cardCream newsPreview" onClick={() => setRoute({ name: "news_card", newsId: n.id })}>
                     <div className="row" style={{ justifyContent: "space-between", marginBottom: "8px" }}>
                       <div className="newsTitle">
@@ -2739,7 +2289,7 @@ export default function App() {
 
             {/* Bottom Bar */}
             <div className="bottomBar" style={{
-              position: "fixed",
+              position: "absolute",
               bottom: 0,
               left: 0,
               right: 0,
@@ -3788,7 +3338,7 @@ export default function App() {
 
             <div className="list">
               {faq.map((item) => (
-                <FaqItem key={item.id} id={item.id} question={lang === "ru" ? item.question_ru : item.question_uz} answer={lang === "ru" ? item.answer_ru : item.answer_uz} />
+                <FaqItem key={item.id} question={lang === "ru" ? item.question_ru : item.question_uz} answer={lang === "ru" ? item.answer_ru : item.answer_uz} />
               ))}
             </div>
 
@@ -3815,6 +3365,304 @@ export default function App() {
             </div>
 
             <div className="list" style={{ paddingTop: "20px" }}>
+              {/* Кнопка калькулятора */}
+              <button
+                onClick={() => setShowCalculator(!showCalculator)}
+                style={{
+                  width: "100%",
+                  padding: "14px",
+                  background: showCalculator ? "#6F00FF" : "linear-gradient(135deg, #6F00FF, #9D4EFF)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "12px",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  boxShadow: "0 4px 12px rgba(111,0,255,.3)",
+                  transition: "all .2s"
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = "translateY(-2px)"}
+                onMouseLeave={(e) => e.currentTarget.style.transform = "translateY(0)"}
+              >
+                🧮 {lang === "ru" ? (showCalculator ? "Скрыть калькулятор" : "Калькулятор прибыли") : (showCalculator ? "Kalkulyatorni yashirish" : "Foyda kalkulyatori")}
+              </button>
+
+              {/* Калькулятор прибыли */}
+              {showCalculator && (
+                <div className="cardCream" style={{
+                  background: "linear-gradient(145deg, rgba(111,0,255,.08), rgba(111,0,255,.03))",
+                  border: "3px solid #6F00FF",
+                  position: "relative"
+                }}>
+                  {/* Заголовок с иконкой информации */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+                    <div style={{ fontSize: "16px", fontWeight: 900, color: "#6F00FF" }}>
+                      💰 {lang === "ru" ? "Калькулятор прибыли" : "Foyda kalkulyatori"}
+                    </div>
+                    <button
+                      onClick={() => setShowCalcInstruction(!showCalcInstruction)}
+                      style={{
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "50%",
+                        background: showCalcInstruction ? "#6F00FF" : "rgba(111,0,255,.15)",
+                        color: showCalcInstruction ? "#fff" : "#6F00FF",
+                        border: "2px solid #6F00FF",
+                        fontSize: "14px",
+                        fontWeight: 900,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all .2s"
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!showCalcInstruction) {
+                          e.currentTarget.style.background = "rgba(111,0,255,.25)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!showCalcInstruction) {
+                          e.currentTarget.style.background = "rgba(111,0,255,.15)";
+                        }
+                      }}
+                    >
+                      i
+                    </button>
+                  </div>
+
+                  {/* Всплывающая инструкция */}
+                  {showCalcInstruction && (
+                    <div style={{
+                      padding: "14px",
+                      background: "linear-gradient(135deg, rgba(111,0,255,.95), rgba(157,78,255,.95))",
+                      borderRadius: "10px",
+                      marginBottom: "16px",
+                      color: "#fff",
+                      fontSize: "12px",
+                      lineHeight: "1.6",
+                      boxShadow: "0 4px 12px rgba(111,0,255,.3)"
+                    }}>
+                      <div style={{ fontWeight: 900, marginBottom: "8px", fontSize: "13px" }}>
+                        ℹ️ {lang === "ru" ? "Как пользоваться калькулятором:" : "Kalkulyatordan qanday foydalanish:"}
+                      </div>
+                      {lang === "ru" ? (
+                        <>
+                          <div style={{ marginBottom: "4px" }}>1️⃣ Найдите нужную категорию через поиск выше</div>
+                          <div style={{ marginBottom: "4px" }}>2️⃣ Выберите её из истории поиска</div>
+                          <div style={{ marginBottom: "4px" }}>3️⃣ Выберите тип комиссии (FBO/FBS/DBS)</div>
+                          <div style={{ marginBottom: "4px" }}>4️⃣ Укажите габарит товара:</div>
+                          <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
+                            • МГТ (малогабаритный) — логистика 3000 сум
+                          </div>
+                          <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
+                            • СГТ (среднегабаритный) — логистика 5000 сум
+                          </div>
+                          <div style={{ marginLeft: "12px", marginBottom: "8px", opacity: 0.9 }}>
+                            • КГТ (крупногабаритный) — логистика 9000 сум
+                          </div>
+                          <div style={{ marginBottom: "4px" }}>5️⃣ Введите сумму продажи</div>
+                          <div>6️⃣ Получите чистую прибыль к выводу! 💰</div>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ marginBottom: "4px" }}>1️⃣ Yuqorida qidiruv orqali kerakli turkumni toping</div>
+                          <div style={{ marginBottom: "4px" }}>2️⃣ Uni qidiruv tarixidan tanlang</div>
+                          <div style={{ marginBottom: "4px" }}>3️⃣ Komissiya turini tanlang (FBO/FBS/DBS)</div>
+                          <div style={{ marginBottom: "4px" }}>4️⃣ Tovar oʻlchamini koʻrsating:</div>
+                          <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
+                            • МГТ (kichik) — logistika 3000 som
+                          </div>
+                          <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
+                            • СГТ (oʻrta) — logistika 5000 som
+                          </div>
+                          <div style={{ marginLeft: "12px", marginBottom: "8px", opacity: 0.9 }}>
+                            • КГТ (katta) — logistika 9000 som
+                          </div>
+                          <div style={{ marginBottom: "4px" }}>5️⃣ Sotish summasini kiriting</div>
+                          <div>6️⃣ Toza foydani oling! 💰</div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Выбор комиссии из истории */}
+                  <div style={{ marginBottom: "16px" }}>
+                    <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)", marginBottom: "6px", display: "block" }}>
+                      {lang === "ru" ? "Выберите категорию из истории поиска" : "Qidiruv tarixidan turkumni tanlang"}
+                    </label>
+                    {commissionHistory.length === 0 ? (
+                      <div style={{ fontSize: "13px", color: "#999", fontStyle: "italic" }}>
+                        {lang === "ru" ? "Сначала найдите комиссию через поиск выше" : "Avval yuqorida qidiruv orqali komissiyani toping"}
+                      </div>
+                    ) : (
+                      <select
+                        value={calcSelectedCommission?.id || ""}
+                        onChange={(e) => {
+                          const item = commissionHistory.find(h => h.id === e.target.value);
+                          setCalcSelectedCommission(item || null);
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "10px",
+                          borderRadius: "10px",
+                          border: "2px solid rgba(111,0,255,.2)",
+                          background: "#fff",
+                          fontSize: "13px",
+                          fontWeight: 600,
+                          color: "#111"
+                        }}
+                      >
+                        <option value="">{lang === "ru" ? "Выберите категорию..." : "Turkumni tanlang..."}</option>
+                        {commissionHistory.map((item) => {
+                          const categoryPath: string[] = [];
+                          for (let i = 1; i <= 6; i++) {
+                            const cat = item[`category${i}_${lang}`];
+                            if (cat) categoryPath.push(cat);
+                          }
+                          return (
+                            <option key={item.id} value={item.id}>
+                              {categoryPath.join(" → ")}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    )}
+                  </div>
+
+                  {calcSelectedCommission && (
+                    <>
+                      {/* Тип комиссии */}
+                      <div style={{ marginBottom: "16px" }}>
+                        <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)", marginBottom: "8px", display: "block" }}>
+                          {lang === "ru" ? "Тип комиссии" : "Komissiya turi"}
+                        </label>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          {(["fbo", "fbs", "dbs"] as const).map((type) => (
+                            <button
+                              key={type}
+                              onClick={() => setCalcCommType(type)}
+                              style={{
+                                flex: 1,
+                                padding: "10px",
+                                background: calcCommType === type ? "#6F00FF" : "#fff",
+                                color: calcCommType === type ? "#fff" : "#111",
+                                border: `2px solid ${calcCommType === type ? "#6F00FF" : "rgba(111,0,255,.2)"}`,
+                                borderRadius: "10px",
+                                fontSize: "13px",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                                transition: "all .2s"
+                              }}
+                            >
+                              {type.toUpperCase()} ({calcSelectedCommission[`comm_${type}`]}%)
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Габариты товара */}
+                      <div style={{ marginBottom: "16px" }}>
+                        <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)", marginBottom: "8px", display: "block" }}>
+                          {lang === "ru" ? "Габариты товара" : "Tovar oʻlchamlari"}
+                        </label>
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          {(["МГТ", "СГТ", "КГТ"] as const).map((gab) => (
+                            <button
+                              key={gab}
+                              onClick={() => setCalcGabarit(gab)}
+                              style={{
+                                flex: 1,
+                                padding: "10px",
+                                background: calcGabarit === gab ? "#6F00FF" : "#fff",
+                                color: calcGabarit === gab ? "#fff" : "#111",
+                                border: `2px solid ${calcGabarit === gab ? "#6F00FF" : "rgba(111,0,255,.2)"}`,
+                                borderRadius: "10px",
+                                fontSize: "13px",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                                transition: "all .2s"
+                              }}
+                            >
+                              {gab}
+                              <div style={{ fontSize: "10px", fontWeight: 500, marginTop: "2px" }}>
+                                {gab === "МГТ" ? "3000" : gab === "СГТ" ? "5000" : "9000"}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                        <div style={{ fontSize: "11px", color: "#666", marginTop: "4px" }}>
+                          {lang === "ru" ? "Логистический сбор указан под каждым типом" : "Logistika yigʻimi har bir tur ostida koʻrsatilgan"}
+                        </div>
+                      </div>
+
+                      {/* Сумма продажи */}
+                      <div style={{ marginBottom: "16px" }}>
+                        <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)", marginBottom: "6px", display: "block" }}>
+                          {lang === "ru" ? "Сумма продажи (сум)" : "Sotish summasi (som)"}
+                        </label>
+                        <input
+                          type="number"
+                          value={calcSaleAmount}
+                          onChange={(e) => setCalcSaleAmount(e.target.value)}
+                          placeholder={lang === "ru" ? "Введите сумму..." : "Summani kiriting..."}
+                          style={{
+                            width: "100%",
+                            padding: "12px",
+                            borderRadius: "10px",
+                            border: "2px solid rgba(111,0,255,.2)",
+                            background: "#fff",
+                            fontSize: "14px",
+                            fontWeight: 600,
+                            color: "#111"
+                          }}
+                        />
+                      </div>
+
+                      {/* Результат */}
+                      {calcSaleAmount && parseFloat(calcSaleAmount) > 0 && (
+                        <div style={{
+                          padding: "16px",
+                          background: "linear-gradient(135deg, #6F00FF, #9D4EFF)",
+                          borderRadius: "12px",
+                          color: "#fff"
+                        }}>
+                          {(() => {
+                            const saleAmount = parseFloat(calcSaleAmount);
+                            const commPercent = calcSelectedCommission[`comm_${calcCommType}`];
+                            const commAmount = saleAmount * (commPercent / 100);
+                            const logisticFee = calcGabarit === "МГТ" ? 3000 : calcGabarit === "СГТ" ? 5000 : 9000;
+                            const totalDeduction = commAmount + logisticFee;
+                            const netProfit = saleAmount - totalDeduction;
+
+                            return (
+                              <>
+                                <div style={{ fontSize: "13px", marginBottom: "8px", opacity: 0.9 }}>
+                                  {lang === "ru" ? "💰 Расчёт" : "💰 Hisoblash"}
+                                </div>
+                                <div style={{ fontSize: "12px", marginBottom: "4px", opacity: 0.8 }}>
+                                  {lang === "ru" ? "Комиссия" : "Komissiya"}: {commAmount.toFixed(0)} {lang === "ru" ? "сум" : "som"} ({commPercent}%)
+                                </div>
+                                <div style={{ fontSize: "12px", marginBottom: "8px", opacity: 0.8 }}>
+                                  {lang === "ru" ? "Логистика" : "Logistika"}: {logisticFee} {lang === "ru" ? "сум" : "som"}
+                                </div>
+                                <div style={{ fontSize: "12px", marginBottom: "8px", opacity: 0.8, paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,.3)" }}>
+                                  {lang === "ru" ? "Всего вычетов" : "Jami chegirmalar"}: {totalDeduction.toFixed(0)} {lang === "ru" ? "сум" : "som"}
+                                </div>
+                                <div style={{ fontSize: "18px", fontWeight: 900, marginTop: "8px" }}>
+                                  {lang === "ru" ? "✅ К выводу: " : "✅ Yechib olish uchun: "}
+                                  {netProfit.toFixed(0)} {lang === "ru" ? "сум" : "som"}
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
               {/* Поле поиска */}
               <div className="cardCream">
                 <label style={{ 
@@ -3979,30 +3827,6 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Контекстный FAQ */}
-                  <ContextualFaqLink
-                    text={lang === "ru" ? "От чего зависит комиссия Uzum?" : "Uzum komissiyasi nimaga bog'liq?"}
-                    onClick={() => {
-                      const faqItem = faq.find(f => 
-                        lang === "ru" 
-                          ? f.question_ru?.toLowerCase().includes("комиссия") && f.question_ru?.toLowerCase().includes("зависит")
-                          : f.question_uz?.toLowerCase().includes("komissiya")
-                      );
-                      if (faqItem) {
-                        setRoute({ name: "faq" });
-                        setTimeout(() => {
-                          const elem = document.querySelector(`[data-faq-id="${faqItem.id}"]`) as HTMLElement;
-                          if (elem) {
-                            elem.click();
-                            elem.scrollIntoView({ behavior: "smooth", block: "center" });
-                          }
-                        }, 100);
-                      } else {
-                        setRoute({ name: "faq" });
-                      }
-                    }}
-                  />
-
                   {/* Кнопка очистки */}
                   <button
                     onClick={() => {
@@ -4039,454 +3863,6 @@ export default function App() {
                     ? "Введите название категории товара для поиска комиссии"
                     : "Komissiyani qidirish uchun tovar turkumini kiriting"
                   }
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {route.name === "calculator" && (
-          <div className="page">
-            <TopBar
-              t={t}
-              lang={lang}
-              setLang={setLang}
-              showSearch={false}
-              search={search}
-              setSearch={setSearch}
-              onBack={goBack}
-              onHome={goHome}
-            />
-
-            <div className="headerBlock">
-              <div className="h2">{lang === "ru" ? "Калькулятор прибыли" : "Foyda kalkulyatori"}</div>
-              <div className="sub">{lang === "ru" ? "Рассчитайте чистую прибыль с учётом комиссий" : "Komissiyalarni hisobga olgan holda toza foydani hisoblang"}</div>
-            </div>
-
-            <div className="list" style={{ paddingTop: "20px" }}>
-              {/* История поиска категорий */}
-              {commissionHistory.length > 0 && (
-                <div className="cardCream" style={{ background: "rgba(111,0,255,.05)" }}>
-                  <div style={{ fontSize: "14px", fontWeight: 900, marginBottom: "12px", color: "#6F00FF" }}>
-                    📋 {lang === "ru" ? "История поиска категорий" : "Qidiruv tarixi"}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                    {commissionHistory.map((item) => {
-                      const categoryPath: string[] = [];
-                      for (let i = 1; i <= 6; i++) {
-                        const cat = item[`category${i}_${lang}`];
-                        if (cat) categoryPath.push(cat);
-                      }
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => {
-                            setCalcSelectedCommission(item);
-                          }}
-                          style={{
-                            padding: "10px 12px",
-                            background: calcSelectedCommission?.id === item.id ? "linear-gradient(135deg, #6F00FF, #9D4EFF)" : "#fff",
-                            color: calcSelectedCommission?.id === item.id ? "#fff" : "#111",
-                            border: `2px solid ${calcSelectedCommission?.id === item.id ? "#6F00FF" : "rgba(111,0,255,.2)"}`,
-                            borderRadius: "10px",
-                            fontSize: "13px",
-                            fontWeight: 600,
-                            textAlign: "left",
-                            cursor: "pointer",
-                            transition: "all .2s"
-                          }}
-                        >
-                          {categoryPath.join(" → ")}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Калькулятор прибыли */}
-              <div className="cardCream" style={{
-                background: "linear-gradient(145deg, rgba(111,0,255,.08), rgba(111,0,255,.03))",
-                border: "3px solid #6F00FF",
-                position: "relative"
-              }}>
-                {/* Заголовок с иконкой информации */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-                  <div style={{ fontSize: "16px", fontWeight: 900, color: "#6F00FF" }}>
-                    💰 {lang === "ru" ? "Калькулятор прибыли" : "Foyda kalkulyatori"}
-                  </div>
-                  <button
-                    onClick={() => setShowCalcInstruction(!showCalcInstruction)}
-                    style={{
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "50%",
-                      background: showCalcInstruction ? "#6F00FF" : "rgba(111,0,255,.15)",
-                      color: showCalcInstruction ? "#fff" : "#6F00FF",
-                      border: "2px solid #6F00FF",
-                      fontSize: "14px",
-                      fontWeight: 900,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      transition: "all .2s"
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!showCalcInstruction) {
-                        e.currentTarget.style.background = "rgba(111,0,255,.25)";
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!showCalcInstruction) {
-                        e.currentTarget.style.background = "rgba(111,0,255,.15)";
-                      }
-                    }}
-                  >
-                    i
-                  </button>
-                </div>
-
-                {/* Всплывающая инструкция */}
-                {showCalcInstruction && (
-                  <div style={{
-                    padding: "14px",
-                    background: "linear-gradient(135deg, rgba(111,0,255,.95), rgba(157,78,255,.95))",
-                    borderRadius: "10px",
-                    marginBottom: "16px",
-                    color: "#fff",
-                    fontSize: "12px",
-                    lineHeight: "1.6",
-                    boxShadow: "0 4px 12px rgba(111,0,255,.3)"
-                  }}>
-                    <div style={{ fontWeight: 900, marginBottom: "8px", fontSize: "13px" }}>
-                      ℹ️ {lang === "ru" ? "Как пользоваться калькулятором:" : "Kalkulyatordan qanday foydalanish:"}
-                    </div>
-                    {lang === "ru" ? (
-                      <>
-                        <div style={{ marginBottom: "4px" }}>1️⃣ Найдите категорию через поиск комиссий</div>
-                        <div style={{ marginBottom: "4px" }}>2️⃣ Выберите её из истории выше</div>
-                        <div style={{ marginBottom: "4px" }}>3️⃣ Выберите тип комиссии (FBO/FBS/DBS)</div>
-                        <div style={{ marginBottom: "4px" }}>4️⃣ Укажите габарит товара:</div>
-                        <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
-                          • МГТ (малогабаритный) — логистика 5000 сум
-                        </div>
-                        <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
-                          • СГТ (среднегабаритный) — логистика 8000 сум
-                        </div>
-                        <div style={{ marginLeft: "12px", marginBottom: "8px", opacity: 0.9 }}>
-                          • КГТ (крупногабаритный) — логистика 20000 сум
-                        </div>
-                        <div style={{ marginBottom: "4px" }}>5️⃣ Введите сумму продажи</div>
-                        <div>6️⃣ Получите чистую прибыль к выводу! 💰</div>
-                      </>
-                    ) : (
-                      <>
-                        <div style={{ marginBottom: "4px" }}>1️⃣ Komissiyalar qidiruvidan turkumni toping</div>
-                        <div style={{ marginBottom: "4px" }}>2️⃣ Yuqoridagi tarixdan tanlang</div>
-                        <div style={{ marginBottom: "4px" }}>3️⃣ Komissiya turini tanlang (FBO/FBS/DBS)</div>
-                        <div style={{ marginBottom: "4px" }}>4️⃣ Tovar oʻlchamini koʻrsating:</div>
-                        <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
-                          • МГТ (kichik) — logistika 5000 som
-                        </div>
-                        <div style={{ marginLeft: "12px", marginBottom: "4px", opacity: 0.9 }}>
-                          • СГТ (oʻrta) — logistika 8000 som
-                        </div>
-                        <div style={{ marginLeft: "12px", marginBottom: "8px", opacity: 0.9 }}>
-                          • КГТ (katta) — logistika 20000 som
-                        </div>
-                        <div style={{ marginBottom: "4px" }}>5️⃣ Sotish summasini kiriting</div>
-                        <div>6️⃣ Toza foydani oling! 💰</div>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* Выбор комиссии из истории */}
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)", marginBottom: "6px", display: "block" }}>
-                    {lang === "ru" ? "Выберите категорию из истории поиска" : "Qidiruv tarixidan turkumni tanlang"}
-                  </label>
-                  {commissionHistory.length === 0 ? (
-                    <div style={{ fontSize: "13px", color: "#999", fontStyle: "italic" }}>
-                      {lang === "ru" ? "Сначала найдите комиссию через поиск в разделе Комиссии" : "Avval Komissiyalar bo'limidan qidiruv orqali komissiyani toping"}
-                    </div>
-                  ) : (
-                    <select
-                      value={calcSelectedCommission?.id || ""}
-                      onChange={(e) => {
-                        const item = commissionHistory.find(h => h.id === e.target.value);
-                        setCalcSelectedCommission(item || null);
-                      }}
-                      style={{
-                        width: "100%",
-                        padding: "10px",
-                        borderRadius: "10px",
-                        border: "2px solid rgba(111,0,255,.2)",
-                        background: "#fff",
-                        fontSize: "13px",
-                        fontWeight: 600,
-                        color: "#111"
-                      }}
-                    >
-                      <option value="">{lang === "ru" ? "Выберите категорию..." : "Turkumni tanlang..."}</option>
-                      {commissionHistory.map((item) => {
-                        const categoryPath: string[] = [];
-                        for (let i = 1; i <= 6; i++) {
-                          const cat = item[`category${i}_${lang}`];
-                          if (cat) categoryPath.push(cat);
-                        }
-                        return (
-                          <option key={item.id} value={item.id}>
-                            {categoryPath.join(" → ")}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  )}
-                </div>
-
-                {calcSelectedCommission && (
-                  <>
-                    {/* Тип комиссии */}
-                    <div style={{ marginBottom: "16px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                        <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)" }}>
-                          {lang === "ru" ? "Тип комиссии" : "Komissiya turi"}
-                        </label>
-                        <ContextualTooltip
-                          content={lang === "ru" ? "Комиссия зависит от категории товара и формата доставки." : "Komissiya tovar turkumi va yetkazib berish formati bo'yicha farqlanadi."}
-                          position="right"
-                          trigger="click"
-                        />
-                      </div>
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        {(["fbo", "fbs", "dbs"] as const).map((type) => (
-                          <button
-                            key={type}
-                            onClick={() => setCalcCommType(type)}
-                            style={{
-                              flex: 1,
-                              padding: "10px",
-                              background: calcCommType === type ? "#6F00FF" : "#fff",
-                              color: calcCommType === type ? "#fff" : "#111",
-                              border: `2px solid ${calcCommType === type ? "#6F00FF" : "rgba(111,0,255,.2)"}`,
-                              borderRadius: "10px",
-                              fontSize: "13px",
-                              fontWeight: 700,
-                              cursor: "pointer",
-                              transition: "all .2s"
-                            }}
-                          >
-                            {type.toUpperCase()} ({calcSelectedCommission[`comm_${type}`]}%)
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Габариты товара */}
-                    <div style={{ marginBottom: "16px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                        <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)" }}>
-                          {lang === "ru" ? "Габариты товара" : "Tovar oʻlchamlari"}
-                        </label>
-                        <ContextualTooltip
-                          content={lang === "ru" ? "Какие размеры товара и как это влияет на логистику" : "Tovar o'lchamlari logistikaga qanday ta'sir qiladi"}
-                          position="right"
-                          trigger="click"
-                        />
-                      </div>
-                      <div style={{ display: "flex", gap: "8px" }}>
-                        {(["МГТ", "СГТ", "КГТ"] as const).map((gab) => (
-                          <button
-                            key={gab}
-                            onClick={() => setCalcGabarit(gab)}
-                            style={{
-                              flex: 1,
-                              padding: "10px",
-                              background: calcGabarit === gab ? "#6F00FF" : "#fff",
-                              color: calcGabarit === gab ? "#fff" : "#111",
-                              border: `2px solid ${calcGabarit === gab ? "#6F00FF" : "rgba(111,0,255,.2)"}`,
-                              borderRadius: "10px",
-                              fontSize: "13px",
-                              fontWeight: 700,
-                              cursor: "pointer",
-                              transition: "all .2s"
-                            }}
-                          >
-                            {gab}
-                            <div style={{ fontSize: "10px", fontWeight: 500, marginTop: "2px" }}>
-                              {gab === "МГТ" ? "5000" : gab === "СГТ" ? "8000" : "20000"}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                      <div style={{ fontSize: "11px", color: "#666", marginTop: "4px" }}>
-                        {lang === "ru" ? "Логистический сбор указан под каждым типом" : "Logistika yigʻimi har bir tur ostida koʻrsatilgan"}
-                      </div>
-                    </div>
-
-                    {/* Сумма продажи */}
-                    <div style={{ marginBottom: "16px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-                        <label style={{ fontSize: "13px", fontWeight: 700, color: "rgba(0,0,0,.7)" }}>
-                          {lang === "ru" ? "Сумма продажи (сум)" : "Sotish summasi (som)"}
-                        </label>
-                        <ContextualTooltip
-                          content={lang === "ru" ? "От неё зависит ваша прибыль и позиция в выдаче" : "Bunga ko'ra sizning foydangiz va qidiruvda joyingiz belgilanadi"}
-                          position="right"
-                          trigger="click"
-                        />
-                      </div>
-                      <input
-                        type="number"
-                        value={calcSaleAmount}
-                        onChange={(e) => setCalcSaleAmount(e.target.value)}
-                        placeholder={lang === "ru" ? "Введите сумму..." : "Summani kiriting..."}
-                        style={{
-                          width: "100%",
-                          padding: "12px",
-                          borderRadius: "10px",
-                          border: "2px solid rgba(111,0,255,.2)",
-                          background: "#fff",
-                          fontSize: "14px",
-                          fontWeight: 600,
-                          color: "#111"
-                        }}
-                      />
-                    </div>
-
-                    {/* Результат */}
-                    {calcSaleAmount && parseFloat(calcSaleAmount) > 0 && (
-                      <div style={{
-                        padding: "16px",
-                        background: "linear-gradient(135deg, #6F00FF, #9D4EFF)",
-                        borderRadius: "12px",
-                        color: "#fff"
-                      }}>
-                        {(() => {
-                          const saleAmount = parseFloat(calcSaleAmount);
-                          const commPercent = calcSelectedCommission[`comm_${calcCommType}`];
-                          const commAmount = saleAmount * (commPercent / 100);
-                          const logisticFee = calcGabarit === "МГТ" ? 5000 : calcGabarit === "СГТ" ? 8000 : 20000;
-                          const totalDeduction = commAmount + logisticFee;
-                          const netProfit = saleAmount - totalDeduction;
-
-                          return (
-                            <>
-                              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                                <div style={{ fontSize: "13px", opacity: 0.9 }}>
-                                  {lang === "ru" ? "💰 Расчёт" : "💰 Hisoblash"}
-                                </div>
-                                <ContextualTooltip
-                                  content={lang === "ru" ? "Это предварительный расчёт. Точная прибыль будет известна после продажи товара." : "Bu tahlili hisoblash. Aniq foyda tovar sotilgandan keyin ma'lum bo'ladi."}
-                                  position="bottom"
-                                  trigger="click"
-                                />
-                              </div>
-                              <div style={{ fontSize: "12px", marginBottom: "4px", opacity: 0.8 }}>
-                                {lang === "ru" ? "Комиссия" : "Komissiya"}: {commAmount.toFixed(0)} {lang === "ru" ? "сум" : "som"} ({commPercent}%)
-                              </div>
-                              <div style={{ fontSize: "12px", marginBottom: "8px", opacity: 0.8 }}>
-                                {lang === "ru" ? "Логистика" : "Logistika"}: {logisticFee} {lang === "ru" ? "сум" : "som"}
-                              </div>
-                              <div style={{ fontSize: "12px", marginBottom: "8px", opacity: 0.8, paddingTop: "8px", borderTop: "1px solid rgba(255,255,255,.3)" }}>
-                                {lang === "ru" ? "Всего вычетов" : "Jami chegirmalar"}: {totalDeduction.toFixed(0)} {lang === "ru" ? "сум" : "som"}
-                              </div>
-                              <div style={{ fontSize: "18px", fontWeight: 900, marginTop: "8px" }}>
-                                {lang === "ru" ? "✅ К выводу: " : "✅ Yechib olish uchun: "}
-                                {netProfit.toFixed(0)} {lang === "ru" ? "сум" : "som"}
-                              </div>
-
-                              {/* Микрообучение */}
-                              <div style={{ fontSize: "12px", marginTop: "12px", paddingTop: "12px", borderTop: "1px solid rgba(255,255,255,.3)", opacity: 0.85 }}>
-                                💡 {lang === "ru" ? "Хотите точнее?" : "Aniqroq bo'lishni xohlaysizmi?"} <span style={{ cursor: "pointer", fontWeight: 600, textDecoration: "underline" }} onClick={() => setRoute({ name: "uzum" })}>
-                                  {lang === "ru" ? "Подключите Uzum →" : "Uzumni ulang →"}
-                                </span>
-                              </div>
-
-                              {/* Контекстный FAQ */}
-                              <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "8px" }}>
-                                <ContextualFaqLink
-                                  text={lang === "ru" ? "Почему это примерный расчёт?" : "Nima uchun bu tahlili hisoblash?"}
-                                  onClick={() => {
-                                    const faqItem = faq.find(f => 
-                                      lang === "ru" 
-                                        ? f.question_ru?.includes("расчёт") || f.question_ru?.includes("примерн")
-                                        : f.question_uz?.includes("hisoblash")
-                                    );
-                                    if (faqItem) {
-                                      setRoute({ name: "faq" });
-                                      setTimeout(() => {
-                                        const elem = document.querySelector(`[data-faq-id="${faqItem.id}"]`) as HTMLElement;
-                                        if (elem) {
-                                          elem.click();
-                                          elem.scrollIntoView({ behavior: "smooth", block: "center" });
-                                        }
-                                      }, 100);
-                                    }
-                                  }}
-                                />
-                                <ContextualFaqLink
-                                  text={lang === "ru" ? "Что влияет на прибыль?" : "Foydaga nima ta'sir qiladi?"}
-                                  onClick={() => {
-                                    const faqItem = faq.find(f => 
-                                      lang === "ru" 
-                                        ? f.question_ru?.includes("прибыль") || f.question_ru?.includes("влияет")
-                                        : f.question_uz?.includes("foyda")
-                                    );
-                                    if (faqItem) {
-                                      setRoute({ name: "faq" });
-                                      setTimeout(() => {
-                                        const elem = document.querySelector(`[data-faq-id="${faqItem.id}"]`) as HTMLElement;
-                                        if (elem) {
-                                          elem.click();
-                                          elem.scrollIntoView({ behavior: "smooth", block: "center" });
-                                        }
-                                      }, 100);
-                                    } else {
-                                      setRoute({ name: "faq" });
-                                    }
-                                  }}
-                                />
-                              </div>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-
-              {/* Переход к поиску комиссий */}
-              {commissionHistory.length === 0 && (
-                <div className="cardCream" style={{ background: "rgba(255,200,0,.1)", border: "2px dashed rgba(255,200,0,.4)" }}>
-                  <div style={{ fontSize: "14px", fontWeight: 700, marginBottom: "8px" }}>
-                    💡 {lang === "ru" ? "Сначала найдите комиссию" : "Avval komissiyani toping"}
-                  </div>
-                  <div style={{ fontSize: "13px", marginBottom: "12px", color: "rgba(0,0,0,.7)" }}>
-                    {lang === "ru" 
-                      ? "Для расчёта прибыли вам нужно сначала найти комиссию для вашего товара в разделе Комиссии"
-                      : "Foydani hisoblash uchun avval Komissiyalar bo'limidan tovaringiz uchun komissiyani topishingiz kerak"
-                    }
-                  </div>
-                  <button
-                    onClick={() => setRoute({ name: "commissions" })}
-                    style={{
-                      width: "100%",
-                      padding: "12px",
-                      background: "linear-gradient(135deg, #FFC800, #FFD700)",
-                      color: "#111",
-                      border: "none",
-                      borderRadius: "10px",
-                      fontSize: "14px",
-                      fontWeight: 700,
-                      cursor: "pointer"
-                    }}
-                  >
-                    🔍 {lang === "ru" ? "Найти комиссию" : "Komissiyani topish"}
-                  </button>
                 </div>
               )}
             </div>
@@ -4884,27 +4260,15 @@ export default function App() {
                       <button className="btnGhost" onClick={() => setAdminTab("codes")}>
                         🔑 {t.manageCodes}
                       </button>
-                      <button className="btnGhost" onClick={() => setAdminTab("microcopy")}>
-                        ✏️ Микро-тексты
-                      </button>
                     </>
                   )}
                   {canFullAccess() && (
-                    <>
-                      <button className="btnGhost" onClick={() => setAdminTab("users")}>
-                        👥 Пользователи
-                      </button>
-                      <button className="btnGhost" onClick={async () => { await runCrawl(); alert('Краулинг завершён'); }}>
-                        🚀 Краулинг
-                      </button>
-                    </>
+                    <button className="btnGhost" onClick={async () => { await runCrawl(); alert('Краулинг завершён'); }}>
+                      🚀 Краулинг
+                    </button>
                   )}
                 </div>
               </div>
-
-              {canFullAccess() && adminTab === "users" && (
-                <UsersManagement userRole={userRole} />
-              )}
 
               {canEdit() && adminTab === "sections" && (
                 <div className="cardCream">
@@ -5472,24 +4836,6 @@ export default function App() {
                     <div className="split">
                       <input
                         className="input"
-                        placeholder="Slug (для ContextualFaqLink)"
-                        value={faqForm.slug}
-                        onChange={(e) => setFaqForm({ ...faqForm, slug: e.target.value })}
-                      />
-                      <select
-                        className="input"
-                        value={faqForm.category}
-                        onChange={(e) => setFaqForm({ ...faqForm, category: e.target.value })}
-                      >
-                        <option value="general">General</option>
-                        <option value="calculator">Calculator</option>
-                        <option value="commissions">Commissions</option>
-                        <option value="uzum">Uzum</option>
-                      </select>
-                    </div>
-                    <div className="split">
-                      <input
-                        className="input"
                         type="number"
                         placeholder={t.sort}
                         value={faqForm.sort}
@@ -5531,93 +4877,6 @@ export default function App() {
                         </div>
                       ))
                     )}
-                  </div>
-                </>
-              )}
-
-              {canManage() && adminTab === "microcopy" && (
-                <>
-                  <div className="headerBlock">
-                    <div className="h2">✏️ Микро-тексты</div>
-                    <div className="sub">Управление текстовыми фрагментами UI</div>
-                  </div>
-
-                  <div className="cardCream">
-                    <div style={{ fontWeight: 950, marginBottom: 12 }}>Добавить</div>
-                    <div className="split">
-                      <input
-                        className="input"
-                        placeholder="Key (уникальный ключ)"
-                        value={microcopyForm.key}
-                        onChange={(e) => setMicrocopyForm({ ...microcopyForm, key: e.target.value })}
-                      />
-                      <input
-                        className="input"
-                        placeholder="Context (login, home, uzum...)"
-                        value={microcopyForm.context}
-                        onChange={(e) => setMicrocopyForm({ ...microcopyForm, context: e.target.value })}
-                      />
-                    </div>
-                    <div className="split">
-                      <input
-                        className="input"
-                        placeholder="Текст (RU)"
-                        value={microcopyForm.text_ru}
-                        onChange={(e) => setMicrocopyForm({ ...microcopyForm, text_ru: e.target.value })}
-                      />
-                      <input
-                        className="input"
-                        placeholder="Текст (UZ)"
-                        value={microcopyForm.text_uz}
-                        onChange={(e) => setMicrocopyForm({ ...microcopyForm, text_uz: e.target.value })}
-                      />
-                    </div>
-                    <input
-                      className="input"
-                      placeholder="Описание (для админа)"
-                      value={microcopyForm.description}
-                      onChange={(e) => setMicrocopyForm({ ...microcopyForm, description: e.target.value })}
-                      style={{ marginTop: 10 }}
-                    />
-                    <button className="btnPrimary" onClick={adminSaveMicrocopy} style={{ marginTop: 10, width: "100%" }}>
-                      Сохранить
-                    </button>
-                  </div>
-
-                  <div className="cardCream" style={{ marginTop: 16 }}>
-                    <div style={{ fontWeight: 950, marginBottom: 12 }}>Список</div>
-                    <div className="adminListContainer">
-                      {microcopyList.map((item) => (
-                        <div key={item.id} style={{ 
-                          padding: "12px 16px", 
-                          background: "rgba(111,0,255,.05)", 
-                          borderRadius: "8px",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "12px"
-                        }}>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontWeight: 700, color: "#6F00FF", marginBottom: "4px", fontFamily: "monospace", fontSize: "13px" }}>
-                              {item.key}
-                            </div>
-                            <div style={{ fontSize: "14px", color: "#111", marginBottom: "2px" }}>{item.text_ru}</div>
-                            <div style={{ fontSize: "13px", color: "#666" }}>{item.text_uz}</div>
-                            {item.context && (
-                              <div style={{ fontSize: "11px", color: "#999", marginTop: "4px" }}>
-                                Context: {item.context}
-                              </div>
-                            )}
-                          </div>
-                          <button 
-                            className="btnGhost" 
-                            onClick={() => adminDeleteMicrocopy(item.id)}
-                            style={{ flexShrink: 0, padding: "6px 12px", fontSize: "12px" }}
-                          >
-                            Удалить
-                          </button>
-                        </div>
-                      ))}
-                    </div>
                   </div>
                 </>
               )}
