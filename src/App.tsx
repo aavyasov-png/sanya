@@ -354,6 +354,7 @@ export default function App() {
   const [showUzumPin, setShowUzumPin] = useState(false);
   const [uzumCurrentPage, setUzumCurrentPage] = useState<'dashboard' | 'products' | 'orders' | 'finance'>('dashboard');
   const [uzumDecryptedToken, setUzumDecryptedToken] = useState(""); // Для использования в API запросах
+  const [uzumSelectedShopId, setUzumSelectedShopId] = useState<string | null>(null); // Выбранный магазин
   console.log('Uzum integration ID:', uzumIntegrationId); // используем переменную
 
   // Загрузка истории комиссий при входе пользователя

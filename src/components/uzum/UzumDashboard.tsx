@@ -305,12 +305,16 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
             const amount = (expense.paymentPrice || 0) * (expense.amount || 1);
             const source = expense.source?.toLowerCase() || '';
             
-            if (source.includes('marketing')) {
+            // Более точная категоризация
+            if (source === 'marketing') {
               expensesByCategory.marketing += amount;
             } else if (source.includes('logist')) {
               expensesByCategory.logistics += amount;
-            } else if (source.includes('uzum') || source.includes('market')) {
-              expensesByCategory.fines += amount; // FBS штрафы/комиссии
+            } else if (source.includes('uzum')) {
+              expensesByCategory.fines += amount; // FBS штрафы/комиссии (Uzum Market)
+            } else {
+              // Остальные неизвестные расходы относим к комиссии
+              expensesByCategory.commission += amount;
             }
           });
 
