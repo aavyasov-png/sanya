@@ -134,8 +134,8 @@ export default function UzumOrders({ lang, token, onNavigateBack, onNavigateHome
 
       const shopId = shopsResult.shops[0].id;
 
-      // Затем загружаем заказы (API максимум size=50)
-      const result = await getFbsOrders(token, shopId, { size: 50, page: 0 });
+      // Затем загружаем заказы (без параметров size/page - API вернет все)
+      const result = await getFbsOrders(token, shopId);
       console.log('📋 [Orders] FBS Orders:', result);
       if (result.success && result.orders) {
         const ordersList = Array.isArray(result.orders) ? result.orders : [];
