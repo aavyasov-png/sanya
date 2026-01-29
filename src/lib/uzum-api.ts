@@ -6,10 +6,12 @@
  * Authorization header: <token>
  */
 
-// Используем прокси для dev окружения и прямые запросы для продакшена
-// В продакшене прокси не работает из-за блокировки Uzum API
-const USE_PROXY = import.meta.env.DEV;
-const PROXY_URL = '/api/uzum-proxy';
+// Используем прокси всегда (обязательно из-за CORS)
+// В dev - Vite proxy, в prod - Supabase Edge Function или Cloudflare
+const USE_PROXY = true;
+const PROXY_URL = import.meta.env.DEV 
+  ? '/api/uzum-proxy'  // Vite proxy в разработке
+  : 'https://ykbouygdeqrohizeqlmc.supabase.co/functions/v1/uzum-proxy'; // Supabase Edge Function в продакшене
 
 /**
  * Base API request handler
@@ -28,6 +30,7 @@ async function apiRequest<T>(
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
         },
         body: JSON.stringify({
           path: endpoint,
