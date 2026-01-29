@@ -1,3 +1,0 @@
-# Cloudflare Pages configuration
-name = "vite-react2"
-pages_build_output_dir = "./dist"
