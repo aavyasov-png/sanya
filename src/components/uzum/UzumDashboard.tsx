@@ -90,14 +90,17 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
             }));
           }
 
-          // Load pending orders (NEW статус)
-          const pendingResult = await getFbsOrdersCount(token, shopId, { status: 'NEW' });
-          if (pendingResult.success && pendingResult.count !== undefined) {
-            setStats(prev => ({
-              ...prev,
-              pendingOrders: pendingResult.count || 0,
-            }));
-          }
+          // Load pending orders (CREATED + PACKING + PENDING_DELIVERY статусы)
+          const createdResult = await getFbsOrdersCount(token, shopId, { status: 'CREATED' });
+          const packingResult = await getFbsOrdersCount(token, shopId, { status: 'PACKING' });
+          const pendingResult = await getFbsOrdersCount(token, shopId, { status: 'PENDING_DELIVERY' });
+          
+          const pendingTotal = (createdResult.count || 0) + (packingResult.count || 0) + (pendingResult.count || 0);
+          
+          setStats(prev => ({
+            ...prev,
+            pendingOrders: pendingTotal,
+          }));
         }
       }
     } catch (error) {
