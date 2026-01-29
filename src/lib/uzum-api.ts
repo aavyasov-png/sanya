@@ -26,20 +26,28 @@ async function apiRequest<T>(
 
     if (USE_PROXY) {
       // Используем прокси
+      const proxyBody: any = {
+        path: endpoint,
+        method: options.method || 'GET',
+        headers: {
+          'Authorization': token,
+        },
+      };
+
+      // Добавляем body только если он есть и метод не GET
+      if (options.body && options.method && options.method !== 'GET') {
+        proxyBody.body = typeof options.body === 'string' 
+          ? JSON.parse(options.body) 
+          : options.body;
+      }
+
       response = await fetch(PROXY_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
         },
-        body: JSON.stringify({
-          path: endpoint,
-          method: options.method || 'GET',
-          headers: {
-            'Authorization': token,
-          },
-          body: options.body ? JSON.parse(options.body as string) : undefined,
-        }),
+        body: JSON.stringify(proxyBody),
       });
     } else {
       // Прямой запрос (продакшен - Uzum API разрешает CORS)
