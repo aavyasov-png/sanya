@@ -310,14 +310,17 @@ export default function UzumOrders({ lang, token }: UzumOrdersProps) {
         padding: '16px',
         marginBottom: '16px',
         overflowX: 'auto',
+        overflowY: 'hidden',
         WebkitOverflowScrolling: 'touch',
         boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
         border: '1px solid #e5e7eb',
+        whiteSpace: 'nowrap',
       }}>
         <div style={{
           display: 'flex',
           gap: '8px',
-          minWidth: 'max-content',
+          minWidth: 700,
+          flexWrap: 'nowrap',
         }}>
           {statusOptions.map((option) => {
             const count = getStatusCount(option.value);

@@ -10,7 +10,6 @@ interface UzumShopSelectorProps {
 
 export default function UzumShopSelector({ lang, token, selectedShopId, onShopSelect }: UzumShopSelectorProps) {
   const [shops, setShops] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
 
   useEffect(() => {
@@ -18,7 +17,6 @@ export default function UzumShopSelector({ lang, token, selectedShopId, onShopSe
   }, [token]);
 
   async function loadShops() {
-    setLoading(true);
     try {
       const result = await getShops(token);
       if (result.success && result.shops) {
@@ -30,8 +28,6 @@ export default function UzumShopSelector({ lang, token, selectedShopId, onShopSe
       }
     } catch (error) {
       console.error('Error loading shops:', error);
-    } finally {
-      setLoading(false);
     }
   }
 

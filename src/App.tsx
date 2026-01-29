@@ -5,6 +5,7 @@ import "./App.css";
 import { encryptToken, validatePin, isCryptoAvailable } from "./lib/crypto";
 import { getShops } from "./lib/uzum-api";
 import UzumDashboard from "./components/uzum/UzumDashboard";
+import UzumShopSelector from "./components/uzum/UzumShopSelector";
 import UzumProducts from "./components/uzum/UzumProducts";
 import UzumOrders from "./components/uzum/UzumOrders";
 import UzumFinance from "./components/uzum/UzumFinance";
@@ -2751,7 +2752,16 @@ export default function App() {
                   backgroundColor: 'white',
                   borderBottom: '2px solid #f3f4f6',
                   overflowX: 'auto',
+                  alignItems: 'center',
                 }}>
+                  {/* Shop Selector */}
+                  <UzumShopSelector
+                    lang={lang}
+                    token={uzumDecryptedToken}
+                    selectedShopId={uzumSelectedShopId}
+                    onShopSelect={setUzumSelectedShopId}
+                  />
+                  
                   <button
                     onClick={() => setUzumCurrentPage('dashboard')}
                     style={{
