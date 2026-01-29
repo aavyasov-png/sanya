@@ -4,10 +4,9 @@ import { getShops, getFbsOrders, confirmFbsOrder, cancelFbsOrder } from '../../l
 interface UzumOrdersProps {
   lang: 'ru' | 'uz';
   token: string;
-  onNavigateBack: () => void;
 }
 
-export default function UzumOrders({ lang, token, onNavigateBack }: UzumOrdersProps) {
+export default function UzumOrders({ lang, token }: UzumOrdersProps) {
   const [orders, setOrders] = useState<any[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -304,53 +303,6 @@ export default function UzumOrders({ lang, token, onNavigateBack }: UzumOrdersPr
 
   return (
     <div className="list">
-      {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '12px',
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-        }}>
-          <button
-            onClick={onNavigateBack}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#f3f4f6',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#374151',
-            }}
-          >
-            ← {t.back}
-          </button>
-          <div style={{
-            fontSize: '18px',
-            fontWeight: 700,
-            color: '#111',
-          }}>
-            📦 {t.title}
-          </div>
-        </div>
-        <div style={{
-          padding: '6px 12px',
-          backgroundColor: '#22c55e',
-          color: 'white',
-          borderRadius: '8px',
-          fontWeight: 600,
-          fontSize: '14px',
-        }}>
-          {filteredOrders.length}
-        </div>
-      </div>
-
       {/* Status Filter */}
       <div style={{
         backgroundColor: 'white',

@@ -2843,14 +2843,12 @@ export default function App() {
                     <UzumOrders 
                       lang={lang} 
                       token={uzumDecryptedToken}
-                      onNavigateBack={() => setUzumCurrentPage('dashboard')}
                     />
                   )}
                   {uzumCurrentPage === 'finance' && (
                     <UzumFinance 
                       lang={lang} 
                       token={uzumDecryptedToken}
-                      onNavigateBack={() => setUzumCurrentPage('dashboard')}
                     />
                   )}
                 </div>

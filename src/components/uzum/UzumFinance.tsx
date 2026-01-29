@@ -4,10 +4,9 @@ import { getShops, getFinanceOrders, getFinanceExpenses } from '../../lib/uzum-a
 interface UzumFinanceProps {
   lang: 'ru' | 'uz';
   token: string;
-  onNavigateBack: () => void;
 }
 
-export default function UzumFinance({ lang, token, onNavigateBack }: UzumFinanceProps) {
+export default function UzumFinance({ lang, token }: UzumFinanceProps) {
   const [activeTab, setActiveTab] = useState<'orders' | 'expenses'>('orders');
   const [orders, setOrders] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -94,16 +93,35 @@ export default function UzumFinance({ lang, token, onNavigateBack }: UzumFinance
           setOrders(Array.isArray(result.orders) ? result.orders : []);
         }
       } else {
-        const result = await getFinanceExpenses(token, currentShopId, {
-          size: 100,
-          page: 0,
-          dateFrom: dateFromMs,
-          dateTo: dateToMs,
-        });
-        console.log('💸 [Finance] Expenses:', result);
-        if (result.success && result.expenses) {
-          setExpenses(Array.isArray(result.expenses) ? result.expenses : []);
+        // Загружаем все расходы с пагинацией
+        const allExpenses: any[] = [];
+        let page = 0;
+        let hasMore = true;
+
+        while (hasMore) {
+          const result = await getFinanceExpenses(token, currentShopId, {
+            size: 100,
+            page,
+            dateFrom: dateFromMs,
+            dateTo: dateToMs,
+          });
+          console.log(`💸 [Finance] Expenses page ${page}:`, result);
+          
+          if (result.success && result.expenses && result.expenses.length > 0) {
+            allExpenses.push(...result.expenses);
+            if (result.expenses.length < 100) {
+              hasMore = false;
+            } else {
+              page++;
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+          } else {
+            hasMore = false;
+          }
         }
+        
+        console.log(`💸 [Finance] Total expenses loaded: ${allExpenses.length}`);
+        setExpenses(allExpenses);
       }
     } catch (error) {
       console.error('Finance load error:', error);
@@ -137,43 +155,6 @@ export default function UzumFinance({ lang, token, onNavigateBack }: UzumFinance
 
   return (
     <div className="list">
-      {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '12px',
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-        }}>
-          <button
-            onClick={onNavigateBack}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#f3f4f6',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#374151',
-            }}
-          >
-            ← {t.back}
-          </button>
-          <div style={{
-            fontSize: '18px',
-            fontWeight: 700,
-            color: '#111',
-          }}>
-            💰 {t.title}
-          </div>
-        </div>
-      </div>
-
       {/* Summary Cards */}
       <div style={{
         display: 'grid',
