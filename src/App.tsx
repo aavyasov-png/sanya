@@ -5,6 +5,7 @@ import "./App.css";
 import { encryptToken, validatePin, isCryptoAvailable } from "./lib/crypto";
 import { getShops } from "./lib/uzum-api";
 import UzumDashboard from "./components/uzum/UzumDashboard";
+import UzumShopSelector from "./components/uzum/UzumShopSelector";
 import UzumProducts from "./components/uzum/UzumProducts";
 import UzumOrders from "./components/uzum/UzumOrders";
 import UzumFinance from "./components/uzum/UzumFinance";
@@ -354,6 +355,7 @@ export default function App() {
   const [showUzumPin, setShowUzumPin] = useState(false);
   const [uzumCurrentPage, setUzumCurrentPage] = useState<'dashboard' | 'products' | 'orders' | 'finance'>('dashboard');
   const [uzumDecryptedToken, setUzumDecryptedToken] = useState(""); // Для использования в API запросах
+  const [uzumSelectedShopId, setUzumSelectedShopId] = useState<string | null>(null); // Выбранный магазин
   console.log('Uzum integration ID:', uzumIntegrationId); // используем переменную
 
   // Загрузка истории комиссий при входе пользователя
@@ -2750,7 +2752,16 @@ export default function App() {
                   backgroundColor: 'white',
                   borderBottom: '2px solid #f3f4f6',
                   overflowX: 'auto',
+                  alignItems: 'center',
                 }}>
+                  {/* Shop Selector */}
+                  <UzumShopSelector
+                    lang={lang}
+                    token={uzumDecryptedToken}
+                    selectedShopId={uzumSelectedShopId}
+                    onShopSelect={setUzumSelectedShopId}
+                  />
+                  
                   <button
                     onClick={() => setUzumCurrentPage('dashboard')}
                     style={{

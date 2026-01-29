@@ -19,6 +19,9 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
     profit: 0,
     fboStock: 0,
     fbsStock: 0,
+    percentRevenue: 0,
+    percentProfit: 0,
+    percentExpenses: 0,
   });
   const [financeBreakdown, setFinanceBreakdown] = useState({
     // Расходы
@@ -35,19 +38,28 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
   const [datePeriod, setDatePeriod] = useState<7 | 10 | 30>(7);
 
   // Вычисляем диапазон дат на основе выбранного периода
-  function getDateRange() {
-    const end = new Date();
-    const start = new Date();
+
+  // Получить текущий и предыдущий периоды
+  function getPeriods() {
+    const now = new Date();
+    const end = new Date(now);
+    const start = new Date(now);
     start.setDate(end.getDate() - datePeriod);
-    start.setHours(0, 0, 0, 0); // начало дня
-    end.setHours(23, 59, 59, 999); // конец дня
+    start.setHours(0, 0, 0, 0);
+    end.setHours(23, 59, 59, 999);
+
+    const prevEnd = new Date(start.getTime() - 1);
+    const prevStart = new Date(prevEnd);
+    prevStart.setDate(prevEnd.getDate() - datePeriod + 1);
+    prevStart.setHours(0, 0, 0, 0);
+
     return {
-      startMs: start.getTime(),
-      endMs: end.getTime()
+      current: { startMs: start.getTime(), endMs: end.getTime() },
+      prev: { startMs: prevStart.getTime(), endMs: prevEnd.getTime() },
     };
   }
 
-  const dateRange = getDateRange();
+  const periods = getPeriods();
 
   const T = {
     ru: {
@@ -167,6 +179,10 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
               chunk.map(status => getFbsOrdersCount(token, shopId, { status }))
             );
             totalOrders += results.reduce((sum, r) => sum + (r.count || 0), 0);
+            // Добавляем задержку между чанками
+            if (i + 3 < statuses.length) {
+              await new Promise(resolve => setTimeout(resolve, 400));
+            }
           }
           
           console.log('📋 Total orders count:', totalOrders);
@@ -200,167 +216,149 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
     }
   }
 
+
   async function loadFinanceData() {
     try {
       const shopsResult = await getShops(token);
       if (!shopsResult.success || !shopsResult.shops || shopsResult.shops.length === 0) {
         return;
       }
-
       const shopId = shopsResult.shops[0].id;
-
-      // Load finance data - orders and expenses
-      console.log('📊 Loading finance data for period:', datePeriod, 'days');
-
-      // Load finance orders (revenue) - load ALL orders
+      // Загрузим все заказы и расходы за 2 периода (current + prev)
       let allFinanceOrders: any[] = [];
-          let page = 0;
-          let hasMore = true;
+      let allExpenses: any[] = [];
+      // Заказы
+      let page = 0, hasMore = true;
+      while (hasMore) {
+        const financeResult = await getFinanceOrders(token, shopId, { size: 100, page });
+        if (financeResult.success && financeResult.orders && financeResult.orders.length > 0) {
+          allFinanceOrders.push(...financeResult.orders);
+          if (financeResult.orders.length < 100) hasMore = false;
+          else { page++; await new Promise(r=>setTimeout(r,400)); }
+        } else { hasMore = false; }
+      }
+      // Расходы
+      page = 0; hasMore = true;
+      while (hasMore) {
+        const expensesResult = await getFinanceExpenses(token, shopId, { size: 100, page });
+        if (expensesResult.success && expensesResult.expenses && expensesResult.expenses.length > 0) {
+          allExpenses.push(...expensesResult.expenses);
+          if (expensesResult.expenses.length < 100) hasMore = false;
+          else { page++; await new Promise(r=>setTimeout(r,400)); }
+        } else { hasMore = false; }
+      }
 
-          while (hasMore) {
-            const financeResult = await getFinanceOrders(token, shopId, {
-              size: 100,
-              page,
-            });
-            
-            if (financeResult.success && financeResult.orders && financeResult.orders.length > 0) {
-              allFinanceOrders.push(...financeResult.orders);
-              if (financeResult.orders.length < 100) {
-                hasMore = false;
-              } else {
-                page++;
-                // No delay - API handles it fine
-              }
-            } else {
-              hasMore = false;
-            }
-          }
+      // Фильтрация по периодам
+      function filterOrdersByPeriod(orders: any[], period: {startMs: number, endMs: number}) {
+        return orders.filter(order => {
+          const orderDate = order.date || order.createdAt || 0;
+          return orderDate >= period.startMs && orderDate <= period.endMs;
+        });
+      }
+      function filterExpensesByPeriod(expenses: any[], period: {startMs: number, endMs: number}) {
+        return expenses.filter(expense => {
+          const expenseDate = expense.dateCreated || expense.createdAt || 0;
+          return expenseDate >= period.startMs && expenseDate <= period.endMs;
+        });
+      }
 
-          console.log('💰 Finance orders loaded:', allFinanceOrders.length);
+      // Текущий и предыдущий периоды
+      const currentOrders = filterOrdersByPeriod(allFinanceOrders, periods.current);
+      const prevOrders = filterOrdersByPeriod(allFinanceOrders, periods.prev);
+      const currentExpenses = filterExpensesByPeriod(allExpenses, periods.current);
+      const prevExpenses = filterExpensesByPeriod(allExpenses, periods.prev);
 
-          // Filter by date range manually
-          const filteredOrders = allFinanceOrders.filter(order => {
-            const orderDate = order.date || order.createdAt || 0;
-            return orderDate >= dateRange.startMs && orderDate <= dateRange.endMs;
-          });
+      // filteredOrders и dateRange для breakdown (правильный период)
+      const filteredOrders = currentOrders;
+      const dateRange = periods.current;
 
-          console.log(`💰 Filtered orders for period (${datePeriod} days): ${filteredOrders.length}`);
+      // Выручка и прибыль (только не отменённые)
+      function calcRevenue(orders: any[]) {
+        return orders.reduce((sum, order) => {
+          if (order.status === 'CANCELED' || order.cancelled) return sum;
+          return sum + ((order.sellPrice || 0) * (order.amount || 1));
+        }, 0);
+      }
+      function calcProfit(orders: any[]) {
+        return orders.reduce((sum, order) => {
+          if (order.status === 'CANCELED' || order.cancelled) return sum;
+          return sum + ((order.sellerProfit || 0) * (order.amount || 1));
+        }, 0);
+      }
+      function calcExpenses(expenses: any[]) {
+        return expenses.reduce((sum, expense) => sum + ((expense.paymentPrice || 0) * (expense.amount || 1)), 0);
+      }
 
-          // Calculate revenue (sum of sellPrice * amount for non-canceled orders)
-          const revenue = filteredOrders.reduce((sum, order) => {
-            // Skip canceled orders
-            if (order.status === 'CANCELED' || order.cancelled) return sum;
-            return sum + ((order.sellPrice || 0) * (order.amount || 1));
-          }, 0);
+      const revenue = calcRevenue(currentOrders);
+      const prevRevenue = calcRevenue(prevOrders);
+      const totalProfit = calcProfit(currentOrders);
+      const prevProfit = calcProfit(prevOrders);
+      const totalExpenses = calcExpenses(currentExpenses);
+      const prevTotalExpenses = calcExpenses(prevExpenses);
 
-          // Calculate profit (sellerProfit)
-          const totalProfit = filteredOrders.reduce((sum, order) => {
-            if (order.status === 'CANCELED' || order.cancelled) return sum;
-            return sum + ((order.sellerProfit || 0) * (order.amount || 1));
-          }, 0);
+      // Проценты
+      function calcPercent(curr: number, prev: number) {
+        if (prev === 0) return curr === 0 ? 0 : 100;
+        return Math.round(((curr - prev) / Math.abs(prev)) * 100);
+      }
+      const percentRevenue = calcPercent(revenue, prevRevenue);
+      const percentProfit = calcPercent(totalProfit, prevProfit);
+      const percentExpenses = calcPercent(totalExpenses, prevTotalExpenses);
 
-          // Load expenses
-          let allExpenses: any[] = [];
-          page = 0;
-          hasMore = true;
+      // ...оставить breakdown и setStats как есть...
+      setStats(prev => ({
+        ...prev,
+        revenue,
+        toPay: revenue,
+        profit: totalProfit,
+        percentRevenue,
+        percentProfit,
+        percentExpenses,
+      }));
 
-          while (hasMore) {
-            const expensesResult = await getFinanceExpenses(token, shopId, {
-              size: 100,
-              page,
-            });
+      // ...breakdown и прочее не меняется...
 
-            if (expensesResult.success && expensesResult.expenses && expensesResult.expenses.length > 0) {
-              allExpenses.push(...expensesResult.expenses);
-              if (expensesResult.expenses.length < 100) {
-                hasMore = false;
-              } else {
-                page++;
-                // No delay needed
-              }
-            } else {
-              hasMore = false;
-            }
-          }
+      // Calculate expenses by category
+      const expensesByCategory = {
+        marketing: 0,
+        commission: 0,
+        logistics: 0,
+        fines: 0,
+      };
 
-          console.log('💸 Expenses loaded:', allExpenses.length);
+      const filteredExpenses = filterExpensesByPeriod(allExpenses, dateRange);
 
-          // Filter expenses by date range
-          const filteredExpenses = allExpenses.filter(expense => {
-            const expenseDate = expense.dateCreated || expense.createdAt || 0;
-            return expenseDate >= dateRange.startMs && expenseDate <= dateRange.endMs;
-          });
+      filteredExpenses.forEach(expense => {
+        const amount = (expense.paymentPrice || 0) * (expense.amount || 1);
+        const source = expense.source?.toLowerCase() || '';
+        if (source === 'marketing') {
+          expensesByCategory.marketing += amount;
+        } else if (source.includes('logist')) {
+          expensesByCategory.logistics += amount;
+        } else if (source.includes('uzum')) {
+          expensesByCategory.fines += amount;
+        } else {
+          expensesByCategory.commission += amount;
+        }
+      });
 
-          console.log(`💸 Filtered expenses for period (${datePeriod} days): ${filteredExpenses.length}`);
+      // Calculate income breakdown from orders (commission + logistics charged in orders)
+      const incomeBreakdown = {
+        totalCommission: 0,
+        totalLogistics: 0,
+      };
 
-          // Calculate expenses by category
-          const expensesByCategory = {
-            marketing: 0,
-            commission: 0,
-            logistics: 0,
-            fines: 0,
-          };
+      filteredOrders.forEach((order: any) => {
+        if (order.status !== 'CANCELED' && !order.cancelled) {
+          incomeBreakdown.totalCommission += (order.commission || 0) * (order.amount || 1);
+          incomeBreakdown.totalLogistics += (order.logisticDeliveryFee || 0) * (order.amount || 1);
+        }
+      });
 
-          filteredExpenses.forEach(expense => {
-            const amount = (expense.paymentPrice || 0) * (expense.amount || 1);
-            const source = expense.source?.toLowerCase() || '';
-            
-            if (source.includes('marketing')) {
-              expensesByCategory.marketing += amount;
-            } else if (source.includes('logist')) {
-              expensesByCategory.logistics += amount;
-            } else if (source.includes('uzum') || source.includes('market')) {
-              expensesByCategory.fines += amount; // FBS штрафы/комиссии
-            }
-          });
-
-          // Calculate total expenses
-          const totalExpenses = filteredExpenses.reduce((sum, expense) => {
-            return sum + ((expense.paymentPrice || 0) * (expense.amount || 1));
-          }, 0);
-
-          // Calculate income breakdown from orders (commission + logistics charged in orders)
-          const incomeBreakdown = {
-            totalCommission: 0,
-            totalLogistics: 0,
-          };
-
-          filteredOrders.forEach(order => {
-            if (order.status !== 'CANCELED' && !order.cancelled) {
-              incomeBreakdown.totalCommission += (order.commission || 0) * (order.amount || 1);
-              incomeBreakdown.totalLogistics += (order.logisticDeliveryFee || 0) * (order.amount || 1);
-            }
-          });
-
-          // Update stats with finance data
-          setStats(prev => ({
-            ...prev,
-            revenue,
-            toPay: revenue, // К выплате = выручка (упрощенно)
-            profit: totalProfit,
-          }));
-
-          // Update finance breakdown
-          setFinanceBreakdown({
-            ...expensesByCategory,
-            ...incomeBreakdown,
-          });
-
-          console.log('📊 Finance summary:', { 
-            period: `Last ${datePeriod} days`,
-            dateRangeMs: { start: dateRange.startMs, end: dateRange.endMs },
-            revenue, 
-            totalExpenses, 
-            profit: totalProfit,
-            ordersInPeriod: filteredOrders.length,
-            expensesInPeriod: filteredExpenses.length,
-            breakdown: {
-              expenses: expensesByCategory,
-              income: incomeBreakdown,
-            },
-            sampleOrderDate: filteredOrders[0]?.date || 'no orders',
-            sampleExpenseDate: filteredExpenses[0]?.dateCreated || 'no expenses'
-          });
+      setFinanceBreakdown({
+        ...expensesByCategory,
+        ...incomeBreakdown,
+      });
     } catch (error) {
       console.error('Finance load error:', error);
     }
@@ -386,6 +384,13 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(num);
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '16px', fontWeight: 600, color: stats.percentRevenue > 0 ? '#22c55e' : stats.percentRevenue < 0 ? '#ef4444' : '#666', display: 'flex', alignItems: 'center' }}>
+                    {stats.percentRevenue > 0 && <span style={{marginRight:2}}>▲</span>}
+                    {stats.percentRevenue < 0 && <span style={{marginRight:2}}>▼</span>}
+                    {Math.abs(stats.percentRevenue)}% 
+                  </span>
+                </div>
   };
 
   return (
@@ -572,6 +577,13 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
                 }}>
                   {formatNumber(stats.profit)}
                 </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '16px', fontWeight: 600, color: stats.percentProfit > 0 ? '#22c55e' : stats.percentProfit < 0 ? '#ef4444' : '#666', display: 'flex', alignItems: 'center' }}>
+                      {stats.percentProfit > 0 && <span style={{marginRight:2}}>▲</span>}
+                      {stats.percentProfit < 0 && <span style={{marginRight:2}}>▼</span>}
+                      {Math.abs(stats.percentProfit)}% 
+                    </span>
+                  </div>
               </div>
             </div>
           </div>
@@ -684,7 +696,7 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
               {t.expenses}
             </h2>
             <div style={{ fontSize: '13px', color: '#666', marginBottom: '20px' }}>
-              {t.dateRange} {new Date(dateRange.startMs).toLocaleDateString('ru-RU')} по {new Date(dateRange.endMs).toLocaleDateString('ru-RU')}
+              {t.dateRange} {new Date(periods.current.startMs).toLocaleDateString('ru-RU')} по {new Date(periods.current.endMs).toLocaleDateString('ru-RU')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {[
@@ -752,7 +764,7 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
               {t.income}
             </h2>
             <div style={{ fontSize: '13px', color: '#666', marginBottom: '20px' }}>
-              {t.dateRange} {new Date(dateRange.startMs).toLocaleDateString('ru-RU')} по {new Date(dateRange.endMs).toLocaleDateString('ru-RU')}
+              {t.dateRange} {new Date(periods.current.startMs).toLocaleDateString('ru-RU')} по {new Date(periods.current.endMs).toLocaleDateString('ru-RU')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {[
