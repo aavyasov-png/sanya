@@ -17,7 +17,23 @@ serve(async (req) => {
 
   try {
     // Parse request body
-    const { path, method = 'GET', headers = {}, body } = await req.json();
+    let requestData;
+    try {
+      const text = await req.text();
+      console.log('[Uzum Proxy] Raw request body:', text);
+      requestData = JSON.parse(text);
+    } catch (e) {
+      console.error('[Uzum Proxy] JSON parse error:', e.message);
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body', details: e.message }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    const { path, method = 'GET', headers = {}, body } = requestData;
 
     if (!path) {
       return new Response(
