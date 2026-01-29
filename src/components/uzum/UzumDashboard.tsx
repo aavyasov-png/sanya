@@ -9,44 +9,80 @@ interface UzumDashboardProps {
 }
 
 export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack }: UzumDashboardProps) {
-  const [shops, setShops] = useState<any[]>([]);
   const [stats, setStats] = useState({
     totalProducts: 0,
     activeOrders: 0,
     pendingOrders: 0,
+    revenue: 0,
+    toPay: 0,
+    profit: 0,
+    fboStock: 0,
+    fbsStock: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [dateRange] = useState({
+    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    end: new Date().toISOString().split('T')[0]
+  });
 
   const T = {
     ru: {
-      title: 'Панель управления',
+      title: 'Главная страница',
       back: 'Назад',
       loading: 'Загрузка...',
-      shops: 'Мои магазины',
+      financialData: 'Финансовые данные',
+      dateRange: 'На дату',
+      revenue: 'Выручка',
+      toPay: 'К выплате',
+      netProfit: 'Чистая прибыль',
+      warehouse: 'Товары на складе',
+      fboQty: 'Кол-во FBO',
+      fboCost: 'Себес. FBO',
+      fbsQty: 'Кол-во FBS',
+      fbsCost: 'Себес. FBS',
+      recentOrders: 'Последние заказы',
+      pending: 'в ожидании',
+      delivered: 'доставлено',
+      canceled: 'отменено',
+      expenses: 'Расходы',
+      income: 'Доходы',
+      marketing: 'Маркетинг',
+      commission: 'Комиссия',
+      logistics: 'Логистика',
+      fines: 'Штраф FBS',
       products: 'Товары',
       orders: 'Заказы',
       finance: 'Финансы',
-      totalProducts: 'Всего товаров',
-      activeOrders: 'Активные',
-      pendingOrders: 'Ожидают',
       viewAll: 'Смотреть все',
-      shop: 'Магазин',
-      error: 'Ошибка загрузки данных',
     },
     uz: {
-      title: 'Boshqaruv paneli',
+      title: 'Bosh sahifa',
       back: 'Orqaga',
       loading: 'Yuklanmoqda...',
-      shops: 'Mening dokonlarim',
+      financialData: 'Moliyaviy malumotlar',
+      dateRange: 'Sanadan',
+      revenue: 'Daromad',
+      toPay: 'Tolanishi kerak',
+      netProfit: 'Sof foyda',
+      warehouse: 'Ombordagi mahsulotlar',
+      fboQty: 'FBO soni',
+      fboCost: 'FBO tannarxi',
+      fbsQty: 'FBS soni',
+      fbsCost: 'FBS tannarxi',
+      recentOrders: 'Oxirgi buyurtmalar',
+      pending: 'kutilmoqda',
+      delivered: 'yetkazildi',
+      canceled: 'bekor qilindi',
+      expenses: 'Xarajatlar',
+      income: 'Daromad',
+      marketing: 'Marketing',
+      commission: 'Komissiya',
+      logistics: 'Logistika',
+      fines: 'FBS jarima',
       products: 'Mahsulotlar',
       orders: 'Buyurtmalar',
       finance: 'Moliya',
-      totalProducts: 'Jami mahsulotlar',
-      activeOrders: 'Faol',
-      pendingOrders: 'Kutilmoqda',
       viewAll: 'Barchasini korish',
-      shop: 'Dokon',
-      error: 'Malumotlarni yuklashda xatolik',
     },
   };
 
@@ -63,8 +99,6 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
       const shopsResult = await getShops(token);
       console.log('🏪 Shops result:', shopsResult);
       if (shopsResult.success && shopsResult.shops) {
-        setShops(shopsResult.shops);
-
         // Load products and orders for first shop
         if (shopsResult.shops.length > 0) {
           const shopId = shopsResult.shops[0].id;
@@ -135,115 +169,341 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
     );
   }
 
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat('ru-RU', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(num);
+  };
+
   return (
     <div className="list">
-      {/* Header with navigation */}
+      {/* Header */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '12px',
-        marginBottom: '20px',
+        justifyContent: 'space-between',
+        marginBottom: '24px',
       }}>
-        <button
-          onClick={onNavigateBack}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#f3f4f6',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '600',
-            color: '#374151',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
-        >
-          ← {t.back}
-        </button>
-        <div style={{
-          fontSize: '20px',
-          fontWeight: 700,
-          color: '#111',
-        }}>
-          🏪 {t.title}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            onClick={onNavigateBack}
+            className="split"
+          >
+            ← {t.back}
+          </button>
+          <h1 style={{
+            fontSize: '24px',
+            fontWeight: 700,
+            color: '#111',
+            margin: 0,
+          }}>
+            {t.title}
+          </h1>
         </div>
       </div>
 
-      {/* Shops Section */}
-      {shops.length > 0 && (
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{
-            fontSize: '18px',
-            fontWeight: 700,
-            marginBottom: '12px',
-            color: '#111',
-          }}>
-            {t.shops}
-          </div>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: '12px',
-          }}>
-            {shops.map((shop: any) => (
-              <div
-                key={shop.id}
-                className="cardCream"
-                style={{
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
-              >
-                <div style={{
-                  fontSize: '32px',
-                  marginBottom: '12px',
-                  textAlign: 'center',
-                }}>
-                  🏪
-                </div>
-                <div style={{
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  marginBottom: '6px',
-                  textAlign: 'center',
-                  color: '#111',
-                }}>
-                  {shop.name}
-                </div>
-                <div style={{
-                  color: '#666',
-                  fontSize: '13px',
-                  textAlign: 'center',
-                }}>
-                  ID: {shop.id}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Stats Grid */}
+      {/* Main Grid */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-        gap: '12px',
+        gridTemplateColumns: '1fr 400px',
+        gap: '20px',
+        marginBottom: '20px',
       }}>
-        {/* Products Card */}
-        <div
+        {/* Left Column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Financial Data */}
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            padding: '24px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '20px',
+            }}>
+              <h2 style={{
+                fontSize: '18px',
+                fontWeight: 700,
+                color: '#111',
+                margin: 0,
+              }}>
+                {t.financialData}
+              </h2>
+              <div style={{
+                fontSize: '13px',
+                color: '#666',
+              }}>
+                {t.dateRange}: {dateRange.start} — {dateRange.end}
+              </div>
+            </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '24px',
+            }}>
+              <div>
+                <div style={{
+                  fontSize: '13px',
+                  color: '#666',
+                  marginBottom: '8px',
+                }}>
+                  {t.revenue}
+                </div>
+                <div style={{
+                  fontSize: '28px',
+                  fontWeight: 700,
+                  color: '#111',
+                }}>
+                  {formatNumber(stats.revenue)}
+                </div>
+              </div>
+              <div>
+                <div style={{
+                  fontSize: '13px',
+                  color: '#666',
+                  marginBottom: '8px',
+                }}>
+                  {t.toPay}
+                </div>
+                <div style={{
+                  fontSize: '28px',
+                  fontWeight: 700,
+                  color: '#22c55e',
+                }}>
+                  {formatNumber(stats.toPay)}
+                </div>
+              </div>
+              <div>
+                <div style={{
+                  fontSize: '13px',
+                  color: '#666',
+                  marginBottom: '8px',
+                }}>
+                  {t.netProfit}
+                </div>
+                <div style={{
+                  fontSize: '28px',
+                  fontWeight: 700,
+                  color: stats.profit < 0 ? '#ef4444' : '#22c55e',
+                }}>
+                  {formatNumber(stats.profit)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Warehouse */}
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            padding: '24px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          }}>
+            <h2 style={{
+              fontSize: '18px',
+              fontWeight: 700,
+              color: '#111',
+              marginBottom: '20px',
+            }}>
+              {t.warehouse}
+            </h2>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '20px',
+            }}>
+              <div>
+                <div style={{ fontSize: '13px', color: '#666', marginBottom: '8px' }}>
+                  {t.fboQty}
+                </div>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: '#111' }}>
+                  {stats.fboStock}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '13px', color: '#666', marginBottom: '8px' }}>
+                  {t.fboCost}
+                </div>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: '#111' }}>
+                  0
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '13px', color: '#666', marginBottom: '8px' }}>
+                  {t.fbsQty}
+                </div>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: '#111' }}>
+                  {stats.fbsStock}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '13px', color: '#666', marginBottom: '8px' }}>
+                  {t.fbsCost}
+                </div>
+                <div style={{ fontSize: '24px', fontWeight: 700, color: '#111' }}>
+                  0
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Orders */}
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            padding: '24px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          }}>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '16px',
+            }}>
+              <h2 style={{
+                fontSize: '18px',
+                fontWeight: 700,
+                color: '#111',
+                margin: 0,
+              }}>
+                {t.recentOrders}
+              </h2>
+              <div style={{ fontSize: '13px', color: '#666' }}>
+                {stats.pendingOrders} {t.pending}, 0 {t.delivered}, 0 {t.canceled}
+              </div>
+            </div>
+            <button
+              onClick={() => onNavigate('orders')}
+              className="btnPrimary"
+              style={{ width: '100%' }}
+            >
+              {t.viewAll} →
+            </button>
+          </div>
+        </div>
+
+        {/* Right Column - Expenses & Income */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Expenses */}
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            padding: '24px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          }}>
+            <h2 style={{
+              fontSize: '18px',
+              fontWeight: 700,
+              color: '#111',
+              marginBottom: '8px',
+            }}>
+              {t.expenses}
+            </h2>
+            <div style={{ fontSize: '13px', color: '#666', marginBottom: '20px' }}>
+              {t.dateRange} {dateRange.start} по {dateRange.end}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {[
+                { icon: '📱', label: t.marketing, value: 0, color: '#8b5cf6' },
+                { icon: '💵', label: t.commission, value: 0, color: '#3b82f6' },
+                { icon: '🚚', label: t.logistics, value: 0, color: '#f43f5e' },
+                { icon: '⚠️', label: t.fines, value: 0, color: '#f59e0b' },
+              ].map((item, i) => (
+                <div key={i}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    marginBottom: '8px',
+                  }}>
+                    <span style={{ fontSize: '20px' }}>{item.icon}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>
+                        {item.label}
+                      </div>
+                      <div style={{ fontSize: '20px', fontWeight: 700, color: '#111' }}>
+                        {formatNumber(item.value)}
+                      </div>
+                    </div>
+                    <div style={{
+                      fontSize: '14px',
+                      color: '#666',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}>
+                      100% <span style={{ color: '#ef4444' }}>↑</span>
+                    </div>
+                  </div>
+                  <div style={{
+                    height: '4px',
+                    backgroundColor: '#f3f4f6',
+                    borderRadius: '2px',
+                    overflow: 'hidden',
+                  }}>
+                    <div style={{
+                      height: '100%',
+                      width: '100%',
+                      backgroundColor: item.color,
+                    }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Income */}
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            padding: '24px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          }}>
+            <h2 style={{
+              fontSize: '18px',
+              fontWeight: 700,
+              color: '#111',
+              marginBottom: '8px',
+            }}>
+              {t.income}
+            </h2>
+            <div style={{ fontSize: '13px', color: '#666', marginBottom: '20px' }}>
+              {t.dateRange} {dateRange.start} по {dateRange.end}
+            </div>
+            <div style={{
+              textAlign: 'center',
+              padding: '40px',
+              color: '#9ca3af',
+            }}>
+              Нет данных
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: '16px',
+      }}>
+        <button
           onClick={() => onNavigate('products')}
           className="cardCream"
           style={{
             cursor: 'pointer',
-            transition: 'all 0.2s',
             textAlign: 'center',
+            padding: '24px',
+            border: 'none',
           }}
         >
           <div style={{ fontSize: '32px', marginBottom: '12px' }}>📦</div>
           <div style={{
-            fontSize: '28px',
+            fontSize: '24px',
             fontWeight: 700,
             color: '#7c3aed',
             marginBottom: '8px',
@@ -253,32 +513,24 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
           <div style={{
             fontSize: '14px',
             color: '#666',
-            marginBottom: '8px',
           }}>
-            {t.totalProducts}
+            {t.products}
           </div>
-          <div style={{
-            fontSize: '13px',
-            color: '#7c3aed',
-            fontWeight: 600,
-          }}>
-            {t.viewAll} →
-          </div>
-        </div>
+        </button>
 
-        {/* Orders Card */}
-        <div
+        <button
           onClick={() => onNavigate('orders')}
           className="cardCream"
           style={{
             cursor: 'pointer',
-            transition: 'all 0.2s',
             textAlign: 'center',
+            padding: '24px',
+            border: 'none',
           }}
         >
           <div style={{ fontSize: '32px', marginBottom: '12px' }}>📋</div>
           <div style={{
-            fontSize: '28px',
+            fontSize: '24px',
             fontWeight: 700,
             color: '#22c55e',
             marginBottom: '8px',
@@ -288,53 +540,37 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
           <div style={{
             fontSize: '14px',
             color: '#666',
-            marginBottom: '8px',
           }}>
-            {t.activeOrders}
+            {t.orders}
           </div>
-          <div style={{
-            fontSize: '13px',
-            color: '#22c55e',
-            fontWeight: 600,
-          }}>
-            {t.viewAll} →
-          </div>
-        </div>
+        </button>
 
-        {/* Finance Card */}
-        <div
+        <button
           onClick={() => onNavigate('finance')}
           className="cardCream"
           style={{
             cursor: 'pointer',
-            transition: 'all 0.2s',
             textAlign: 'center',
+            padding: '24px',
+            border: 'none',
           }}
         >
           <div style={{ fontSize: '32px', marginBottom: '12px' }}>💰</div>
           <div style={{
-            fontSize: '28px',
+            fontSize: '24px',
             fontWeight: 700,
             color: '#f59e0b',
             marginBottom: '8px',
           }}>
-            {stats.pendingOrders}
+            {formatNumber(stats.toPay)}
           </div>
           <div style={{
             fontSize: '14px',
             color: '#666',
-            marginBottom: '8px',
           }}>
-            {t.pendingOrders}
+            {t.finance}
           </div>
-          <div style={{
-            fontSize: '13px',
-            color: '#f59e0b',
-            fontWeight: 600,
-          }}>
-            {t.viewAll} →
-          </div>
-        </div>
+        </button>
       </div>
     </div>
   );
