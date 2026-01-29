@@ -2844,7 +2844,6 @@ export default function App() {
                       lang={lang} 
                       token={uzumDecryptedToken}
                       onNavigateBack={() => setUzumCurrentPage('dashboard')}
-                      onNavigateHome={() => setRoute({ name: 'home' })}
                     />
                   )}
                   {uzumCurrentPage === 'finance' && (
@@ -2852,7 +2851,6 @@ export default function App() {
                       lang={lang} 
                       token={uzumDecryptedToken}
                       onNavigateBack={() => setUzumCurrentPage('dashboard')}
-                      onNavigateHome={() => setRoute({ name: 'home' })}
                     />
                   )}
                 </div>

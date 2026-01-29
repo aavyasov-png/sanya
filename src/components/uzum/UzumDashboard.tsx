@@ -228,7 +228,7 @@ export default function UzumDashboard({ lang, token, onNavigate, onNavigateBack 
       {/* Main Grid */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 400px',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
         gap: '20px',
         marginBottom: '20px',
       }}>

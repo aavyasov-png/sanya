@@ -5,10 +5,9 @@ interface UzumFinanceProps {
   lang: 'ru' | 'uz';
   token: string;
   onNavigateBack: () => void;
-  onNavigateHome: () => void;
 }
 
-export default function UzumFinance({ lang, token, onNavigateBack, onNavigateHome }: UzumFinanceProps) {
+export default function UzumFinance({ lang, token, onNavigateBack }: UzumFinanceProps) {
   const [activeTab, setActiveTab] = useState<'orders' | 'expenses'>('orders');
   const [orders, setOrders] = useState<any[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
@@ -164,21 +163,6 @@ export default function UzumFinance({ lang, token, onNavigateBack, onNavigateHom
             }}
           >
             ← {t.back}
-          </button>
-          <button
-            onClick={onNavigateHome}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#f3f4f6',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#374151',
-            }}
-          >
-            🏠
           </button>
           <div style={{
             fontSize: '18px',

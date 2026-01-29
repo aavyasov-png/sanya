@@ -576,8 +576,7 @@ export async function getFinanceExpenses(
   error?: string;
 }> {
   const queryParams = new URLSearchParams();
-  // API требует оба параметра
-  queryParams.append('shopId', String(shopId));
+  // API требует shopIds параметр
   queryParams.append('shopIds', String(shopId));
   queryParams.append('size', String(params?.size || 20));
   queryParams.append('page', String(params?.page || 0));
@@ -597,9 +596,21 @@ export async function getFinanceExpenses(
 
   console.log('💸 Raw finance expenses API response:', result.data);
 
-  // API возвращает массив или объект с полями
-  const expenses = Array.isArray(result.data) ? result.data : (result.data?.expenses || []);
-  const total = result.data?.totalElements || expenses.length;
+  // API возвращает {payload: {payments: [...]}}
+  let expenses: any[] = [];
+  let total = 0;
+
+  if (result.data?.payload?.payments) {
+    expenses = result.data.payload.payments;
+    total = result.data.payload.totalElements || expenses.length;
+  } else if (Array.isArray(result.data)) {
+    expenses = result.data;
+    total = expenses.length;
+  } else if (result.data?.expenses) {
+    expenses = result.data.expenses;
+    total = result.data.totalElements || expenses.length;
+  }
+
   return { success: true, expenses, total };
 }
 

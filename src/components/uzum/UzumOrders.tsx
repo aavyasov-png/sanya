@@ -5,10 +5,9 @@ interface UzumOrdersProps {
   lang: 'ru' | 'uz';
   token: string;
   onNavigateBack: () => void;
-  onNavigateHome: () => void;
 }
 
-export default function UzumOrders({ lang, token, onNavigateBack, onNavigateHome }: UzumOrdersProps) {
+export default function UzumOrders({ lang, token, onNavigateBack }: UzumOrdersProps) {
   const [orders, setOrders] = useState<any[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -331,21 +330,6 @@ export default function UzumOrders({ lang, token, onNavigateBack, onNavigateHome
             }}
           >
             ← {t.back}
-          </button>
-          <button
-            onClick={onNavigateHome}
-            style={{
-              padding: '8px 16px',
-              backgroundColor: '#f3f4f6',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-              color: '#374151',
-            }}
-          >
-            🏠
           </button>
           <div style={{
             fontSize: '18px',
