@@ -46,6 +46,7 @@ serve(async (req) => {
     }
 
     console.log(`[Uzum Proxy] ${method} ${uzumApiUrl}`);
+    console.log('[Uzum Proxy] Headers:', JSON.stringify(requestOptions.headers));
 
     const response = await fetch(uzumApiUrl, requestOptions);
     const data = await response.text();
