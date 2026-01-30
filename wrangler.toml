@@ -1,14 +1,19 @@
-# This project uses Cloudflare Pages
-# Deploy via Cloudflare Dashboard or CLI: wrangler pages deploy dist
+# Cloudflare Pages Configuration
+# This project is a static SPA (Single Page Application)
 
 name = "sanya"
 compatibility_date = "2026-01-30"
 
-# Static assets directory (built by Vite)
-[assets]
-directory = "./dist"
+# For Cloudflare Pages, we don't use [assets] in wrangler.toml
+# Instead, configure in Cloudflare Dashboard:
+# Build command: npm run build
+# Build output directory: dist
+# Deploy command: wrangler pages deploy dist
 
-# Environment variables will be set in Cloudflare dashboard:
+# Or deploy manually via CLI:
+# npm run cf:deploy
+
+# Environment variables should be set in Cloudflare Pages Dashboard:
 # - VITE_SUPABASE_URL
 # - VITE_SUPABASE_ANON_KEY
 # - VITE_TELEGRAM_BOT_TOKEN

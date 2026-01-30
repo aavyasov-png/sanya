@@ -1,14 +1,32 @@
 # Деплой на Cloudflare Pages
 
+## ⚠️ ВАЖНО: Настройка Deploy Command
+
+Cloudflare Pages по умолчанию использует команду `wrangler deploy`, что **неправильно** для статических сайтов.
+
+### Исправление в Cloudflare Dashboard:
+
+1. Зайдите в **Settings** → **Builds & deployments**
+2. В разделе **Build configurations** измените:
+   - **Build command**: `npm run build` ✅
+   - **Build output directory**: `dist` ✅
+   - **Deploy command**: **Оставьте пустым или удалите** ❌
+
+Cloudflare Pages автоматически развернет содержимое `dist/` без дополнительных команд.
+
+---
+
 ## Способ 1: Через Cloudflare Dashboard (Рекомендуется)
 
 1. Зайдите на https://dash.cloudflare.com/
 2. Выберите **Pages** → **Create a project**
 3. Подключите GitHub репозиторий: `aavyasov-png/sanya`
 4. Настройте сборку:
+   - **Framework preset**: `Vite`
    - **Build command**: `npm run build`
    - **Build output directory**: `dist`
    - **Root directory**: `/`
+   - **Deploy command**: _(оставьте пустым)_
 
 5. Добавьте переменные окружения в Settings → Environment variables:
    ```
@@ -32,8 +50,7 @@ npm install -g wrangler
 # Авторизация в Cloudflare
 wrangler login
 
-# Сначала создайте проект в Cloudflare Dashboard (см. Способ 1)
-# Затем выполните сборку и деплой:
+# Сборка и деплой (используйте эту команду, а НЕ wrangler deploy!)
 npm run build
 wrangler pages deploy dist --project-name=sanya
 
@@ -42,6 +59,15 @@ npm run cf:deploy
 ```
 
 **Важно**: Перед первым деплоем через CLI, проект должен быть создан в Cloudflare Dashboard!
+
+## Проверка конфигурации
+
+Если деплой не работает, проверьте:
+
+1. ✅ Build command: `npm run build`
+2. ✅ Build output directory: `dist`
+3. ❌ Deploy command: **ДОЛЖЕН быть пустым** (или удален)
+4. ✅ Framework preset: `Vite` (опционально)
 
 ## Важно!
 
